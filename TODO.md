@@ -12,6 +12,8 @@
 - [x] Native entry routing/result support for existing Hopae login/logout without required Lua scripts.
 - [x] Qualified component releases: signed Hangang/Guard assets and checksummed Hopae assets.
 
+- [x] Unified Hangang-authority Hopae console and explicitly mapped native SSO login ([ADR 0009](docs/adr/0009-console-authority-sso.md)).
+
 ## Design subtask
 - [x] Architecture/ownership diagrams and English/Korean design documents.
 - [x] Catalog, classification, integrated decision and exporter proposals.
@@ -59,3 +61,19 @@ Merged [Hangang #1](https://github.com/ziozzang/hangang/pull/1),
 Published and deployed on 2026-10-13: [Hangang v0.3.1](https://github.com/ziozzang/hangang/releases/tag/v0.3.1), [Guard v0.3.1](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.1), [Hopae v0.0.2](https://github.com/ziozzang/hopae/releases/tag/v0.0.2). Hangang/Guard runtime signatures were verified before deployment; Hopae checksums were verified. Guard supervised signed updates are enabled. Hopae has no signed automatic updater.
 
 - [ ] Measure end-to-end Hopae session throughput; transport qualification alone does not establish 100k QPS.
+
+## Unified console / SSO evidence — 2026-10-13
+
+Merged [Hangang #4](https://github.com/ziozzang/hangang/pull/4) and
+[Hopae #2](https://github.com/ziozzang/hopae/pull/2). Deployed reviewed Linux
+builds from these source trees and frozen Hopae console UI 0.1.2; this is a
+post-release feature deployment, not a new signed cross-platform release.
+The sole existing Hopae administrator is explicitly mapped to the sole existing
+enabled Hangang administrator; no account/grant is created or altered.
+
+- 89 Hangang admin API tests, private lease/native SSO tests and real Hangang broker smoke passed.
+- Hopae: 384 unit tests and 359 scenarios passed (40 explicit ignores); unified/native authority regression, expiry, nonce replay and audit passed.
+- Strict all-target Clippy and publication/boundary/documentation checks passed.
+- Browser SSO placement, callback, viewer role/restoration and plugin role tests passed.
+- Live HTTPS checks: ID/PW + SSO entry, Hangang-only Hopae status/users, secondary-login removal, logout cleanup, anonymous/origin/cookie/lease isolation and native provider entry redirect.
+- Real Google login still requires the operator's provider interaction; automated login qualification uses the owned mock provider/session fixtures.

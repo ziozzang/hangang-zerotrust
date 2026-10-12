@@ -33,6 +33,8 @@ flowchart TB
   end
   subgraph CP["Configuration and management"]
     UI[Hangang console: Guard / Hopae] --> A[Domain-owned management APIs]
+    UI <-->|ID/PW or mapped SSO| CA[Hangang console account authority]
+    CA <-->|live native SSO verification| I
     A -->|validated policy / catalog bundles| H
     A --> I
     A --> G
@@ -123,3 +125,7 @@ Domain authorization, CAS and audit remain mandatory for every actual change.
 Qualification requires deterministic fixtures, malformed/unavailable results,
 calibration evidence and tenant/privacy isolation. No per-request inference
 dependency is introduced into ordinary enforcement.
+
+The embedded Hopae page can explicitly follow Hangang console authority, with a
+Hopae SSO button below local account login. See [ADR 0009](docs/adr/0009-console-authority-sso.md)
+for mapping, request/session checks and ownership boundaries.

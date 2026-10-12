@@ -32,3 +32,5 @@ native result-processing tests, real provider-login delegated mutations and gran
 revocation, durable nonce tests, actor audit and console lifecycle checks.
 Separate services still cannot atomically revoke an already accepted operation.
 End-to-end production throughput is not inferred from Guard transport benchmarks.
+
+The later explicit unified authority/SSO mode is described in [ADR 0009](0009-console-authority-sso.md).

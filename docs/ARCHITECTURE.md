@@ -94,3 +94,11 @@ is made from this inventory.
 
 References: [NIST architecture roles](https://pages.nist.gov/zero-trust-architecture/VolumeB/architecture.html),
 [CISA maturity model](https://www.cisa.gov/sites/default/files/2023-04/zero_trust_maturity_model_v2_508.pdf).
+
+## Ontology and remediation control plane
+
+Sillok owns the zero-trust ontology projection and provenance; Jikji owns
+automation workflow state. Scoped pentest evidence flows through Sillok and Jikji
+to domain-authorized Guard changes and Hangang routing patches. Domain fact
+ownership above remains unchanged. See [Automation](AUTOMATION.md) for scoped
+automatic/approved execution, partial-failure recovery and CAS rollback.

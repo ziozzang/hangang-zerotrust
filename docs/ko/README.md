@@ -13,3 +13,6 @@
 - [단말·워크로드](DEVICES.md)
 - [위협 모델](THREAT_MODEL.md)
 - [구현 순서](ROADMAP.md)
+
+
+[Sillok·Jikji 보안 자동화 설계](AUTOMATION.md)

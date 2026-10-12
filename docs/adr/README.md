@@ -20,3 +20,7 @@ claiming global atomic revocation from separate DBs and a proxy.
 Consequences: more explicit contracts and validation, independent runtime failures,
 consistent responsibility boundaries, and measurable native integration. Revisit
 an ADR when a requirement or evidence changes, preserving the migration rationale.
+
+Accepted component selection: Sillok for zero-trust ontology; Jikji for main
+automatic/semi-automatic orchestration. Proposed integration ADR 0007:
+[scoped pentest-to-Guard-to-Hangang remediation](../AUTOMATION.md).

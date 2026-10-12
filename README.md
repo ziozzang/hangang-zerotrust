@@ -55,3 +55,8 @@ Schema validity is only one check. The validator also checks cross-document
 references and rejects representative unsafe bundles. Authorization enforcement,
 HTTP/native parity, revocation, parser and performance qualification remain
 implementation gates. All examples use reserved domains and synthetic identities.
+
+Sillok is the selected zero-trust ontology engine. Jikji is the main automatic
+and semi-automatic orchestration engine. Scoped pentest evidence feeds Guard
+mitigations and validated Hangang routing patches; see
+[Ontology and security automation](docs/AUTOMATION.md). Integration is planned.

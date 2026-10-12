@@ -18,3 +18,5 @@
 | [ADRs](adr/README.md) | Proposed architectural decisions |
 
 Draft schemas are under `schemas/`, synthetic examples under `examples/`.
+
+| [Ontology and automation](AUTOMATION.md) | Sillok, Jikji, pentest evidence and guarded routing patches |

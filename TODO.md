@@ -22,3 +22,12 @@
 - [ ] Device/workload evidence ADR after environmental investigation.
 
 Runtime implementation checkboxes require actual evidence, not design completion.
+
+## Ontology and automated security hardening
+- [x] Record Sillok/Jikji component selection and remediation design.
+- [ ] Versioned bounded Sillok ontology adapter with provenance/tenant isolation.
+- [ ] Jikji automation and semi-automation tool/approval integration.
+- [ ] Scoped pentest job and normalized finding contracts.
+- [ ] Guard mitigation and Hangang routing patch adapters with CAS/idempotency.
+- [ ] Durable recovery, canary verification and conflict-safe rollback.
+- [ ] Adversarial qualification and request-performance isolation.

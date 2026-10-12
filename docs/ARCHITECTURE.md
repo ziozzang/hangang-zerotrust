@@ -83,12 +83,13 @@ contract. Decision results carry freshness and policy provenance.
 
 ## Current versus planned
 
-Existing: Hangang routing/resource primitives and several native identity/TLS
-features; Hopae provider/session engine and administration; Guard native HTTP/TCP,
-network rules, GeoIP and signed update mechanisms. Prototype: console package
-loading and delegated Guard administration. Planned: shared catalog schema,
-classification compiler, integrated multi-source decisions, Hopae native fast
-transport, native login/logout facade and unified observability exporter.
+Implemented and merged: Hangang routing/resource primitives; trusted pinned
+Guard/Hopae console packages and host broker; Hopae external providers, native
+login/logout and scoped management delegation; authenticated HOP1 verification
+with persistent native Hangang pools; Guard network rules/GeoIP and supervised
+signed runtime updates. The deployed console now serves both native menus.
+Planned: catalog/classification compiler, integrated multi-source resource
+policy, ontology/automation adapters and unified observability exporter.
 Device/posture federation remains an open design. No full-stack compliance claim
 is made from this inventory.
 

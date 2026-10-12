@@ -53,6 +53,6 @@ Merged [Hangang #1](https://github.com/ziozzang/hangang/pull/1),
 - Hopae: 383 unit + 358 scenario tests passed (40 explicit ignores), 39 gateway cases passed; real provider/session/grant/delegation tests and strict Clippy passed.
 - Guard: workspace and packaging tests passed; console generation reproduced the same manifest digest.
 - Actual isolated console + Guard runtime and a signed Hopae fixture exercised both menus, target IDs, viewer denial, secret isolation and logout disposal.
-- [ ] Activate and verify the merged binaries/packages in the deployed console.
+- [x] Activate merged binaries/packages in the deployed console; live HTTPS menus, anonymous denial, native entry redirects, logout disposal and Guard signed update status verified.
 - [ ] Complete native platform release qualification and signed asset publication.
 - [ ] Measure end-to-end Hopae session throughput; transport qualification alone does not establish 100k QPS.

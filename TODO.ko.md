@@ -35,3 +35,7 @@ Hangang 네이티브 로그인·로그아웃, 호환 컴포넌트 검증·서명
 Hangang/Hopae/Guard PR #1을 모두 머지했습니다. Native 메뉴·host 인증·위임 및 HOP1 지속 연결을 구현하고
 기존 provider/session/grant/CSRF/fence를 유지합니다. 영어 TODO에 테스트 수와 근거를 기록했습니다.
 운영 콘솔 활성화·플랫폼 릴리즈 검증·Hopae 전체 처리량 측정은 별도 완료 항목입니다.
+
+- [x] 운영 HTTPS 두 메뉴·익명 거부·네이티브 진입 리다이렉트·로그아웃 정리·Guard 서명 updater 확인.
+- [ ] 나머지 플랫폼 릴리즈 검증과 서명 자산 게시 완료.
+- [ ] Hopae 전체 세션 처리량 측정; 전송 검증을 100k QPS 근거로 사용하지 않음.

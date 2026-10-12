@@ -36,6 +36,7 @@ flowchart LR
   P[Scoped pentest tools] --> N[Bounded evidence normalizer]
   N --> S[Sillok ontology / provenance]
   S --> J[Jikji automated or reviewed workflow]
+  J <-->|bounded judgment / scoring| HE[Hearim / other intelligence backends]
   J --> V[Typed proposal / scope and revision validation]
   V --> G[Guard policy adapter]
   V --> H[Hangang routing patch adapter]
@@ -115,3 +116,22 @@ compiled policy; ontology reasoning and remediation stay on the control plane.
 The [feedback-loop design](FEEDBACK_LOOP.md) integrates logs, distributed traces,
 metrics and pentest findings into Sillok, then reuses measured remediation outcomes
 through Jikji. Scoped post-change pentest and regression checks complete the loop.
+
+## Hearim judgment backend
+
+[Hearim (헤아림)](https://github.com/ziozzang/hearim) is selected as one of the
+background intelligence/judgment backends used by Jikji. Its documented
+`POST /v1/systemone` interface supports Choice / Score / Noul questions and
+logprob-derived candidate distributions. This is judgment assistance, not the
+resource-policy authority, an authenticated fact source or a replacement for
+Sillok/Jikji. Other backends remain possible. Integration is planned.
+
+An adapter must pin model/backend and rubric revisions, minimize evidence sent,
+bound deadlines/concurrency and retain question/evidence digests and scoring
+diagnostics. Probability and entropy confidence are not calibrated attack risk
+or permission to apply a patch. Missing candidates/backend failures yield an
+unavailable or review outcome; they cannot silently become an allow decision.
+Domain authorization, CAS and audit remain mandatory for every actual change.
+Qualification requires deterministic fixtures, malformed/unavailable results,
+calibration evidence and tenant/privacy isolation. No per-request inference
+dependency is introduced into ordinary enforcement.

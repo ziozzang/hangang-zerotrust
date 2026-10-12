@@ -44,6 +44,7 @@ flowchart TB
     PT[Authorized scoped pentest] --> N
     N --> S[Sillok ontology / provenance]
     S --> J[Jikji automatic / semi-automatic workflows]
+    J <-->|bounded judgment / scoring| HE[Hearim: one intelligence backend]
     J --> K[Scope / authorization / revision validation]
     K -->|scoped changes| A
     R[Canary / post-change pentest / regression checks] -->|verified outcomes| N
@@ -63,6 +64,7 @@ ontology reasoning, LLM execution or pentesting. Domain APIs retain write author
 flowchart LR
   O[Logs / traces / metrics + scoped pentest] --> S[Sillok facts / relationships / evidence]
   S --> J[Jikji investigation / proposal]
+  J <-->|judgment assistance| HE[Hearim / other backends]
   J --> V[Pre-authorized scope or reviewed approval + domain validation]
   V --> A[Guard mitigation / Hangang routing patch]
   A --> T[Canary + post-change pentest + normal-traffic checks]
@@ -102,3 +104,22 @@ mitigations and validated Hangang routing patches; see
 
 [Closed-loop design](docs/FEEDBACK_LOOP.md) connects logging, distributed tracing,
 monitoring and scoped pentesting to ontology-backed action and verified outcome reuse.
+
+## Hearim judgment backend
+
+[Hearim (헤아림)](https://github.com/ziozzang/hearim) is selected as one of the
+background intelligence/judgment backends used by Jikji. Its documented
+`POST /v1/systemone` interface supports Choice / Score / Noul questions and
+logprob-derived candidate distributions. This is judgment assistance, not the
+resource-policy authority, an authenticated fact source or a replacement for
+Sillok/Jikji. Other backends remain possible. Integration is planned.
+
+An adapter must pin model/backend and rubric revisions, minimize evidence sent,
+bound deadlines/concurrency and retain question/evidence digests and scoring
+diagnostics. Probability and entropy confidence are not calibrated attack risk
+or permission to apply a patch. Missing candidates/backend failures yield an
+unavailable or review outcome; they cannot silently become an allow decision.
+Domain authorization, CAS and audit remain mandatory for every actual change.
+Qualification requires deterministic fixtures, malformed/unavailable results,
+calibration evidence and tenant/privacy isolation. No per-request inference
+dependency is introduced into ordinary enforcement.

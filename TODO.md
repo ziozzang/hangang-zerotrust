@@ -39,3 +39,6 @@ Runtime implementation checkboxes require actual evidence, not design completion
 - [ ] Jikji case lifecycle, evidence retrieval and bounded outcome reuse.
 - [ ] Post-change pentest and normal-traffic regression checks with predeclared criteria.
 - [ ] Feedback amplification, misleading success and cross-tenant adversarial tests.
+
+- [x] Select Hearim as one intelligence/judgment backend and update diagrams.
+- [ ] Bounded Jikji/Hearim adapter, provenance, error handling and calibration qualification.

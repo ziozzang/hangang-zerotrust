@@ -73,3 +73,5 @@ login/logout. The existing Hangang administrator account API continues to own
 its own operator sessions. A console extension does not automatically turn an
 end-user Hopae session into a Hangang administrator. Attribute/role mappings
 require explicit issuer and management-grant policy.
+
+Native entry integration uses Hopae’s existing `/_hopae/login` and `/_hopae/logout` contracts. Provider/session logic and logout confirmation remain in Hopae.

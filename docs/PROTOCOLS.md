@@ -2,8 +2,9 @@
 
 [한국어](ko/PROTOCOLS.md) · [Index](README.md)
 
-Status: Guard transport exists; Hopae fast transport is proposed and must be
-qualified against its existing HTTP verification engine.
+Status: Guard transport exists; HOP1 Hopae transport and the Hangang pool are
+implemented with HTTP/session parity tests. Production throughput qualification
+and future integrated-decision revision contracts remain separate gates.
 
 ## Shared principles
 
@@ -28,18 +29,18 @@ deny versus dependency failure. Optional IP caching is off by default and only
 1–5 seconds when enabled. Existing benchmark results are for documented Guard
 transport workloads, not a blanket full-stack or identity-verification SLA.
 
-## Hopae proposal
+## Hopae design history
 
 Identity verification includes application/host, method/path, verified client
 address/scheme, configured cookie/authorization inputs and required request
 metadata. A 24-byte IP frame cannot express that. Start with a bounded, versioned
 variable-payload protocol rather than disguising identity as an IP query.
 
-Provisional framing: fixed header with magic/version, message type, flags,
+The initial proposal (superseded by ADR 0008): fixed header with magic/version, message type, flags,
 request ID and payload length; bounded authentication handshake; bounded verify
 request and result; a negotiated request/response size ceiling; no unbounded
 header map or provider blob. Exact field layout and encoding require an ADR
-before interoperability code. Prototype JSON payloads can establish semantics;
+before interoperability code. The implemented choice is binary HOP1 below. Prototype JSON payloads can establish semantics;
 compact typed encoding is a measured optimization, not an authority change.
 
 Serialize only protocol-approved fields. Treat duplicate/ambiguous credentials
@@ -70,3 +71,13 @@ round trip cannot be equated to a local decision lookup. Report achieved QPS,
 error counts, CPU/RSS, p50/p95/p99 and workload conditions for 10k and 100k targets.
 No success claim is justified by a synthetic allow-only loop or cached identities
 that no longer satisfy the revocation contract.
+
+## Implemented HOP1 integration
+
+[Hopae native contract](https://github.com/ziozzang/hopae/blob/main/docs/HANGANG_NATIVE.md)
+and [Hangang pool/console contract](https://github.com/ziozzang/hangang/blob/main/docs/CONSOLE_PLUGINS.md)
+now define the implemented HOP1 layout and supersede provisional Hopae framing
+choices above. HOP1 has a 16-byte magic/u64-ID/u32-length header and bounded raw
+header/result payloads. Caller authentication is per connection and rechecked by
+the existing router per request. Real-session parity, cancellation and replay
+tests qualify semantics; they do not certify production identity throughput.

@@ -3,13 +3,13 @@
 [Roadmap](docs/ROADMAP.md) · [한국어](TODO.ko.md)
 
 ## Main integration
-- [ ] Guard menu in the actual deployed Hangang console, using its existing authority.
-- [ ] Qualify trusted plugin lifecycle, backend credential isolation, roles, revocation and audit.
-- [ ] Scoped Hopae delegated-management contract preserving grants/CSRF and actor identity.
-- [ ] Hopae user/session/event/status menu, native console style and shared authentication.
-- [ ] Provider-independent native verify request/result contract and HTTP parity corpus.
-- [ ] Authenticated bounded Hopae transport and Hangang persistent pool.
-- [ ] Native Hangang login/logout facade without required Lua scripts.
+- [x] Guard menu package and native host broker using the existing Hangang authority; deployed console activation tracked below.
+- [x] Qualify trusted plugin lifecycle, backend credential isolation, roles, revocation and audit.
+- [x] Scoped Hopae delegated-management contract preserving grants/CSRF and actor identity.
+- [x] Hopae user/session/event/status package, native style and host authentication with independent native Hopae grant/session checks.
+- [x] HOP1 provider-independent native verify contract and real-session HTTP parity cases.
+- [x] Authenticated bounded Hopae transport and Hangang persistent pool.
+- [x] Native entry routing/result support for existing Hopae login/logout without required Lua scripts.
 - [ ] Signed compatible component qualification and release.
 
 ## Design subtask
@@ -42,3 +42,17 @@ Runtime implementation checkboxes require actual evidence, not design completion
 
 - [x] Select Hearim as one intelligence/judgment backend and update diagrams.
 - [ ] Bounded Jikji/Hearim adapter, provenance, error handling and calibration qualification.
+
+## Integration evidence — 2026-10-12
+
+Merged [Hangang #1](https://github.com/ziozzang/hangang/pull/1),
+[Hopae #1](https://github.com/ziozzang/hopae/pull/1), and
+[Guard #1](https://github.com/ziozzang/hangang-guard/pull/1).
+
+- Hangang: 1,229 all-target Rust tests passed (58 explicit ignores), plus new native proxy parity and signed assertion tests; strict Clippy and browser lifecycle/role tests passed.
+- Hopae: 383 unit + 358 scenario tests passed (40 explicit ignores), 39 gateway cases passed; real provider/session/grant/delegation tests and strict Clippy passed.
+- Guard: workspace and packaging tests passed; console generation reproduced the same manifest digest.
+- Actual isolated console + Guard runtime and a signed Hopae fixture exercised both menus, target IDs, viewer denial, secret isolation and logout disposal.
+- [ ] Activate and verify the merged binaries/packages in the deployed console.
+- [ ] Complete native platform release qualification and signed asset publication.
+- [ ] Measure end-to-end Hopae session throughput; transport qualification alone does not establish 100k QPS.

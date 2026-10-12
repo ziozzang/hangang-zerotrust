@@ -18,3 +18,8 @@ Hangang 연결 풀/네이티브 로그인·로그아웃 → 회수/장애/파서
 
 10k/100k QPS는 검증 목표입니다. 로컬 warm 검증과 외부 프로바이더 왕복을 구분하고
 전체 게이트웨이 경로의 지연·오류·CPU/RSS·회수 지연을 실제로 보고해야 합니다.
+
+구현된 HOP1은 [Hopae 계약](https://github.com/ziozzang/hopae/blob/main/docs/HANGANG_NATIVE.md)과
+[Hangang 계약](https://github.com/ziozzang/hangang/blob/main/docs/CONSOLE_PLUGINS.md)에 정의합니다.
+16바이트 magic/u64-ID/u32-length 프레임과 제한된 헤더/응답을 사용하며 앞선 임시 프레임 설계를 대체합니다.
+연결 인증 뒤 매 요청에서도 기존 라우터가 caller·세션을 확인합니다. 전체 identity 처리량은 별도 검증입니다.

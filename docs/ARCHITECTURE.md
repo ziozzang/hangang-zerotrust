@@ -121,3 +121,5 @@ Domain authorization, CAS and audit remain mandatory for every actual change.
 Qualification requires deterministic fixtures, malformed/unavailable results,
 calibration evidence and tenant/privacy isolation. No per-request inference
 dependency is introduced into ordinary enforcement.
+
+Implementation update: trusted Guard/Hopae packages, signed scoped Hopae management delegation, HOP1 verification and native Hangang pools/entry result handling are merged. See [ADR 0008](adr/0008-hopae-native.md); ontology/classification/automation integration remains planned.

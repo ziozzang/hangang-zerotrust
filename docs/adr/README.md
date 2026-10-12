@@ -24,3 +24,5 @@ an ADR when a requirement or evidence changes, preserving the migration rational
 Accepted component selection: Sillok for zero-trust ontology; Jikji for main
 automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 [scoped pentest-to-Guard-to-Hangang remediation](../AUTOMATION.md).
+
+[ADR 0008: implemented HOP1 and console delegation](0008-hopae-native.md).

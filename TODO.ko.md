@@ -29,3 +29,9 @@ Hangang 네이티브 로그인·로그아웃, 호환 컴포넌트 검증·서명
 
 - [x] Hearim 지능·판단 백엔드 선정 및 다이어그램 갱신.
 - [ ] 제한된 Jikji/Hearim 어댑터·출처·장애 처리·보정 검증.
+
+## 통합 구현 근거 — 2026-10-12
+
+Hangang/Hopae/Guard PR #1을 모두 머지했습니다. Native 메뉴·host 인증·위임 및 HOP1 지속 연결을 구현하고
+기존 provider/session/grant/CSRF/fence를 유지합니다. 영어 TODO에 테스트 수와 근거를 기록했습니다.
+운영 콘솔 활성화·플랫폼 릴리즈 검증·Hopae 전체 처리량 측정은 별도 완료 항목입니다.

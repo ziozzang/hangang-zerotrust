@@ -60,3 +60,6 @@ Sillok is the selected zero-trust ontology engine. Jikji is the main automatic
 and semi-automatic orchestration engine. Scoped pentest evidence feeds Guard
 mitigations and validated Hangang routing patches; see
 [Ontology and security automation](docs/AUTOMATION.md). Integration is planned.
+
+[Closed-loop design](docs/FEEDBACK_LOOP.md) connects logging, distributed tracing,
+monitoring and scoped pentesting to ontology-backed action and verified outcome reuse.

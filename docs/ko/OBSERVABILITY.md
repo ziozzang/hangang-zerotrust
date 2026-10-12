@@ -20,3 +20,7 @@ ClickHouse로 배치 전송합니다. ClickHouse는 분석 저장소이며 정�
 ClickHouse의 merge나 retry가 exactly-once를 보장한다고 주장하지 않습니다.
 비동기 INSERT에서도 wait_for_async_insert=1 등 저장 확인을 요구하고 큐·배치·재시도·spool에 한도를 둡니다.
 콘솔은 권한과 조회 범위가 제한된 API를 사용하며 ClickHouse 비밀값이나 임의 SQL을 브라우저에 주지 않습니다.
+
+로깅·분산 트레이싱·모니터링은 [온톨로지·펜테스트 피드백 루프](FEEDBACK_LOOP.md)로 연결합니다.
+Sillok에는 의미 있는 사실과 출처 참조를, Jikji에는 조사·제안·실행 결과를 연결합니다.
+대응 전후 펜테스트와 정상 트래픽 영향을 함께 검증하며 원본 분석 저장소 및 정책 권한은 분리합니다.

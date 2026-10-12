@@ -91,3 +91,12 @@ capacity exhausted, and bounded 100k-QPS request-path overhead.
 Primary references: [Prometheus metric/label naming](https://prometheus.io/docs/practices/naming/),
 [Prometheus instrumentation](https://prometheus.io/docs/practices/instrumentation/),
 [ClickHouse observability integration](https://github.com/ClickHouse/clickhouse-docs/blob/main/docs/use-cases/observability/build-your-own/integrating-opentelemetry.md).
+
+## Ontology and action feedback
+
+Logging, distributed tracing and monitoring feed the
+[ontology and pentest feedback loop](FEEDBACK_LOOP.md). Sillok stores semantic
+facts and provenance links; Jikji reuses verified outcomes to investigate and
+propose scoped actions. Pentest before/after evidence and normal-traffic health
+are both required to assess applicable remediation. Raw analytics storage remains
+separate, and export credentials never gain policy mutation authority.

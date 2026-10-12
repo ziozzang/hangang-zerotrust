@@ -109,3 +109,9 @@ compiled policy; ontology reasoning and remediation stay on the control plane.
 - Tests for stale evidence/CAS, target escape, prompt injection, duplicate jobs,
   partial commit, restart recovery, revoked grants and rollback conflicts.
 - Performance evidence that automation/export does not consume request budgets.
+
+## Observability and outcome reuse
+
+The [feedback-loop design](FEEDBACK_LOOP.md) integrates logs, distributed traces,
+metrics and pentest findings into Sillok, then reuses measured remediation outcomes
+through Jikji. Scoped post-change pentest and regression checks complete the loop.

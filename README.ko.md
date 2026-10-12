@@ -19,3 +19,6 @@ Hangang·Hopae·Guard를 기반으로 전체 제로트러스트 구조와 계약
 온톨로지 엔진은 Sillok, 자동·반자동화 핵심 엔진은 Jikji를 사용합니다.
 펜테스트 근거를 Guard 대응 및 Hangang 라우팅 패치로 연결하는
 [통합 설계](docs/ko/AUTOMATION.md)를 추가했습니다. 런타임 연결은 구현 예정입니다.
+
+[폐쇄 루프 설계](docs/ko/FEEDBACK_LOOP.md)에 로깅·트레이싱·모니터링·펜테스트를
+온톨로지 기반 대응과 결과 재사용으로 연결하는 구조를 기록했습니다.

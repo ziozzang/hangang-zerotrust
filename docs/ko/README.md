@@ -16,3 +16,5 @@
 
 
 [Sillok·Jikji 보안 자동화 설계](AUTOMATION.md)
+
+[관측·온톨로지·펜테스트 피드백 루프](FEEDBACK_LOOP.md)

@@ -31,3 +31,11 @@ Runtime implementation checkboxes require actual evidence, not design completion
 - [ ] Guard mitigation and Hangang routing patch adapters with CAS/idempotency.
 - [ ] Durable recovery, canary verification and conflict-safe rollback.
 - [ ] Adversarial qualification and request-performance isolation.
+
+## Observability / ontology / pentest feedback
+- [x] Record the full observation-to-action-to-verification loop in English/Korean.
+- [ ] Correlate bounded logs/traces/metrics and scoped pentest findings with provenance.
+- [ ] Sillok fact/hypothesis/policy/applied-state/outcome distinctions and retraction.
+- [ ] Jikji case lifecycle, evidence retrieval and bounded outcome reuse.
+- [ ] Post-change pentest and normal-traffic regression checks with predeclared criteria.
+- [ ] Feedback amplification, misleading success and cross-tenant adversarial tests.

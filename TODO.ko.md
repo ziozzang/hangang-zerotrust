@@ -4,7 +4,7 @@
 
 주 작업: 운영 Hangang 콘솔의 실제 Guard 메뉴, 플러그인 권한/회수/감사 검증,
 Hopae 관리 위임과 사용자/세션/이벤트 메뉴, HTTP 의미와 같은 고속 verify 프로토콜,
-Hangang 네이티브 로그인·로그아웃, 호환 컴포넌트 검증·서명 릴리즈입니다.
+Hangang 네이티브 로그인·로그아웃, 호환 컴포넌트 검증·릴리즈입니다. Hangang/Guard는 서명 자산, Hopae는 체크섬 자산을 게시했습니다.
 
 설계 서브태스크: 전체 구조·소유권 도표와 영어/한국어 문서, 카탈로그·분류·통합 판단·exporter 제안을 구성했습니다.
 등급·테넌트/객체 증거·하향 승인, 프로토콜과 위임/회수 보장, 실제 엔진/exporter 구현은 남아 있습니다.
@@ -37,5 +37,8 @@ Hangang/Hopae/Guard PR #1을 모두 머지했습니다. Native 메뉴·host 인�
 운영 콘솔 활성화·플랫폼 릴리즈 검증·Hopae 전체 처리량 측정은 별도 완료 항목입니다.
 
 - [x] 운영 HTTPS 두 메뉴·익명 거부·네이티브 진입 리다이렉트·로그아웃 정리·Guard 서명 updater 확인.
-- [ ] 나머지 플랫폼 릴리즈 검증과 서명 자산 게시 완료.
+- [x] 네이티브 플랫폼 검증·게시 완료: Hangang 5개, Guard 4개, Hopae 4개 대상.
+
+2026-10-13 게시·배포: [Hangang v0.3.1](https://github.com/ziozzang/hangang/releases/tag/v0.3.1), [Guard v0.3.1](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.1), [Hopae v0.0.2](https://github.com/ziozzang/hopae/releases/tag/v0.0.2). 배포 전 Hangang/Guard 서명과 Hopae 체크섬을 검증했습니다. Guard 감독형 서명 자동 업데이트는 활성화했습니다. Hopae 서명 자동 updater는 구현하지 않았습니다.
+
 - [ ] Hopae 전체 세션 처리량 측정; 전송 검증을 100k QPS 근거로 사용하지 않음.

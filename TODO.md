@@ -10,7 +10,7 @@
 - [x] HOP1 provider-independent native verify contract and real-session HTTP parity cases.
 - [x] Authenticated bounded Hopae transport and Hangang persistent pool.
 - [x] Native entry routing/result support for existing Hopae login/logout without required Lua scripts.
-- [ ] Signed compatible component qualification and release.
+- [x] Qualified component releases: signed Hangang/Guard assets and checksummed Hopae assets.
 
 ## Design subtask
 - [x] Architecture/ownership diagrams and English/Korean design documents.
@@ -50,9 +50,12 @@ Merged [Hangang #1](https://github.com/ziozzang/hangang/pull/1),
 [Guard #1](https://github.com/ziozzang/hangang-guard/pull/1).
 
 - Hangang: 1,229 all-target Rust tests passed (58 explicit ignores), plus new native proxy parity and signed assertion tests; strict Clippy and browser lifecycle/role tests passed.
-- Hopae: 383 unit + 358 scenario tests passed (40 explicit ignores), 39 gateway cases passed; real provider/session/grant/delegation tests and strict Clippy passed.
+- Hopae: 384 unit + 358 scenario tests passed (40 explicit ignores), 39 gateway cases passed; real provider/session/grant/delegation tests and strict Clippy passed.
 - Guard: workspace and packaging tests passed; console generation reproduced the same manifest digest.
 - Actual isolated console + Guard runtime and a signed Hopae fixture exercised both menus, target IDs, viewer denial, secret isolation and logout disposal.
 - [x] Activate merged binaries/packages in the deployed console; live HTTPS menus, anonymous denial, native entry redirects, logout disposal and Guard signed update status verified.
-- [ ] Complete native platform release qualification and signed asset publication.
+- [x] Complete native platform qualification and publication: Hangang (5 targets), Guard (4), Hopae (4).
+
+Published and deployed on 2026-10-13: [Hangang v0.3.1](https://github.com/ziozzang/hangang/releases/tag/v0.3.1), [Guard v0.3.1](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.1), [Hopae v0.0.2](https://github.com/ziozzang/hopae/releases/tag/v0.0.2). Hangang/Guard runtime signatures were verified before deployment; Hopae checksums were verified. Guard supervised signed updates are enabled. Hopae has no signed automatic updater.
+
 - [ ] Measure end-to-end Hopae session throughput; transport qualification alone does not establish 100k QPS.

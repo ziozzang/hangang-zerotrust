@@ -9,7 +9,8 @@ Hangang·Hopae·Guard를 기반으로 전체 제로트러스트 구조와 계약
 - Guard: IP/CIDR/ASN 제어와 네트워크 위험.
 - 카탈로그·분류 엔진: API·리소스·데이터의 정보등급과 정책 속성.
 - 통합 판단 엔진: 신원·네트워크·리소스·확인 가능한 단말/워크로드 근거를 결합합니다.
-- 관측 exporter: Prometheus 지표, ClickHouse 로그·트레이스·이벤트 분석.
+- 장부: 별도 로그·트레이스 수집/조회 및 ClickHouse 연동.
+- 기존 사초: 모니터링·상태·알림. 품계 권한 관리와 함께 향후 통합을 설계합니다.
 - Sillok: 제로트러스트 온톨로지와 근거·관계·출처.
 - Jikji: 자동·반자동 조사·제안·실행과 검증된 결과 재사용.
 
@@ -33,14 +34,14 @@ flowchart TB
     C[클라이언트] --> H[Hangang 요청 집행]
     H <-->|인증된 네이티브 호출| I[Hopae 사용자 / 세션]
     I <-->|OIDC / Google| P[외부 프로바이더]
-    H <-->|인증된 네이티브 호출| G[Guard 네트워크 제어]
-    H --> D[통합 판단 엔진]
+    H <-->|인증된 네이티브 호출| G[수문장: Guard 네트워크 제어]
+    H --> D[품계 권한 판단: 구현 예정]
     D --> CL[컴파일된 분류 / 카탈로그]
     V[단말 / 워크로드 근거: 설계 예정] -.-> D
     H --> B[애플리케이션 / 리소스]
   end
   subgraph CP["설정과 관리"]
-    UI[Hangang 콘솔: Guard / Hopae] --> A[도메인별 관리 API]
+    UI[Hangang 콘솔: 수문장 / 호패 / 품계] --> A[도메인별 관리 API]
     UI <-->|ID/PW 또는 매핑된 SSO| CA[Hangang 콘솔 계정 권한]
     CA <-->|실시간 네이티브 SSO 검증| I
     A -->|검증된 정책 / 카탈로그 번들| H
@@ -48,8 +49,9 @@ flowchart TB
     A --> G
   end
   subgraph OP["관측과 보안 자동화: 통합 구현 예정"]
-    E[제한된 exporter] --> CH[ClickHouse 로그 / 트레이스 / 이벤트]
+    E[장부: 제한된 로그 / 트레이스] --> CH[ClickHouse 로그 / 트레이스 / 이벤트]
     M[Prometheus 지표] --> N[근거 정규화 / 상관 분석]
+    M --> SA[사초: 기존 모니터링 / 상태 / 알림]
     CH --> N
     PT[승인된 범위의 펜테스트] --> N
     N --> S[Sillok 온톨로지 / 출처]
@@ -59,6 +61,8 @@ flowchart TB
     K -->|제한된 변경| A
     R[카나리 / 재펜테스트 / 회귀 검증] -->|검증된 결과| N
   end
+    H & I & G -->|감사 근거| AU[사헌: 감사 / 무결성 / 검증]
+    AU -->|제한된 근거| S
   H & I & G -->|제한된 로그 / 트레이스 / 이벤트| E
   M -->|scrape| H & I & G & E
   H & G -->|적용된 변경| R
@@ -102,3 +106,5 @@ logprob 기반 후보 분포를 판단 보조에 활용하며 다른 백엔드�
 내장 Hopae 관리 화면은 명시적으로 Hangang 콘솔 권한을 따를 수 있으며 로컬 로그인
 아래에 Hopae SSO 버튼을 제공합니다. 계정 매핑·요청/세션 검사·소유권 경계는
 [ADR 0009](docs/ko/ADR_0009.md)에 기록했습니다.
+
+[품계 / Pumgye ownership and implementation plan](docs/adr/0010-pumgye-ownership.md) · [한국어](docs/ko/0010-pumgye-ownership.md)

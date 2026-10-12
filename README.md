@@ -25,14 +25,14 @@ flowchart TB
     C[Client] --> H[Hangang enforcement]
     H <-->|authenticated native calls| I[Hopae identity / sessions]
     I <-->|OIDC / Google| P[External providers]
-    H <-->|authenticated native calls| G[Guard network controls]
-    H --> D[Integrated decision engine]
+    H <-->|authenticated native calls| G[Sumunjang: Guard network controls]
+    H --> D[Pumgye authorization: planned]
     D --> CL[Compiled classification / catalog]
     V[Device / workload evidence: proposed] -.-> D
     H --> B[Application / resource]
   end
   subgraph CP["Configuration and management"]
-    UI[Hangang console: Guard / Hopae] --> A[Domain-owned management APIs]
+    UI[Hangang console: Sumunjang / Hopae / Pumgye] --> A[Domain-owned management APIs]
     UI <-->|ID/PW or mapped SSO| CA[Hangang console account authority]
     CA <-->|live native SSO verification| I
     A -->|validated policy / catalog bundles| H
@@ -40,8 +40,9 @@ flowchart TB
     A --> G
   end
   subgraph OP["Observability and security automation: planned integration"]
-    E[Bounded exporter] --> CH[ClickHouse logs / traces / events]
+    E[Jangbu: bounded logs / traces] --> CH[ClickHouse logs / traces / events]
     M[Prometheus metrics] --> N[Evidence normalization / correlation]
+    M --> SA[Sacho: existing monitoring / status / alerts]
     CH --> N
     PT[Authorized scoped pentest] --> N
     N --> S[Sillok ontology / provenance]
@@ -51,6 +52,8 @@ flowchart TB
     K -->|scoped changes| A
     R[Canary / post-change pentest / regression checks] -->|verified outcomes| N
   end
+    H & I & G -->|audit evidence| AU[Saheon: audit / integrity / verification]
+    AU -->|bounded evidence| S
   H & I & G -->|bounded logs / traces / events| E
   M -->|scrape| H & I & G & E
   H & G -->|applied changes| R
@@ -129,3 +132,5 @@ dependency is introduced into ordinary enforcement.
 The embedded Hopae page can explicitly follow Hangang console authority, with a
 Hopae SSO button below local account login. See [ADR 0009](docs/adr/0009-console-authority-sso.md)
 for mapping, request/session checks and ownership boundaries.
+
+[품계 / Pumgye ownership and implementation plan](docs/adr/0010-pumgye-ownership.md) · [한국어](docs/ko/0010-pumgye-ownership.md)

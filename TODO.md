@@ -77,3 +77,12 @@ enabled Hangang administrator; no account/grant is created or altered.
 - Browser SSO placement, callback, viewer role/restoration and plugin role tests passed.
 - Live HTTPS checks: ID/PW + SSO entry, Hangang-only Hopae status/users, secondary-login removal, logout cleanup, anonymous/origin/cookie/lease isolation and native provider entry redirect.
 - Real Google login still requires the operator's provider interaction; automated login qualification uses the owned mock provider/session fixtures.
+
+## Pumgye / Sumunjang integration
+
+- [x] Component names and ownership accepted ([ADR 0010](docs/adr/0010-pumgye-ownership.md)).
+- [ ] Bounded embedded Pumgye policy compiler and adversarial tests.
+- [ ] Native Hangang policy publication, audit and console authorization matrix.
+- [ ] Protected-route Hopae identity + user/IP permissions + Sumunjang enforcement.
+- [ ] Cache, revocation, transport and browser qualification; reviewed deployment.
+- [x] Record Jangbu / existing Sacho / Sillok as separate design responsibilities.

@@ -20,28 +20,67 @@ are tracked separately; a diagram is not a production assurance claim.
 ## System view
 
 ```mermaid
-flowchart LR
-  C[Client] --> H[Hangang enforcement]
-  H <-->|native authenticated calls| I[Hopae identity/session runtime]
-  I <-->|OIDC / Google / other providers| P[External identity providers]
-  H <-->|native authenticated calls| G[Guard network runtime]
-  H --> D[Integrated decision engine]
-  A[Catalog and policy authority] -->|validated atomic bundles| H
-  D --> CL[Classification lookup]
-  CL --> S[Compiled resource catalog]
-  V[Device/workload evidence — proposed] -.-> D
-  H --> B[Application / resource]
-  H & I & G -->|bounded events| E[Observability exporter]
-  E --> CH[ClickHouse events]
-  M[Prometheus] -->|scrape| H & I & G & E
-  UI[Hangang console: Guard / Hopae menus] --> H
+flowchart TB
+  subgraph DP["Request enforcement"]
+    C[Client] --> H[Hangang enforcement]
+    H <-->|authenticated native calls| I[Hopae identity / sessions]
+    I <-->|OIDC / Google| P[External providers]
+    H <-->|authenticated native calls| G[Guard network controls]
+    H --> D[Integrated decision engine]
+    D --> CL[Compiled classification / catalog]
+    V[Device / workload evidence: proposed] -.-> D
+    H --> B[Application / resource]
+  end
+  subgraph CP["Configuration and management"]
+    UI[Hangang console: Guard / Hopae] --> A[Domain-owned management APIs]
+    A -->|validated policy / catalog bundles| H
+    A --> I
+    A --> G
+  end
+  subgraph OP["Observability and security automation: planned integration"]
+    E[Bounded exporter] --> CH[ClickHouse logs / traces / events]
+    M[Prometheus metrics] --> N[Evidence normalization / correlation]
+    CH --> N
+    PT[Authorized scoped pentest] --> N
+    N --> S[Sillok ontology / provenance]
+    S --> J[Jikji automatic / semi-automatic workflows]
+    J --> K[Scope / authorization / revision validation]
+    K -->|scoped changes| A
+    R[Canary / post-change pentest / regression checks] -->|verified outcomes| N
+  end
+  H & I & G -->|bounded logs / traces / events| E
+  M -->|scrape| H & I & G & E
+  H & G -->|applied changes| R
 ```
+
+Request enforcement uses bounded native calls and compiled policy. Sillok and
+Jikji operate on the control plane; ordinary requests do not wait for analytics,
+ontology reasoning, LLM execution or pentesting. Domain APIs retain write authority.
+
+## Security feedback loop
+
+```mermaid
+flowchart LR
+  O[Logs / traces / metrics + scoped pentest] --> S[Sillok facts / relationships / evidence]
+  S --> J[Jikji investigation / proposal]
+  J --> V[Pre-authorized scope or reviewed approval + domain validation]
+  V --> A[Guard mitigation / Hangang routing patch]
+  A --> T[Canary + post-change pentest + normal-traffic checks]
+  T --> R[Measured result / uncertainty / retain or CAS rollback]
+  R -->|provenance and outcome reuse| S
+```
+
+Observe, propose, authorize, apply and verify are distinct stages. Pentest targets
+and probe budgets remain explicitly scoped. Rollback preserves intervening changes;
+verified outcomes become reusable evidence, not automatically authorized global rules.
+
 
 Read [Architecture](docs/ARCHITECTURE.md),
 [Catalog](docs/CATALOG.md), [Classification engine](docs/CLASSIFICATION.md),
 [Integrated decisions](docs/DECISIONS.md), [Native identity integration](docs/IDENTITY.md),
 [Console plugins](docs/CONSOLE.md), [Runtime protocols](docs/PROTOCOLS.md),
-[Observability](docs/OBSERVABILITY.md), and [Device/workload questions](docs/DEVICES.md).
+[Observability](docs/OBSERVABILITY.md), [Ontology and automation](docs/AUTOMATION.md),
+[Feedback loop](docs/FEEDBACK_LOOP.md), and [Device/workload questions](docs/DEVICES.md).
 
 ## Validate the draft contracts
 

@@ -46,8 +46,9 @@ cannot establish these facts. Authentication success alone does not grant access
 
 Existing authentication-only routes remain explicitly distinguishable from new
 Pumgye-protected routes. No broad production grant or automatic blocking policy
-is inferred from deployment. Guard identifiers, protocol magic, release names
-and updater URLs remain compatible during the Sumunjang branding transition.
+is inferred from deployment. The primary executable and release assets become `sumunjang` in v0.3.2.
+Legacy executable/signed asset pairs, protocol magic, credential environment
+identifiers and updater repository URLs preserve compatibility.
 
 ## Observability components: design scope
 

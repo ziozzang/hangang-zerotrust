@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hangang.example.test/schemas/bundle.schema.json",
+  "$comment": "Draft server/control-plane contract. Successful parsing does not establish identity or authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "authority_epoch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "catalog_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "policy_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "catalog_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "supported_obligations": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "application_object_authorization",
+          "no_export",
+          "no_sensitive_logging"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 8,
+      "uniqueItems": true
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "schema_version",
+    "authority_epoch",
+    "revision",
+    "catalog_revision",
+    "policy_revision",
+    "catalog_sha256",
+    "policy_sha256",
+    "supported_obligations",
+    "valid_from",
+    "valid_until"
+  ]
+}

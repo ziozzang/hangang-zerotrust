@@ -1,0 +1,68 @@
+{
+  "schema_version": "0.1.0",
+  "authority_epoch": "example-authority-01",
+  "revision": 1,
+  "catalog_revision": 1,
+  "default": "deny",
+  "rules": [
+    {
+      "rule_id": "finance-read",
+      "effect": "allow",
+      "resources": [
+        "finance.reports"
+      ],
+      "actions": [
+        "read"
+      ],
+      "conditions": {
+        "required_facts": [
+          "identity",
+          "network"
+        ],
+        "min_aal": 2,
+        "entitlements": [
+          "finance:read"
+        ],
+        "tenant_constraint": "application_enforced",
+        "allowed_classes": [
+          "confidential"
+        ],
+        "max_network_suspicion": "watch"
+      },
+      "obligations": [
+        {
+          "kind": "application_object_authorization"
+        },
+        {
+          "kind": "no_export"
+        },
+        {
+          "kind": "no_sensitive_logging"
+        }
+      ]
+    },
+    {
+      "rule_id": "anonymous-health",
+      "effect": "allow",
+      "resources": [
+        "site.health"
+      ],
+      "actions": [
+        "read"
+      ],
+      "conditions": {
+        "required_facts": [
+          "network"
+        ],
+        "min_aal": 0,
+        "entitlements": [],
+        "tenant_constraint": "none",
+        "allowed_classes": [
+          "public"
+        ],
+        "max_network_suspicion": "watch"
+      },
+      "obligations": []
+    }
+  ]
+}

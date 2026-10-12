@@ -1,0 +1,58 @@
+{
+  "schema_version": "0.1.0",
+  "authority_epoch": "example-authority-01",
+  "revision": 1,
+  "vocabulary_version": 1,
+  "resources": [
+    {
+      "resource_id": "finance.reports",
+      "owner": "finance-team",
+      "application": "reports",
+      "classification": {
+        "level": "confidential",
+        "compartments": [
+          "finance"
+        ],
+        "source": "owner_review"
+      },
+      "actions": [
+        "read",
+        "export"
+      ],
+      "tenant_mode": "application_enforced",
+      "bindings": [
+        {
+          "route_id": "reports-read",
+          "method": "GET",
+          "action": "read"
+        },
+        {
+          "route_id": "reports-export",
+          "method": "POST",
+          "action": "export"
+        }
+      ]
+    },
+    {
+      "resource_id": "site.health",
+      "owner": "platform-team",
+      "application": "health",
+      "classification": {
+        "level": "public",
+        "compartments": [],
+        "source": "owner_review"
+      },
+      "actions": [
+        "read"
+      ],
+      "tenant_mode": "none",
+      "bindings": [
+        {
+          "route_id": "public-health",
+          "method": "GET",
+          "action": "read"
+        }
+      ]
+    }
+  ]
+}

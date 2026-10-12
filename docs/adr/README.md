@@ -1,0 +1,22 @@
+# Architecture decisions
+
+All decisions below are **proposed** for the full-stack implementation. They record
+user direction and engineering invariants; implementation requires the roadmap gates.
+
+| ADR | Decision |
+| --- | --- |
+| 0001 | One field authority per domain; reuse identity through delegation, not shared business schemas |
+| 0002 | Provider logic remains in Hopae; native entry/transport/lifecycle support belongs in Hangang |
+| 0003 | Server-authoritative catalog labels precede integrated resource decisions |
+| 0004 | Telemetry exporter is independent; Prometheus metrics and ClickHouse events have different semantics |
+| 0005 | Device/workload evidence remains open; unknown cannot become trusted |
+| 0006 | Trusted same-origin console packages are pinned imports, not an untrusted-code sandbox |
+
+Alternatives rejected: provider clients in Hangang; arbitrary runtime UI imports;
+client-authoritative information grades; one averaged trust score; analytics writes
+on every admission; copying session/user data into the network service; and
+claiming global atomic revocation from separate DBs and a proxy.
+
+Consequences: more explicit contracts and validation, independent runtime failures,
+consistent responsibility boundaries, and measurable native integration. Revisit
+an ADR when a requirement or evidence changes, preserving the migration rationale.

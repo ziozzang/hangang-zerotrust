@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hangang.example.test/schemas/policy.schema.json",
+  "$comment": "Draft server/control-plane contract. Successful parsing does not establish identity or authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "authority_epoch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "catalog_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "default": {
+      "const": "deny"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_.:-]+$"
+          },
+          "effect": {
+            "const": "allow"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:-]+$"
+            },
+            "minItems": 1,
+            "maxItems": 256,
+            "uniqueItems": true
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.:-]+$"
+            },
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true
+          },
+          "conditions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "required_facts": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "identity",
+                    "network"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 2,
+                "uniqueItems": true
+              },
+              "min_aal": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "entitlements": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.:-]+$"
+                },
+                "minItems": 0,
+                "maxItems": 32,
+                "uniqueItems": true
+              },
+              "tenant_constraint": {
+                "enum": [
+                  "none",
+                  "application_enforced"
+                ]
+              },
+              "allowed_classes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "public",
+                    "internal",
+                    "confidential",
+                    "restricted"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 4,
+                "uniqueItems": true
+              },
+              "max_network_suspicion": {
+                "enum": [
+                  "normal",
+                  "watch",
+                  "suspicious",
+                  "high"
+                ]
+              }
+            },
+            "required": [
+              "required_facts",
+              "min_aal",
+              "entitlements",
+              "tenant_constraint",
+              "allowed_classes",
+              "max_network_suspicion"
+            ]
+          },
+          "obligations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "application_object_authorization",
+                    "no_export",
+                    "no_sensitive_logging"
+                  ]
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 8,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "rule_id",
+          "effect",
+          "resources",
+          "actions",
+          "conditions",
+          "obligations"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 1024,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "authority_epoch",
+    "revision",
+    "catalog_revision",
+    "default",
+    "rules"
+  ]
+}

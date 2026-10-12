@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1.0",
+  "authority_epoch": "example-authority-01",
+  "revision": 1,
+  "catalog_revision": 1,
+  "policy_revision": 1,
+  "catalog_sha256": "8ff8856618ee636fdc26680cd4bc5ef29ddc30b2af798711f9a40672cdd0b8c4",
+  "policy_sha256": "b0ce0b96ee6f2b81ffaa1ee351ce868b91fc3c7761f7c971538559dcf1621fbf",
+  "supported_obligations": [
+    "application_object_authorization",
+    "no_export",
+    "no_sensitive_logging"
+  ],
+  "valid_from": "2026-10-12T00:00:00Z",
+  "valid_until": "2026-10-12T01:00:00Z"
+}

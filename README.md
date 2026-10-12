@@ -8,9 +8,11 @@ The architecture and contract repository for a zero-trust backbone built around
 [Guard](https://github.com/ziozzang/hangang-guard).
 
 Hangang enforces admission and resource policy. Hopae owns user identity,
-sessions and external authentication providers. Guard owns network controls and
-network risk. Catalog/classification and integrated decisions add resource and
-data context. An exporter connects bounded telemetry to Prometheus and ClickHouse.
+sessions and external authentication providers. Sumunjang (the Guard component)
+owns network controls and risk evidence. Pumgye owns deterministic service roles,
+permissions, information classes and user/IP authorization matrices; its core is
+embedded in Hangang. Jangbu, existing Sacho, Sillok and Saheon observability/audit
+integration remain design work, with Prometheus and ClickHouse connections.
 
 **This repository contains design proposals, example contracts and validation,
 not a shipped full-stack implementation.** Device and workload evidence needs
@@ -134,3 +136,5 @@ Hopae SSO button below local account login. See [ADR 0009](docs/adr/0009-console
 for mapping, request/session checks and ownership boundaries.
 
 [품계 / Pumgye ownership and implementation plan](docs/adr/0010-pumgye-ownership.md) · [한국어](docs/ko/0010-pumgye-ownership.md)
+
+[Pumgye integration qualification](docs/PUMGYE_QUALIFICATION.md) · [한국어](docs/ko/PUMGYE_QUALIFICATION.md)

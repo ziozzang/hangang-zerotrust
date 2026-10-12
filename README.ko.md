@@ -6,9 +6,9 @@ Hangang·Hopae·Guard를 기반으로 전체 제로트러스트 구조와 계약
 
 - Hangang: 요청 집행, 리소스 접근 제어, 공통 관리 콘솔, 네이티브 로그인·로그아웃 진입점.
 - Hopae: 사용자·세션·외부 인증 프로바이더. Google/OIDC 처리는 Hopae에 유지합니다.
-- Guard: IP/CIDR/ASN 제어와 네트워크 위험.
+- 수문장(기존 Guard): IP/CIDR/ASN 제어와 네트워크 위험 근거.
 - 카탈로그·분류 엔진: API·리소스·데이터의 정보등급과 정책 속성.
-- 통합 판단 엔진: 신원·네트워크·리소스·확인 가능한 단말/워크로드 근거를 결합합니다.
+- 품계: 서비스별 역할·권한·정보등급·사용자/IP 매트릭스와 결정적 권한 판단. Hangang에 코어를 내장합니다.
 - 장부: 별도 로그·트레이스 수집/조회 및 ClickHouse 연동.
 - 기존 사초: 모니터링·상태·알림. 품계 권한 관리와 함께 향후 통합을 설계합니다.
 - Sillok: 제로트러스트 온톨로지와 근거·관계·출처.
@@ -108,3 +108,5 @@ logprob 기반 후보 분포를 판단 보조에 활용하며 다른 백엔드�
 [ADR 0009](docs/ko/ADR_0009.md)에 기록했습니다.
 
 [품계 / Pumgye ownership and implementation plan](docs/adr/0010-pumgye-ownership.md) · [한국어](docs/ko/0010-pumgye-ownership.md)
+
+[Pumgye integration qualification](docs/PUMGYE_QUALIFICATION.md) · [한국어](docs/ko/PUMGYE_QUALIFICATION.md)

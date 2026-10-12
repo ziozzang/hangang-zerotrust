@@ -1,6 +1,7 @@
 # ADR 0010: Pumgye authorization and component ownership
 
-Status: accepted design; runtime implementation and qualification pending.
+Status: implemented integration, merged and Linux deployment verified on 2026-10-13.
+Observability/audit components remain design scope.
 
 ## Decision
 

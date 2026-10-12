@@ -41,3 +41,21 @@ release/update identifiers remain compatible. End-to-end 100k HTTP QPS and conti
 provider-session revocation during long streams are not claimed. Long streams are
 conservatively retired on any configuration publication. Logging/ontology/audit
 runtime integrations remain future work by the user's scoped instruction.
+
+## Sumunjang executable / release completion
+
+2026-10-13: [Guard #3](https://github.com/ziozzang/hangang-guard/pull/3) merged;
+[Sumunjang v0.3.2](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.2)
+is public. Main-source native qualification
+[run 38322290197](https://github.com/ziozzang/hangang-guard/actions/runs/38322290197)
+passed all four platforms. All 22 uploaded asset sizes and GitHub SHA-256 digests
+matched the signed staging tree. Both primary and compatibility manifest pairs
+were independently verified with the pinned Ed25519 public key.
+
+The deployed executable is `sumunjang 0.3.2`; installed bytes match the published,
+qualified Linux artifact. Read-only operational preflight, native listeners and
+post-install unified-console/SSO checks passed. The supervised GitHub updater
+reports `up_to_date` after verifying v0.3.2. An actual v0.3.1 updater upgraded to
+the actual v0.3.2 compatibility executable in an isolated process fixture, retaining
+policy and rollback/tamper protections. Old repository URLs, HGD1 and credential
+names remain compatible; `hangang-guard` exists as an explicit compatibility binary.

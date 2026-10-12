@@ -94,4 +94,4 @@ enabled Hangang administrator; no account/grant is created or altered.
 - [x] Primary `sumunjang` executable / version identity, legacy executable and signed asset compatibility.
 - [x] Workspace / packaging / strict Clippy / real signed upgrade and rollback qualification.
 - [x] Signature-verified Linux deployment and unified-console / SSO regression checks.
-- [ ] Four native platforms, public v0.3.2 release and live GitHub updater confirmation.
+- [x] Four native platforms, public v0.3.2 release and live GitHub updater confirmation.

@@ -41,7 +41,7 @@ Hangang/Hopae/Guard PR #1을 모두 머지했습니다. Native 메뉴·host 인�
 - [x] 운영 HTTPS 두 메뉴·익명 거부·네이티브 진입 리다이렉트·로그아웃 정리·Guard 서명 updater 확인.
 - [x] 네이티브 플랫폼 검증·게시 완료: Hangang 5개, Guard 4개, Hopae 4개 대상.
 
-2026-10-13 게시·배포: [Hangang v0.3.1](https://github.com/ziozzang/hangang/releases/tag/v0.3.1), [Guard v0.3.1](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.1), [Hopae v0.0.2](https://github.com/ziozzang/hopae/releases/tag/v0.0.2). 배포 전 Hangang/Guard 서명과 Hopae 체크섬을 검증했습니다. Guard 감독형 서명 자동 업데이트는 활성화했습니다. Hopae 서명 자동 updater는 구현하지 않았습니다.
+2026-10-13 게시·배포: [Hangang v0.3.1](https://github.com/ziozzang/hangang/releases/tag/v0.3.1), [Guard v0.3.1](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.1), [Hopae v0.0.2](https://github.com/ziozzang/hopae/releases/tag/v0.0.2). 배포 전 Hangang/Guard 서명과 Hopae 체크섬을 검증했습니다. Guard 감독형 서명 자동 업데이트는 활성화했습니다. Hopae 서명 자동 updater는 구현하지 않았습니다.
 
 - [ ] Hopae 전체 세션 처리량 측정; 전송 검증을 100k QPS 근거로 사용하지 않음.
 

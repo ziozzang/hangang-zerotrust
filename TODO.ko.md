@@ -447,3 +447,37 @@ Vendored 6개 테스트로 정상·잘못된 다운스트림 파싱·결정적 w
 추가했습니다. 원인은 미확인이며 간헐 조건은 성능 통과로 간주하지 않고
 후속 검증 대상으로 유지합니다. 통합 계약은 스키마 6개·적대적 및 개인정보
 21건을 통과합니다.
+
+## MFA 확장 요구사항 — 2026-10-14
+
+호패는 Google Authenticator 호환 TOTP와 외부 인증 API 검증을 지원하며 네이티브
+수명주기 권한과 제한된 Lua 확장을 갖춰야 합니다. Google Authenticator는 로컬 TOTP
+코드를 생성하고 Google OIDC는 1차 인증을 담당하는 별도 연결입니다. 네이티브
+6자리 SHA-1/30초 TOTP는 구현되어 있습니다. 외부 인증 결과 파서는 있지만 HTTPS
+호출, 영속 단일 사용 증명 소비와 Lua 호스트 함수는 아직 활성화하지 않았습니다.
+
+- [ ] 설정된 외부 HTTPS factor 커넥터에 제한된 풀·기한·유입 제한·설정별 서킷을
+  적용합니다. 요청자가 endpoint를 고를 수 없습니다.
+- [ ] 소유자 transaction에서 revision 검사, challenge/proof 단일 소비, session
+  등급 상승, 이전 handle 회수, handoff와 audit/outbox를 원자적으로 처리합니다.
+- [ ] 승인된 호스트 호출과 불변 설정 snapshot을 사용하는 제한된 Lua 런타임을
+  내장하고 메모리·명령·시간·동시 실행 상한을 적용합니다.
+- [ ] 운영 활성화 전에 재사용, 사용자·서비스 교차 근거, 비활성화·revision 경쟁,
+  외부 장애·취소와 sandbox 탈출을 검증합니다.
+
+기존 AAL 0 서비스 API 릴레이 결과는 사람의 MFA 근거가 될 수 없습니다.
+구현 계약은 호패의 SECOND_FACTOR_EXTENSIONS 문서에 있습니다.
+
+## LDAP 소스 활성화와 자체 런타임 검증 — 2026-10-14
+
+호패 소스 설정이 OIDC와 타입화된 LDAP provider를 함께 허용합니다. 자체 OpenLDAP
+환경의 LDAPS와 필수 StartTLS에서 실제 호패 프로세스로 chooser, 비밀번호 폼 Origin
+검사, 잘못된 비밀번호의 session·신원 미생성, session 발급, 앱에 바인딩된 handoff,
+비밀번호 재인증, 이전 handle 거부와 로컬 사용자 비활성화를 검증합니다. 비밀번호
+폼 CSP는 검증된 앱 Origin만 허용하며 재인증은 OIDC 대신 password factor를 기록합니다.
+
+전체 직렬 gates는 837건 통과, 42건 제외입니다. 별도 환경이 필요한 자체 LDAP
+런타임 테스트는 각 TLS 모드에서 명시적으로 별도 실행합니다. 과거 기록의 소스 설정
+활성화 거부를 대체합니다. 실제 Chromium LDAP 로그인, 외부 디렉터리 계정 회수,
+비밀·CA 게시 epoch와 분산 lifecycle 검증은 남아 있습니다. 배포된 네이티브 MFA
+이미지는 그대로이며 운영 LDAP를 설정하지 않았습니다.

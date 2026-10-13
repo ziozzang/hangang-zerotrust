@@ -474,3 +474,41 @@ the isolated test and complete rerun passed. Failure diagnostics now include onl
 the public refusal reason. Its cause is not established and the intermittent
 condition remains a qualification issue to investigate, not a performance pass.
 Cross-component validation passes six schemas and 21 adversarial/privacy cases.
+
+## MFA extensibility requirement — 2026-10-14
+
+Hopae must support Google Authenticator-compatible TOTP and external authentication
+API verification, with native lifecycle authority and constrained Lua extensions.
+Google Authenticator generates a local TOTP code; Google OIDC authenticates the
+first factor and is a separate integration. Native six-digit SHA-1/30-second TOTP
+exists. External factor parsing exists, but HTTPS execution, durable single-use
+proof consumption and Lua host functions are not enabled yet.
+
+- [ ] Implement configured external HTTPS factor connectors with bounded pools,
+  deadlines, admission and per-configuration circuits; no caller-selected endpoint.
+- [ ] Consume challenge/proof once in the owner transaction with revision fences,
+  session elevation, previous-handle revocation, handoff and audit/outbox together.
+- [ ] Embed constrained Lua orchestration with approved host calls and immutable
+  configuration snapshots; enforce memory/instruction/time/concurrency limits.
+- [ ] Qualify replay, cross-user/service evidence, disable/revision races,
+  verifier outage/cancellation and sandbox escapes before operational enablement.
+
+Existing service API relay results at AAL 0 cannot become human MFA evidence.
+The implementation contract is Hopae's SECOND_FACTOR_EXTENSIONS document.
+
+## LDAP source activation and owned runtime qualification — 2026-10-14
+
+Hopae now accepts OIDC and typed LDAP providers together in source configuration.
+The owned OpenLDAP fixture exercises an actual Hopae process over LDAPS and
+mandatory StartTLS: chooser, password form Origin enforcement, failed-password
+no-session/no-identity checks, session issuance, application-bound handoff,
+password reauthentication, previous-handle refusal and local user disable.
+The password form CSP permits only the validated application origin; reauth
+records a password factor instead of incorrectly recording an OIDC factor.
+
+Full serial gates pass 837 tests, 42 ignored. The owned LDAP runtime test is
+explicitly invoked separately for each TLS mode; it requires its isolated fixture.
+This supersedes the source configuration activation rejection in earlier notes.
+Actual Chromium LDAP login, external directory-account revocation, secret/CA
+publication epochs and distributed lifecycle qualification remain unfinished.
+The deployed native-MFA image remains unchanged; no operational LDAP is configured.

@@ -737,7 +737,8 @@ Lua support above is required implementation work, not a released capability.
 
 ## Hopae 0.0.3 signed staging and internal deployment — 2026-10-14
 
-Public main and annotated `v0.0.3` point to `c56ac4a`. A GitHub release draft
+Annotated `v0.0.3` points to `c56ac4a`; public main includes the later fixture
+fix `37dcb46`. A GitHub release draft
 holds 11 assets for Linux AMD64/ARM64 and macOS ARM64. Pinned Ed25519 signatures,
 tamper rejection, checksums, archive/binary equality and downloaded-asset equality
 pass. Linux source gates pass 856 tests with 42 ignored; optimized AMD64 and
@@ -755,3 +756,9 @@ stopped owner/delegation v6 backups and the previous image are retained;
 configuration/keys are preserved. Live service matrix/API/credential stripping,
 module menus, Pumgye, SSO/logout/Origin/native regressions pass. Production
 external verifiers remain unconfigured. GitHub Actions remain disabled.
+
+The external-verifier readiness failure was traced to Python HTTPServer's
+startup `getfqdn()` blocking on macOS. The owned fixture now binds loopback
+without DNS; the complete owned OIDC/external HTTPS browser-form scenario
+passes on Linux and native macOS ARM64. Other macOS failures remain open;
+this fixture-only change does not alter the tagged release binary or deployment.

@@ -671,7 +671,8 @@ DB 변경 없이 v6를 거부하고 원래 비공개 설정·환경과 맞춘 �
 
 ## 호패 0.0.3 서명 준비·내부 배포 — 2026-10-14
 
-공개 main과 annotated `v0.0.3`은 `c56ac4a`입니다. GitHub 릴리스 초안에 Linux
+annotated `v0.0.3`은 `c56ac4a`이며 공개 main에는 후속 fixture 수정 `37dcb46`이
+포함됩니다. GitHub 릴리스 초안에 Linux
 AMD64·ARM64와 macOS ARM64의 asset 11개가 있습니다. 고정 Ed25519 공개 키 서명,
 변조 거부, 체크섬, 압축 파일·실행 파일 일치 및 내려받은 asset 일치가 통과했습니다.
 Linux 소스 gates는 856건 통과·42건 ignored이며 최적화 AMD64와 QEMU ARM64 후보의
@@ -687,3 +688,9 @@ macOS ARM64 네이티브 테스트는 848건 통과·8건 실패·42건 ignored�
 delegation v6 백업과 이전 이미지를 보관하고 설정·키를 유지했습니다. 라이브 서비스
 매트릭스·API·자격 제거·모듈 메뉴·품계·SSO·logout·Origin·네이티브 회귀가 통과했습니다.
 운영 외부 verifier는 설정하지 않았으며 GitHub Actions도 비활성 상태를 유지합니다.
+
+외부 verifier 준비 실패는 macOS에서 Python HTTPServer 시작 중 `getfqdn()`이
+멈추는 것으로 확인했습니다. 소유한 fixture를 DNS 조회 없이 loopback에 바인딩하도록
+고쳐 전체 OIDC·외부 HTTPS 브라우저 폼 시나리오가 Linux와 네이티브 macOS ARM64에서
+통과했습니다. 나머지 macOS 실패는 후속이며 fixture만 수정했으므로 태그의 릴리스
+실행 파일과 배포 이미지는 바뀌지 않습니다.

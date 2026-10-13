@@ -507,3 +507,38 @@ Lua 호스트 호출이 필요합니다. HTTPS 호출이 없다는 과거 기록
 42건 제외입니다. fmt·clippy·boundary·문서·시나리오 커버리지와 기존 범위의 의존성
 audit를 통과했습니다. 통합 계약도 schema 6건과 적대적·개인정보 사례 21건을
 통과했습니다. 이 소스 단계로 공개 릴리스나 운영 외부 MFA 활성화를 주장하지 않습니다.
+
+## 네이티브 외부 MFA 소유자 완료 — 2026-10-14
+
+호패 HTTPS connector가 불투명·직렬화 불가 receipt를 반환합니다. 네이티브 서비스가
+교환 전에 transaction을 actor·portal cookie/handle·자격 세대·게시된 verifier authority에
+결합합니다. 사용자·session·서비스는 소유자에서 도출하며 transaction 해시를 전달합니다.
+소유자가 문맥을 재검사한 뒤 한 transaction에서 challenge·proof 해시 소비, AAL 2,
+자격 교체, 이전 handle·code 회수, 새 portal handle·정확한 target handoff와 필수 감사·
+outbox를 처리합니다. 네이티브 `external` factor는 1차 인증 시간을 유지하며 step-up에
+인정됩니다. 변경 전과 commit 전에 벽시계 만료·단조 기한을 검사합니다.
+
+schema v6은 revision이 있는 승인·비활성 authority, factor/session 인덱스, 영속 범위별
+proof 해시와 용량 counter·guard를 추가합니다. 게시 변경·disable은 해당 factor로 등급이
+상승한 session을 회수하며 모든 session JSON을 스캔하지 않습니다. revision·게시된 전역 epoch를 낮추거나
+실제 비밀·CA 변경에 재사용할 수 없습니다. 소유자 재개방과 session 정리 후에도 proof를
+유지합니다. 원장 상한은 1,000,000행이며 가득 차면 거부하고 재사용 이력을 자동 삭제하지
+않습니다. 안전한 보관·퇴역과 용량 telemetry는 후속입니다.
+
+실제 자체 TLS와 소유자를 연결하여 등급 상승·handoff, 동시·session간 proof 단일 소비,
+재개방 영속성, authority disable과 사용자·provider·설정 변경, 문맥 교차, 앱·브라우저
+binding, 벽시계·단조 만료, 감사·용량을 포함한 거부·롤백 24개 경우를 검증합니다.
+foundation 테스트는 guard·구조 누락과 counter 손상을 거부합니다. 네이티브 서비스와
+SQLite 소유자 테스트이며 브라우저 외부 MFA나 독립 follower DB 간 재사용 검증은 아닙니다.
+
+운영 런타임은 schema v5·기존 네이티브 MFA 이미지를 유지합니다. v6 소스 마이그레이션은
+일관된 이전 owner·delegation 백업이 필요하며 v5 바이너리는 v6 상태를 열 수 없습니다.
+root 설정·snapshot 게시, 서비스별 factor 선택·등록, UI·CSRF·유입 제한, 프로세스 전체
+유입 제한, Lua, fleet 성능·lifecycle, 공개 릴리스와 배포는 남아 있습니다. 영속 외부
+완료가 없다는 과거 기록은 당시 상태이며 전체 통합 목표는 진행 중입니다.
+
+검증: 네이티브 TLS·소유자 완료·영속성·경쟁과 v6 foundation을 포함하여 최종 직렬
+호패 gates가 846건 통과, 42건 제외입니다. 새 필수 이벤트와 v6 테이블에 맞춰 기존
+이벤트 개수·테이블 목록 기대값을 갱신했습니다. v6 소스에서 자체 LDAP LDAPS·필수
+StartTLS 런타임 검증도 통과했습니다. 통합 계약은 schema 6건과 적대적·개인정보 사례
+21건을 통과했습니다. 공개 릴리스와 운영 v6 활성화는 남아 있습니다.

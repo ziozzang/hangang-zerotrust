@@ -542,3 +542,46 @@ owned HTTPS transport tests; fmt/clippy/boundaries/docs/scenario coverage and th
 existing scoped dependency audit pass. Cross-component contracts pass six schemas
 and 21 adversarial/privacy cases. No public release or operational external MFA
 activation is claimed by this source-only step.
+
+## Native external MFA owner completion — 2026-10-14
+
+Hopae's HTTPS connector now returns an opaque, nonserializable transport receipt.
+A native service binds the transaction to the actor, portal cookie/handle,
+credential generation and published verifier authority before the exchange;
+it derives user/session/service from owner state and sends a transaction digest.
+The owner rechecks all context and consumes the challenge and hashed proof in
+one transaction with AAL 2, credential rotation, old handle/code revocation,
+new portal handle/exact-target handoff and required audit/outbox. Native `external`
+factor records preserve primary authentication time and count for step-up.
+Receipt wall expiry and monotonic deadline are checked before mutation and commit.
+
+Schema v6 adds revisioned approved/disabled authorities, an indexed factor/session
+mapping, permanent scoped proof hashes and a guarded capacity counter. Native
+publication changes or disable revoke sessions elevated by the affected factor
+without scanning every session JSON. Revisions and published global epochs cannot move backward or reuse
+changed resolved secret/CA material. Proofs survive owner reopen/session cleanup.
+The ledger cap is 1,000,000; full capacity fails closed and no automatic replay
+history deletion exists. Safe archival/retirement and capacity telemetry remain.
+
+Actual owned TLS-to-owner tests cover elevation and handoff, concurrent and
+cross-session single-use proofs, reopen persistence, authority disable and 24
+refusal/rollback cases including user/provider/config changes, cross-context,
+application/browser bindings, wall/monotonic expiry, audit and capacity.
+Foundation tests refuse missing guard/structure and corrupt counter state.
+These are native service/SQLite-owner tests, not browser external MFA or replay
+qualification across independent follower databases.
+
+Operational runtime remains schema v5 and the native-MFA image is unchanged.
+The v6 source migration requires consistent pre-upgrade owner/delegation backups;
+v5 binaries cannot reopen v6 state. Root config/snapshot publication, service
+factor selection/enrollment, UI/CSRF/rate controls, process-wide admission, Lua,
+fleet performance/lifecycle, public release and deployment remain unfinished.
+Earlier notes describing absent durable external completion are historical;
+the full integration objective remains active.
+
+Validation: final serial Hopae gates pass 846 tests, 42 ignored, including native
+TLS-to-owner completion/persistence/races and v6 foundation qualification. The
+legacy event-count/table-catalog expectations were updated for the new required
+event and v6 tables. Owned LDAP LDAPS/mandatory-StartTLS runtime qualification
+also passes on v6 source. Cross-component validation passes six schemas and 21
+adversarial/privacy cases. Public release and operational v6 activation remain open.

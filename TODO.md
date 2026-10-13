@@ -734,3 +734,24 @@ the complete original goal remains active.
 Pumgye owns authorization decisions; Sumunjang contributes network evidence;
 Hopae validates identity and authentication evidence and issues credentials.
 Lua support above is required implementation work, not a released capability.
+
+## Hopae 0.0.3 signed staging and internal deployment — 2026-10-14
+
+Public main and annotated `v0.0.3` point to `c56ac4a`. A GitHub release draft
+holds 11 assets for Linux AMD64/ARM64 and macOS ARM64. Pinned Ed25519 signatures,
+tamper rejection, checksums, archive/binary equality and downloaded-asset equality
+pass. Linux source gates pass 856 tests with 42 ignored; optimized AMD64 and
+QEMU ARM64 candidates pass actual Chromium external/TOTP, HTTP and pooled mTLS
+HOP1 parity on private owner-state copies.
+
+macOS ARM64 native tests finish with 848 passing, 8 failing and 42 ignored:
+Linux `/proc`/`/dev/full` assumptions, alternate loopback binding, external
+verifier fixture readiness and reproducible HTTP connection reset need resolution.
+Intel macOS cross-build completes; execution qualification remains unavailable.
+Neither macOS qualification nor a stable 0.0.3 release is complete.
+
+Internal Hopae now runs `0.0.3-zerotrust-v6-c56ac4a` with schema v6. Consistent
+stopped owner/delegation v6 backups and the previous image are retained;
+configuration/keys are preserved. Live service matrix/API/credential stripping,
+module menus, Pumgye, SSO/logout/Origin/native regressions pass. Production
+external verifiers remain unconfigured. GitHub Actions remain disabled.

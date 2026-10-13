@@ -668,3 +668,22 @@ DB 변경 없이 v6를 거부하고 원래 비공개 설정·환경과 맞춘 �
 
 품계는 권한 판단, 수문장은 네트워크 근거, 호패는 신원·인증 근거 검증과 자격 발급을
 담당합니다. 위 Lua 지원은 구현해야 하는 요구사항이며 릴리스된 기능이 아닙니다.
+
+## 호패 0.0.3 서명 준비·내부 배포 — 2026-10-14
+
+공개 main과 annotated `v0.0.3`은 `c56ac4a`입니다. GitHub 릴리스 초안에 Linux
+AMD64·ARM64와 macOS ARM64의 asset 11개가 있습니다. 고정 Ed25519 공개 키 서명,
+변조 거부, 체크섬, 압축 파일·실행 파일 일치 및 내려받은 asset 일치가 통과했습니다.
+Linux 소스 gates는 856건 통과·42건 ignored이며 최적화 AMD64와 QEMU ARM64 후보의
+실제 Chromium 외부 MFA·TOTP, HTTP·지속 mTLS HOP1 공통 동작이 비공개 owner 복사본에서
+통과했습니다.
+
+macOS ARM64 네이티브 테스트는 848건 통과·8건 실패·42건 ignored입니다. Linux
+`/proc`·`/dev/full` 가정, 추가 loopback 주소, 외부 verifier fixture 준비 시간초과와
+재현되는 HTTP 연결 초기화 실패를 해결해야 합니다. Intel macOS 크로스 빌드는 완료했지만
+실행 검증 환경은 아직 없습니다. macOS 검증과 0.0.3 정식 릴리스는 완료되지 않았습니다.
+
+내부 호패는 `0.0.3-zerotrust-v6-c56ac4a`·schema v6입니다. 중지 후 일관된 owner·
+delegation v6 백업과 이전 이미지를 보관하고 설정·키를 유지했습니다. 라이브 서비스
+매트릭스·API·자격 제거·모듈 메뉴·품계·SSO·logout·Origin·네이티브 회귀가 통과했습니다.
+운영 외부 verifier는 설정하지 않았으며 GitHub Actions도 비활성 상태를 유지합니다.

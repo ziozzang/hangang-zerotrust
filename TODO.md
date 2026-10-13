@@ -371,3 +371,28 @@ Hopae gates pass 832 tests (449 library, 15 other integration, 368 scenarios),
 41 ignored, with formatting/clippy/boundary/docs/scenario coverage and the existing
 scoped dependency advisory policy. Contract validation passes six schemas and
 21 adversarial/privacy cases. Internal deployment is unchanged.
+
+## Durable portal step-up binding — 2026-10-13
+
+Hopae's native service/owner store now binds a live step-up challenge to the
+portal-cookie digest, exact portal handle, same session/current request IP,
+credential generation and active TOTP enrollment ID/revision. Application
+binding must exist and OAuth/reauthentication metadata must be absent. For
+stepup only, the existing pending-identity column carries native context.
+Identical live refresh is idempotent; cookie/handle/IP transfer or stale
+session/enrollment context cannot replace the binding. Required audit/outbox
+failure rolls back binding. Final OTP elevation rechecks portal proof, recorded
+context and current actor IP before consuming challenge/counter or issuing
+credentials. Real service/SQLite cases cover binding, rollback/retry, transfer,
+stale contexts and final-commit refusal.
+
+This remains native service/storage work. Browser challenge creation, portal
+page/CSRF, app return-target and publication-epoch fencing, recovery/navigation
+and operational MFA activation remain mandatory. No browser step-up route is
+enabled and the internally deployed image is unchanged. Source schema remains v5.
+
+Validation: serial Hopae full gates pass 835 tests (452 library, 15 other
+integration, 368 scenarios), 41 ignored; formatting, clippy, boundary, docs,
+scenario coverage and dependency audit pass under the existing scoped advisory
+policy. Cross-component contracts pass six schemas and 21 adversarial/privacy
+cases. This is native service/storage qualification, not browser completion.

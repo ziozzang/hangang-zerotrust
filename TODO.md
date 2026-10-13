@@ -396,3 +396,30 @@ integration, 368 scenarios), 41 ignored; formatting, clippy, boundary, docs,
 scenario coverage and dependency audit pass under the existing scoped advisory
 policy. Cross-component contracts pass six schemas and 21 adversarial/privacy
 cases. This is native service/storage qualification, not browser completion.
+
+## Native browser OTP source workflow — 2026-10-13
+
+Hopae now connects configured TOTP keys to capped document step-up, recent
+first-factor reauthentication, EN/KO portal setup guidance/code form, distinct
+Origin/CSRF binding to transaction+portal cookie+handle, same-user/current-target
+validation and atomic proof/challenge consumption, credential rotation and
+AAL 2 application handoff. Unenrolled users get setup/continue links; enrollment
+alone stays AAL 1. Ordinary login/provider entry refuses step-up transactions.
+AAL 1 primary-freshness rules reauthenticate instead of entering an OTP loop.
+The native portal always supplies configuration generation, checked against
+persisted owner metadata under the writer lock and retained in challenge context.
+
+An owned OIDC/actual-process HTTP browser-client fixture qualifies registration,
+unregistered guidance, new OTP, protected AAL 2 access, Origin/cross-purpose/
+anonymous/duplicate-query/wrong-entry refusal, old-handle denial and replay.
+This is not Chromium/mobile or production-user qualification. Full serial gates
+pass 837 tests (453 library, 15 other integration, 369 scenarios), 41 ignored;
+formatting/clippy/boundary/docs/scenario coverage and the existing scoped advisory
+policy pass. Cross-component contract validation remains six schemas and
+21 adversarial/privacy cases.
+
+Recovery/cancel/removal/navigation, account/distributed admission, key lifecycle,
+real browser/mobile qualification, external MFA API/Lua connectors and operational
+MFA rollout remain mandatory. The internal owner-v5-d876909 image is unchanged;
+source schema remains v5. The broader gateway/distribution/performance/release goal
+is still incomplete.

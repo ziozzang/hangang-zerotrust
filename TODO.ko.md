@@ -694,3 +694,14 @@ delegation v6 백업과 이전 이미지를 보관하고 설정·키를 유지�
 고쳐 전체 OIDC·외부 HTTPS 브라우저 폼 시나리오가 Linux와 네이티브 macOS ARM64에서
 통과했습니다. 나머지 macOS 실패는 후속이며 fixture만 수정했으므로 태그의 릴리스
 실행 파일과 배포 이미지는 바뀌지 않습니다.
+
+## 네이티브 macOS 보안 검증 복구 — 2026-10-14
+
+호패 main `cfa106e`에서 macOS 실제 RSS 측정, Linux 전용 stdout 실패를 닫힌 상대
+socket으로 대체하고 모호하지 않은 HTTP 응답 전체를 받은 경우에만 reset을 처리합니다.
+framing 남용 테스트는 잘린 응답·길이 누락·상충하는 header를 계속 거부합니다.
+임시 `127.0.0.2`를 준비해 같은 peer 격리 조건을 검증했고 실행 후 alias를 제거했습니다.
+Linux gates와 네이티브 macOS ARM64 테스트는 각각 860건 통과·42건 ignored·실패 0건으로
+기존 macOS 실패 8건을 모두 해결했습니다. 릴리스 Rust 소스·의존성·template·vendor는
+`v0.0.3`과 같고 asset·배포도 유지합니다. Intel macOS 실행 검증은 아직 남아 릴리스는
+초안입니다. Lua와 나머지 전체 통합 목표도 후속입니다.

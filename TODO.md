@@ -762,3 +762,16 @@ startup `getfqdn()` blocking on macOS. The owned fixture now binds loopback
 without DNS; the complete owned OIDC/external HTTPS browser-form scenario
 passes on Linux and native macOS ARM64. Other macOS failures remain open;
 this fixture-only change does not alter the tagged release binary or deployment.
+
+## Native macOS security qualification recovered — 2026-10-14
+
+Hopae main `cfa106e` makes RSS measurement native on macOS, replaces Linux-only
+failed stdout with a closed-peer socket and accepts a reset only after a complete,
+unambiguously framed HTTP response. A framing adversarial test retains truncation,
+missing-length and conflicting-header failures. Provisioned `127.0.0.2` allows
+the same peer-isolation assertions; the temporary alias is removed after the run.
+Linux gates and native macOS ARM64 suites each pass 860 tests, 42 ignored, zero
+failures. All original eight macOS failures are resolved. Release Rust sources,
+dependencies/templates/vendor remain identical to `v0.0.3`; assets/deployment
+are unchanged. Intel macOS execution qualification is still pending; the release
+remains a draft. Lua and the rest of the full integration goal remain open.

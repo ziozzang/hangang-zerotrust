@@ -31,3 +31,5 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 
 [ADR 0014: proposed credential projection after authorization](0014-credential-projection.md)
 ([한국어](../ko/0014-credential-projection.md)).
+
+[ADR 0015: Kubernetes and IAM authoritative sources](0015-kubernetes-iam-authority.md) ([한국어](../ko/0015-kubernetes-iam-authority.md)).

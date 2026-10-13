@@ -20,3 +20,5 @@
 [관측·온톨로지·펜테스트 피드백 루프](FEEDBACK_LOOP.md)
 
 [스냅샷 백본과 스케일아웃 멤버십](0013-snapshot-membership-scaleout.md) — 도메인 스냅샷·lease·합류/드레인/제거·Hangang 구독.
+
+[Kubernetes·IAM 원천 설계](0015-kubernetes-iam-authority.md) — 네 모듈 원천 연동·RBAC·워크로드 신원.

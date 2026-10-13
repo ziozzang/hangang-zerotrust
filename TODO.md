@@ -881,3 +881,12 @@ The first anonymous `/healthz` probe received 401 and rolled back; corrected `/u
 readiness and authenticated module loading pass. Previous registry backup remains;
 Hopae image `0.0.3-mixed-f14287a` and business configuration are unchanged. This
 management improvement does not complete the remaining original integration goal.
+
+## Kubernetes / IAM authority — 2026-10-14
+
+- [x] Record four-component Kubernetes source-of-truth direction in ADR 0015 (EN/KO); distinguish existing Hangang Ingress from pending adapters.
+- [ ] Qualify all four independent Kubernetes deployments and minimal RBAC/mTLS/Secret rotation.
+- [ ] Implement owner-domain read-only watches, provenance, complete relists and explicit application permission mappings.
+- [ ] Define domain-owned CRDs and Kubernetes-authoritative console publication with conflict protection; no competing DB writer.
+- [ ] Implement bound workload TokenReview, scoped RBAC import, CNI-aware NetworkPolicy integration and provider-specific IAM connectors.
+- [ ] Qualify deletion/recreation, watch expiry, stale replicas, escalation/impersonation, alternate paths, stream revocation and full-chain throughput.

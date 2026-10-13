@@ -156,3 +156,5 @@ for mapping, request/session checks and ownership boundaries.
 [Pumgye integration qualification](docs/PUMGYE_QUALIFICATION.md) · [한국어](docs/ko/PUMGYE_QUALIFICATION.md)
 
 [Scale-out design](docs/adr/0013-snapshot-membership-scaleout.md) records memory snapshots, domain DB backbones, leased membership and Hangang pool/watch obligations. Implementation and fleet qualification remain pending.
+
+[Kubernetes and IAM source integration](docs/adr/0015-kubernetes-iam-authority.md): Hangang already supports Ingress; complete Hopae/Pumgye/Sumunjang authority adapters remain proposed.

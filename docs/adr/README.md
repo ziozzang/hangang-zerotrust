@@ -26,3 +26,5 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 [scoped pentest-to-Guard-to-Hangang remediation](../AUTOMATION.md).
 
 [ADR 0008: implemented HOP1 and console delegation](0008-hopae-native.md).
+
+[ADR 0013: required snapshot backbone and scale-out membership](0013-snapshot-membership-scaleout.md).

@@ -22,3 +22,5 @@ Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 | [Ontology and automation](AUTOMATION.md) | Sillok, Jikji, pentest evidence and guarded routing patches |
 
 [Observability, ontology and pentest feedback loop](FEEDBACK_LOOP.md) — evidence, action and verified outcome reuse.
+
+[Snapshot backbone and scale-out membership](adr/0013-snapshot-membership-scaleout.md) — domain snapshots, leased join/drain/remove and Hangang subscriptions.

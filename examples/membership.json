@@ -1,0 +1,45 @@
+{
+  "schema_version": "0.1.0",
+  "domain": "pumgye",
+  "authority_id": "fixture-pumgye",
+  "authority_epoch": "fixture-epoch-1",
+  "generation": 3,
+  "minimum_revision": 7,
+  "max_staleness_ms": 1000,
+  "valid_from": "2026-01-01T00:00:00Z",
+  "valid_until": "2026-01-01T00:00:01Z",
+  "nodes": [
+    {
+      "node_id": "pumgye-a",
+      "incarnation": "boot-a-1",
+      "state": "ready",
+      "compiled_revision": 7,
+      "snapshot_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "capacity": 64,
+      "endpoint": {
+        "host": "pumgye-a.example.test",
+        "port": 9085,
+        "protocol": "PPG1",
+        "mtls": true,
+        "tls_server_name": "pumgye-a.example.test",
+        "tls_service_identity": "spiffe://example.test/pumgye/pumgye-a"
+      }
+    },
+    {
+      "node_id": "pumgye-b",
+      "incarnation": "boot-b-1",
+      "state": "joining",
+      "compiled_revision": 0,
+      "snapshot_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "capacity": 64,
+      "endpoint": {
+        "host": "pumgye-b.example.test",
+        "port": 9085,
+        "protocol": "PPG1",
+        "mtls": true,
+        "tls_server_name": "pumgye-b.example.test",
+        "tls_service_identity": "spiffe://example.test/pumgye/pumgye-b"
+      }
+    }
+  ]
+}

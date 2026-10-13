@@ -103,3 +103,10 @@ Hopae unit 384개·시나리오 359개(명시적 제외 40개), strict Clippy·�
 - [x] 공개 Linux 바이너리 서명 검증 후 설치했습니다. 새 저장소의 감독형 updater는 활성화/up_to_date(v0.3.3)이며 통합 콘솔과 인증된 HGD1 회귀 검증이 통과했습니다.
 
 v0.3.2 이하 바이너리는 고정된 구 GitHub API의 리다이렉트를 거부하므로 서명을 검증한 v0.3.3으로 최초 전환 설치가 필요합니다. [이전 안내](https://github.com/ziozzang/sumunjang/blob/main/docs/ko/UPDATES.md)를 참조하세요. 이 검증은 위의 인증 게이트웨이·독립 원격 런타임 작업 완료를 의미하지 않습니다.
+
+## 스냅샷 백본과 스케일아웃 멤버십
+
+- [x] 메모리 스냅샷·도메인 DB 백본·합류/드레인/제거 계약과 Hangang 구독 의무를 기록했습니다(ADR 0013).
+- [ ] 호패·수문장·품계의 인증된 snapshot/outbox 어댑터, 보호된 검증 인덱스와 세션/토큰 회수.
+- [ ] lease 멤버십 authority, Hangang watch/재동기화·제한된 풀·incarnation/리비전 fencing·드레인.
+- [ ] 실제 복제본 증감·partition·통지 유실·오래된 근거·세션/네트워크/역할 회수와 지속 전체 경로 스케일아웃 검증.

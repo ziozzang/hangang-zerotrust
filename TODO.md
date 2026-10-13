@@ -120,3 +120,10 @@ enabled Hangang administrator; no account/grant is created or altered.
 - [x] Published Linux binary signature verified before installation; supervised canonical-repository updater reports enabled/up_to_date at v0.3.3; unified console and authenticated HGD1 regression checks pass.
 
 Binaries through v0.3.2 require a one-time signature-verified v0.3.3 bootstrap because their pinned old GitHub API rejects redirects. See [migration guidance](https://github.com/ziozzang/sumunjang/blob/main/docs/UPDATES.md). This qualification does not complete the authentication-gateway or independent remote-runtime work above.
+
+## Snapshot backbone and scale-out membership
+
+- [x] Record memory-snapshot / domain DB-backbone / join-drain-remove contracts and Hangang subscriber duties (ADR 0013).
+- [ ] Authenticated snapshot/outbox adapters for Hopae, Sumunjang and Pumgye; protected verification indexes and session/token revocation.
+- [ ] Leased membership authority and Hangang watch/resync, bounded endpoint pools, incarnation/revision fencing and drain handling.
+- [ ] Actual replica churn, partitions, lost notifications, stale proofs, session/network/role revocation and sustained end-to-end scale-out qualification.

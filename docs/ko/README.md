@@ -18,3 +18,5 @@
 [Sillok·Jikji 보안 자동화 설계](AUTOMATION.md)
 
 [관측·온톨로지·펜테스트 피드백 루프](FEEDBACK_LOOP.md)
+
+[스냅샷 백본과 스케일아웃 멤버십](0013-snapshot-membership-scaleout.md) — 도메인 스냅샷·lease·합류/드레인/제거·Hangang 구독.

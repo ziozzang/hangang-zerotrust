@@ -175,3 +175,31 @@ Hopae now bootstraps reference-only authentication profiles into its own databas
 Console package 0.1.3 and the static Linux binary are internally deployed. A live Hangang browser inspected the profile and published identical configuration through its signed broker; the profile revision increased while routing revision/configuration and existing grants stayed unchanged. Anonymous denial, logout cleanup, API authentication, role matrix, all module menus, native transports and existing SSO regressions passed. Owned process restart and transactional rollback tests passed. All-target gates passed (400 library, 15 other integration, 365 scenario cases; 40 ignored); the existing unmaintained PEM parser warning remains. Private consistent backups and image/package rollback are retained.
 
 This does not complete upstream credential translation, LDAP/local human authentication, composition, open-stream credential revocation, distributed followers/membership, comprehensive scale or public multi-platform releases. File-oriented preflight/secret-reference migration and persistence of connector circuit state still need work.
+
+
+## LDAP direct-login source integration — 2026-10-13
+
+Hopae now has TLS-only LDAP credential connectors, separate service/user binds,
+immutable text/binary subject namespaces, explicit direct-result provenance,
+process-local circuits and bounded password submission admission. Owned OpenLDAP
+fixtures pass over LDAPS and mandatory StartTLS, including rejection of upgrade
+failure without plaintext bind. Direct providers are represented separately from
+OIDC in schema v4, snapshots and registry, and are included in normal/reauthentication
+choosers. The portal prepares bound password forms and its POST handler requires
+HTTPS, Origin/CSRF, unique bounded fields and attempt admission. Real-store tests
+exercise challenge binding, credential failure, AAL 1 session/handoff, replay and
+provider-disable/browser-binding refusal. No implicit email/MFA elevation is allowed.
+
+Current all-target gates pass: 421 library, 15 other integration and 366 scenario
+cases. One owned LDAP fixture and 40 scenario cases are explicitly ignored in that
+run; the directory fixture is qualified separately. The existing unmaintained PEM
+parser warning remains. Source changes are on Hopae main, but production LDAP
+configuration remains gated and internal deployments still use their prior feature
+image/schema. A v4 operational upgrade needs a consistent v3 backup for rollback.
+
+Before LDAP activation, complete real-directory browser/gateway qualification,
+hard BER response bounds, connector configuration/epoch fencing at commit, and
+account/distributed admission and directory session revocation. Local passwords,
+credential translation/composition, memory-session/distributed followers, full-stack
+10k/100k throughput and public multi-platform releases also remain open. These source
+and test results do not complete the overall zero-trust runtime goal.

@@ -172,3 +172,26 @@ credential endpoint 바인딩에는 운영자 선언이 필요합니다. HTTP/HO
 upstream credential 변환·LDAP/자체 사람 인증·근거 조합·열린 stream credential
 회수·분산 follower/membership·전체 처리량·공개 다중 플랫폼 릴리즈는 아직 남았습니다.
 파일 중심 preflight/비밀 참조 이전과 connector circuit 상태 유지도 후속 작업입니다.
+
+
+## LDAP 직접 로그인 소스 연결 — 2026-10-13
+
+호패에 TLS 전용 LDAP 커넥터·분리된 서비스/사용자 bind·텍스트/바이너리 불변 subject
+namespace·직접 인증 결과 출처 검증·프로세스 로컬 circuit·제한된 비밀번호 제출을
+구현했습니다. 소유한 OpenLDAP fixture는 LDAPS·필수 StartTLS 및 upgrade 실패 후
+평문 bind 미전송을 검증합니다. LDAP는 schema v4·스냅샷·registry에서 OIDC와
+분리되며 일반/재인증 선택기에 포함됩니다. portal은 바인딩 form을 준비하고 POST에
+HTTPS·Origin/CSRF·고유한 제한 필드·시도 admission을 요구합니다. 실제 store에서
+challenge·자격 실패·AAL 1 세션/handoff·replay·provider 비활성/브라우저 바인딩 거부를
+검사합니다. email/MFA의 암시적 승격은 허용하지 않습니다.
+
+현재 전체 target gate는 라이브러리 421·기타 통합 15·시나리오 366건 통과입니다.
+LDAP fixture 1건·시나리오 40건은 명시적 ignored이며 디렉토리 fixture는 별도 검증합니다.
+기존 PEM parser 유지보수 중단 경고는 남았습니다. 소스는 호패 main에 있지만 운영
+LDAP 설정 활성화는 제한하고 내부 배포는 이전 기능 이미지/schema를 유지합니다.
+v4 운영 업그레이드 복구에는 일관된 v3 DB 백업이 필요합니다.
+
+활성화 전 실제 디렉토리 브라우저/gateway 검증·엄격한 BER 응답 제한·commit 시
+커넥터 설정/epoch fence·계정/분산 admission·디렉토리 세션 회수를 완료해야 합니다.
+자체 비밀번호·인증 변환/조합·인메모리 세션/분산 follower·전체 스택 10k/100k 처리량·
+공개 다중 플랫폼 릴리즈도 남아 있습니다. 이 소스/검사 결과가 전체 목표의 완성은 아닙니다.

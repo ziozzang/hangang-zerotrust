@@ -693,3 +693,31 @@ upgrade/rollback qualification, operational/fleet/performance rollout, organizat
 accounts, service-specific eligibility, enrollment/recovery/account limits and Lua
 remain unfinished under the full active goal. Earlier missing-Chromium notes now
 describe historical source stages; no production external MFA pass is claimed.
+
+## Static v6 qualification and internal dogfooding deployment — 2026-10-14
+
+The optimized x86_64 musl static-pie release candidate passes Chromium external
+MFA/TOTP coexistence, old-handle refusal and HTTP/pooled mTLS HOP1 valid service
+acceptance plus guest/bad-credential refusal on a private owner-state copy.
+Offline static qualification preserves all old table digests/counts across v5→v6,
+restores an identical v5 backup, and the actual old binary refuses v6 without DB
+changes and boots restored v5 with matching original private configuration/env.
+Explicit expected schema flags reject a no-op qualifier; its input stays v5.
+
+Internal Hopae is now `0.0.2-zerotrust-v6-c776cde`, schema v6. Existing config,
+secret files, keys and assurance rules are preserved; no external verifier or
+fixture users/sessions entered production. Consistent stopped owner/delegation
+v5 backups, original configuration/secret files and old image remain private.
+The first deployment stopped at a wrong image-variable preflight assumption and
+restored healthy v5 before new-image migration. Corrected HOPAE_TAG preflight
+runs before service stop; the second deployment and live API/matrix/credential
+stripping/module menus/Pumgye/SSO/logout/origin/native regressions pass. Health
+is 200 and the authoritative running image/database confirm v6.
+
+The minimum unrelated config failed the restored authentication-profile check;
+matching copied config and environment completed rollback boot qualification.
+This is not full-stack 10k/100k throughput, follower/fleet or production-user MFA
+qualification. Public signed releases/assets, broader provider/identity gateway
+mixing, Lua, enrollment/recovery/account limits, memory followers and existing
+stream revocation remain required. Earlier internal-v5 notes are historical and
+the complete original goal remains active.

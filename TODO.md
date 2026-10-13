@@ -423,3 +423,27 @@ real browser/mobile qualification, external MFA API/Lua connectors and operation
 MFA rollout remain mandatory. The internal owner-v5-d876909 image is unchanged;
 source schema remains v5. The broader gateway/distribution/performance/release goal
 is still incomplete.
+
+## Chromium CSP fix and internal native-MFA rollout — 2026-10-13
+
+Actual Chromium qualification found the self-only form CSP blocked the
+post-OTP application handoff despite successful owner completion. Hopae now
+adds only the live-validated application origin to the step-up GET form CSP.
+The reusable browser tool runs against a private loopback candidate/owner-state
+copy, with an owned first-factor session fixture, real browser Origin/cookies/
+redirects and native handoff. Corrected static candidate passes enrollment,
+step-up/handoff and previous-handle refusal; this is not real Google-user login.
+Full serial gates still pass 837 tests, 41 ignored; HTTP and pooled mTLS HOP1
+candidate service acceptance/guest/invalid-credential refusal pass.
+
+The internal image is now `0.0.2-native-mfa-791719a` with schema v5 and a private
+optional TOTP keyring. Existing providers/service assurance rules are unchanged;
+no fixture users/sessions entered production. Live API matrix/denial/credential
+stripping, all module menus/Pumgye matrix, SSO/logout/origin isolation and native
+mTLS regressions pass. Consistent owner/delegation backups and prior image,
+configuration and secret files are retained privately for rollback.
+
+Recovery/key lifecycle/account/fleet admission/navigation, real production-user
+MFA, external MFA API/Lua, distributed memory followers, stream revocation,
+full-stack 10k/100k performance and public releases remain required unfinished
+work. Earlier internal image notes record prior stages; the full goal stays active.

@@ -23,6 +23,17 @@ entity: `234488f459d8b3069a74d308d639fa9bfb402b12a9544a413c06c6136a8dab11`.
 Two tests and fmt/clippy/boundary/docs checks pass. Routing integration, receipt
 authentication and issuance remain unfinished; no deployment behavior changes.
 
+Hopae `8b4d0ce` adds a source-only Ed25519 receipt primitive: 146 bytes,
+authentication/permit purposes, domain-separated exact-byte signatures, native
+binding, issuer-supplied nonce and at most a one-second lease. Strict verification
+rejects weak keys, byte tampering, wrong key/purpose/binding, size and time errors.
+The authenticated wrapper cannot be constructed, cloned or serialized by consumers.
+Two crypto tests and fmt/clippy/boundary/scoped-audit/docs checks pass. Nonces must
+come from native CSPRNG issuance; recipient keys must be authority/purpose scoped.
+Canonical chain binding, key registries, rollback-resistant clocks, live revocation,
+atomic nonce consumption, Pumgye signer integration and credential issuance are still
+required. Stateless signature acceptance can repeat; it is not replay protection.
+
 Current evidence: Hopae returns verified identity through its auth-proxy response.
 Hangang copies configured response headers before evaluating Pumgye permission.
 Returning an upstream secret through this existing path would release it before

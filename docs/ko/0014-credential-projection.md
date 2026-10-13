@@ -20,6 +20,16 @@ entity의 네이티브·독립 Python 벡터는
 테스트 2건·fmt·clippy·경계·문서 검사가 통과했습니다. 라우팅 연결·receipt 인증·발급은
 후속이며 현재 배포 동작은 바뀌지 않습니다.
 
+호패 `8b4d0ce`는 소스 단계 Ed25519 receipt 기본 함수를 추가합니다. 146 bytes,
+인증/허용 목적 구분, domain을 분리한 정확한 byte 서명, native binding, 발급자가
+제공하는 nonce와 최대 1초 lease를 사용합니다. 엄격한 검증은 약한 키·바이트 변조·
+다른 키/목적/binding·길이·시각 오류를 거부합니다. 검증 wrapper는 소비자가 직접
+생성·복제·직렬화할 수 없습니다. 암호 테스트 2건·fmt·clippy·경계·범위가 정해진 audit·
+문서 검사가 통과했습니다. nonce는 네이티브 CSPRNG 발급이 필요하고 수신 키는
+authority·purpose별로 제한해야 합니다. chain binding·key registry·시계 rollback
+방지·실시간 회수·원자적 nonce 소비·품계 signer 연결·자격 발급은 후속입니다.
+상태 없는 서명 확인은 반복 가능하며 replay 방지 구현은 아닙니다.
+
 현재 호패는 auth-proxy 응답으로 검증된 신원을 반환하고 한강은 설정된 응답 header를
 복사한 뒤 품계 권한을 판단합니다. 이 경로로 upstream 비밀을 반환하면 권한 확인 전에
 자격을 전달하게 됩니다. 현재 접두사 혼합 라우팅은 입력 자격을 풀어 전달하는 기능이며

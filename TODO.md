@@ -668,3 +668,28 @@ owned first-factor/HTTPS/form/handoff path and timestamp-boundary qualification.
 Fmt/clippy/boundaries/docs/scenario coverage and the existing scoped dependency
 audit pass. Cross-component validation passes six schemas and 21 privacy/
 adversarial cases. No production external MFA or Chromium qualification is claimed.
+
+## Actual Chromium external MFA and TOTP coexistence — 2026-10-14
+
+The public browser qualifier now accepts an external factor mode with unique
+configured loopback HTTPS verifier/candidate-owned CA guards. The default TOTP
+mode explicitly selects TOTP when an external chooser appears. On a private
+online owner/delegation copy migrated to schema v6, actual Chromium passes
+external chooser/form, real HTTPS verifier exchange, AAL-2 cross-origin handoff
+and old-handle refusal. The same running candidate passes TOTP enrollment,
+selection alongside external MFA, elevated handoff and old-handle refusal.
+
+The qualifier preserves browser Origin/cookies/CSP and distinct Set-Cookie via
+CDP mapping of HTTPS browser origins to loopback portal/gateway HTTP. This is
+not public-portal TLS or real Google first-factor qualification: first-factor
+sessions are owned fixtures on the private copy. The candidate uses a development
+binary. Both modes pass again after the external loopback/CA guard was added;
+syntax and staged documentation checks pass. Screenshots before sensitive input
+and sanitized phase reports are private. Candidate processes stopped and its
+copied environment file was removed. No fixture user/session entered production.
+
+Live state remains schema v5 and the existing native-MFA image. Release artifact,
+upgrade/rollback qualification, operational/fleet/performance rollout, organization
+accounts, service-specific eligibility, enrollment/recovery/account limits and Lua
+remain unfinished under the full active goal. Earlier missing-Chromium notes now
+describe historical source stages; no production external MFA pass is claimed.

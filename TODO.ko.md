@@ -611,3 +611,25 @@ Origin·CSRF·추가 필드 실패의 backend 미호출, 타입 거절, 사용�
 856건 통과, 42건 제외입니다. fmt·clippy·boundary·문서·시나리오와 기존 범위의 의존성
 audit를 통과했습니다. 통합 계약도 schema 6건과 개인정보·적대적 사례 21건을 통과했습니다.
 운영 외부 MFA나 Chromium 검증을 주장하지 않습니다.
+
+## 실제 Chromium 외부 MFA·TOTP 공존 검증 — 2026-10-14
+
+공개 브라우저 검증 도구에 고유하게 설정된 loopback HTTPS verifier·후보 내부 CA를
+검사하는 외부 factor 모드를 추가했습니다. 기본 TOTP 모드는 외부 chooser가 표시되면
+TOTP를 명시적으로 선택합니다. 온라인 owner·delegation 상태의 비공개 복사본을 schema
+v6로 마이그레이션한 후보에서 실제 Chromium의 외부 chooser·폼·실제 HTTPS verifier·
+AAL 2 Origin간 handoff·이전 handle 거부를 통과했습니다. 같은 실행 후보에서 TOTP 등록·
+외부 MFA와 함께 표시되는 선택·높은 등급 handoff·이전 handle 거부도 통과했습니다.
+
+CDP로 HTTPS 브라우저 Origin을 loopback portal·gateway HTTP에 연결하며 브라우저
+Origin·cookie·CSP·분리된 Set-Cookie를 유지합니다. public portal TLS나 실제 Google
+1차 인증 검증은 아니며 1차 session은 비공개 복사본의 자체 fixture입니다. 개발 빌드로
+검증했습니다. loopback·CA 검사를 추가한 최종 도구에서도 두 모드가 재통과했고 구문·
+stage 문서 검사도 통과했습니다. 민감 입력 전 screenshot과 단계 보고서는 비공개로
+유지합니다. 후보 프로세스를 종료하고 복사한 환경 파일을 제거했으며 운영에 fixture
+사용자·session을 넣지 않았습니다.
+
+실제 운영은 schema v5·기존 네이티브 MFA 이미지를 유지합니다. 릴리스 artifact·upgrade·
+rollback 검증, 운영·fleet·성능, 조직 계정, 서비스별 자격, 등록·복구·계정 제한·Lua는
+전체 활성 목표에 남아 있습니다. 과거 Chromium 부재 기록은 당시 단계이며 운영 외부
+MFA 통과를 주장하지 않습니다.

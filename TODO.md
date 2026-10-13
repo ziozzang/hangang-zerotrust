@@ -890,3 +890,5 @@ management improvement does not complete the remaining original integration goal
 - [ ] Define domain-owned CRDs and Kubernetes-authoritative console publication with conflict protection; no competing DB writer.
 - [ ] Implement bound workload TokenReview, scoped RBAC import, CNI-aware NetworkPolicy integration and provider-specific IAM connectors.
 - [ ] Qualify deletion/recreation, watch expiry, stale replicas, escalation/impersonation, alternate paths, stream revocation and full-chain throughput.
+
+- [x] Pumgye `55cea05`: bounded read-only offline RBAC inspection, explicit cluster provenance, scope/reference validation; CLI and existing server regressions pass. Live watches and policy publication remain pending.

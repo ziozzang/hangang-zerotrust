@@ -833,3 +833,35 @@ scripts/external factors remain unconfigured and tagged 0.0.3 assets unchanged.
 General connector composition, credential translation, human first-factor hooks,
 local passwords/recovery, followers/stream revocation and full-stack throughput
 remain required; the full original goal is not complete.
+
+## Explicit credential mixing and qualification correction — 2026-10-14
+
+Hopae `09ce882` adds bounded prefix routing/unwrapping for a service's native
+keys and fixed external relay; `fff2b5f` rejects mixed native issuer aliasing.
+Native/expired/unknown/retired keys never fall through to relay, including after
+the last native key is removed while retaining its prefix. External rejection,
+outage and Lua denial never choose another credential or a human session.
+Issuer/realm/subject/service/kind remain native verified, service AAL 0.
+Final Linux gates pass 866 tests, 42 ignored; six native macOS runtime tests pass.
+The actual mixed HTTP/HOP1 scenario includes local and relay success, invalid
+credentials, outage and Lua-denied upstream identity.
+
+Correction: earlier `1341bae`/`5125ff7` JSON-only candidate service-policy claims
+did not prove service Lua activation. Durable profile documents override bootstrap
+JSON; those runs verified the existing DB profiles. Native factor Lua/Chromium,
+direct service runtime/protocol tests and production regressions remain valid.
+`f14287a` adds an offline native-publication qualifier, refusing live filenames
+before state access. The corrected optimized candidate publishes to a private
+owner copy, verifies the stored desired document and checks mixed local/relay plus
+upstream-approved/Lua-denied identity over HTTP and pooled mTLS; actual Chromium
+MFA/TOTP and old-handle checks pass. This supersedes the insufficient activation
+evidence, rather than changing DB-over-bootstrap ownership.
+
+Internal `0.0.3-mixed-f14287a` runs schema v6, preserving configuration/keys,
+consistent stopped owner/delegation backups and previous image; live API/matrix/
+module/SSO/logout/Origin/native regressions pass. Authoritative production DB
+profiles remain native-only with scripts/relay/prefixes unconfigured; no fixture
+identities/providers are deployed. Tagged 0.0.3 assets and draft status remain
+unchanged. Broader composition/translation, human/local authentication lifecycle,
+followers/membership/stream revocation, full-stack performance and pending releases
+remain part of the original active goal.

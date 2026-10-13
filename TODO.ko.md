@@ -755,3 +755,31 @@ Linux gates는 865건 통과·42건 ignored입니다. 실제 HTTP·지속 HOP1 �
 설정하지 않고 태그 0.0.3 asset도 유지합니다. 범용 커넥터 조합·자격 변환·사람 1차 인증
 hook·자체 비밀번호·복구·follower·기존 stream 회수·전체 스택 성능은 후속이며 전체
 원래 목표는 완료되지 않았습니다.
+
+## 명시적 자격 혼합과 검증 정정 — 2026-10-14
+
+호패 `09ce882`는 서비스의 자체 key·고정 외부 relay를 제한된 접두사로 선택·제거하고
+`fff2b5f`는 혼합 시 자체 issuer와의 충돌을 거부합니다. 자체·만료·알 수 없는·회수한
+key는 relay로 우회하지 않으며 마지막 자체 key를 없애도 접두사를 유지하면 같습니다.
+외부 거절·장애·Lua 거부로 다른 자격이나 사람 session을 선택하지 않습니다.
+issuer·realm·subject·서비스·종류와 서비스 AAL 0을 유지합니다. 최종 Linux gates
+866건 통과·42건 ignored, macOS 네이티브 runtime 6건이 통과했습니다. 실제
+HTTP·HOP1 혼합 시나리오는 자체·relay 성공, 잘못된 자격, 장애 및 upstream 신원의
+Lua 거부를 포함합니다.
+
+정정: 이전 `1341bae`·`5125ff7` JSON만 변경한 후보의 서비스 Lua 활성화 주장은
+충분한 증거가 아니었습니다. 저장된 profile 문서가 bootstrap JSON보다 우선해 기존
+DB profile을 검증한 실행이었습니다. 네이티브 factor Lua·Chromium, 직접 서비스
+runtime·프로토콜 테스트와 운영 회귀는 유효합니다. `f14287a`는 상태 접근 전에
+라이브 파일명을 거부하는 오프라인 네이티브 publication qualifier를 추가했습니다.
+수정한 최적화 후보는 비공개 owner 복사본에 게시하고 저장된 문서 일치를 확인한 뒤
+HTTP·지속 mTLS에서 자체·relay 및 upstream 승인·Lua 거부 신원을 검증합니다.
+실제 Chromium MFA·TOTP·이전 handle 거부도 통과했습니다. 부족했던 활성화 증거를
+대체하며 DB가 bootstrap보다 우선하는 소유권 규칙은 유지합니다.
+
+내부 `0.0.3-mixed-f14287a`·schema v6의 기존 설정·키, 중지 후 일관된 owner·
+delegation 백업과 이전 이미지를 보관했고 라이브 API·매트릭스·모듈·SSO·logout·
+Origin·네이티브 회귀가 통과했습니다. 실제 운영 DB profile은 스크립트·relay·접두사
+없는 자체 자격이며 fixture 신원·provider를 배포하지 않았습니다. 태그 0.0.3 asset·
+초안은 유지합니다. 더 넓은 조합·변환·사람·자체 인증 수명주기·follower·membership·
+기존 stream 회수·전체 스택 성능·미완료 릴리스는 원래 전체 진행 목표에 남아 있습니다.

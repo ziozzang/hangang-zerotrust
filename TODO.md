@@ -111,3 +111,12 @@ enabled Hangang administrator; no account/grant is created or altered.
 - [ ] Authenticated remote HOP1/HGD1/Pumgye transport and scoped admin delegation.
 - [ ] Replica revision/expiry/revocation and breaker/failover qualification.
 - [ ] Three-process native integration and sustained/end-to-end throughput evidence.
+
+### Sumunjang repository migration qualification (2026-10-13)
+
+- [x] Public canonical repository: [ziozzang/sumunjang](https://github.com/ziozzang/sumunjang); Git remote, Hangang/Pumgye dependencies and documentation use that address.
+- [x] [v0.3.3](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.3): four native targets qualified in [CI](https://github.com/ziozzang/sumunjang/actions/runs/38326599970); 22 published asset digests match staged bytes, with eight independently verified Ed25519 manifests.
+- [x] Historical v0.3.2 manifest and binary downloaded from the moved repository retain the authentic old signed URL and match the pinned key, size and hash. Tests reject other repositories, tags and filenames.
+- [x] Published Linux binary signature verified before installation; supervised canonical-repository updater reports enabled/up_to_date at v0.3.3; unified console and authenticated HGD1 regression checks pass.
+
+Binaries through v0.3.2 require a one-time signature-verified v0.3.3 bootstrap because their pinned old GitHub API rejects redirects. See [migration guidance](https://github.com/ziozzang/sumunjang/blob/main/docs/UPDATES.md). This qualification does not complete the authentication-gateway or independent remote-runtime work above.

@@ -94,3 +94,12 @@ Hopae unit 384개·시나리오 359개(명시적 제외 40개), strict Clippy·�
 - [ ] 원격 인증 HOP1/HGD1/품계 전송 및 범위 제한 관리 위임.
 - [ ] 복제 리비전/만료/철회·서킷/노드 전환 검증.
 - [ ] 세 실 프로세스 통합과 지속/종단간 처리량 검증.
+
+### 수문장 저장소 이전 검증 (2026-10-13)
+
+- [x] 공개 공식 저장소 [ziozzang/sumunjang](https://github.com/ziozzang/sumunjang)으로 이전하고 Git 원격·Hangang/품계 의존성·문서 주소를 정렬했습니다.
+- [x] [v0.3.3](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.3): 네 네이티브 플랫폼이 [CI](https://github.com/ziozzang/sumunjang/actions/runs/38326599970)를 통과했습니다. 공개 자산 22개의 해시가 원본과 일치하고 Ed25519 manifest 8개를 독립적으로 검증했습니다.
+- [x] 이전된 저장소에서 받은 실제 v0.3.2 manifest·바이너리의 기존 서명 URL·고정 공개키·크기·해시를 검증했습니다. 다른 저장소·태그·파일명은 테스트에서 거부합니다.
+- [x] 공개 Linux 바이너리 서명 검증 후 설치했습니다. 새 저장소의 감독형 updater는 활성화/up_to_date(v0.3.3)이며 통합 콘솔과 인증된 HGD1 회귀 검증이 통과했습니다.
+
+v0.3.2 이하 바이너리는 고정된 구 GitHub API의 리다이렉트를 거부하므로 서명을 검증한 v0.3.3으로 최초 전환 설치가 필요합니다. [이전 안내](https://github.com/ziozzang/sumunjang/blob/main/docs/ko/UPDATES.md)를 참조하세요. 이 검증은 위의 인증 게이트웨이·독립 원격 런타임 작업 완료를 의미하지 않습니다.

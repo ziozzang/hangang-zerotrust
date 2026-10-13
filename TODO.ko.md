@@ -481,3 +481,29 @@ Vendored 6개 테스트로 정상·잘못된 다운스트림 파싱·결정적 w
 활성화 거부를 대체합니다. 실제 Chromium LDAP 로그인, 외부 디렉터리 계정 회수,
 비밀·CA 게시 epoch와 분산 lifecycle 검증은 남아 있습니다. 배포된 네이티브 MFA
 이미지는 그대로이며 운영 LDAP를 설정하지 않았습니다.
+
+## 외부 MFA HTTPS 호출 구현 — 2026-10-14
+
+호패에 네이티브 외부 factor HTTPS connector 프리미티브를 구현했습니다. 설정된
+factor·revision과 정확한 challenge·사용자·session·서비스·자격 세대를 결합하며
+운영자 자격 참조, 1–1000ms 전체 기한, 선언·streaming 응답 8 KiB 상한을 적용합니다.
+connector마다 대기 없이 최대 64개 호출을 허용하고 전용 pool은 origin별 idle 연결을
+64개·30초로 제한합니다. HTTP·redirect·환경 proxy는 거부합니다. private HTTPS는
+명시적 허용이 필요하며 CA·서버 이름 검증을 유지합니다. 해석된 verifier 비밀과 custom
+CA 내용이 달라지면 connector를 재사용할 수 없습니다.
+
+자체 TLS 테스트로 성공·거절, 실제 연결 재사용, 잘못된 CA, 문맥·등급 주입, 잘못된
+응답, 서버가 stream을 유지하는 chunked·header 상한, 본문 timeout, 동시성 제한,
+취소, 서킷 복구와 시계 역행을 검증합니다. 문맥에 맞는 거절은 정상 응답이며 단순
+HTTP 거부와 잘못된 근거는 verifier 실패입니다. 3회 실패하면 30초 서킷을 엽니다.
+
+connector는 파싱한 근거만 반환합니다. portal·provider 설정에 활성화하지 않았으며
+인증등급을 부여하거나 재사용 캐시를 가지지 않습니다. 영속 proof·challenge 소비,
+네이티브 소유자 등급 상승, 런타임 snapshot 게시, 프로세스 전체 유입 제한과 제한된
+Lua 호스트 호출이 필요합니다. HTTPS 호출이 없다는 과거 기록은 당시 상태이며 운영
+외부 MFA는 아직 미구현입니다. 배포된 이미지는 유지합니다.
+
+검증: 자체 HTTPS 호출 테스트 4건을 포함하여 전체 직렬 호패 gates가 841건 통과,
+42건 제외입니다. fmt·clippy·boundary·문서·시나리오 커버리지와 기존 범위의 의존성
+audit를 통과했습니다. 통합 계약도 schema 6건과 적대적·개인정보 사례 21건을
+통과했습니다. 이 소스 단계로 공개 릴리스나 운영 외부 MFA 활성화를 주장하지 않습니다.

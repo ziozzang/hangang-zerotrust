@@ -512,3 +512,33 @@ This supersedes the source configuration activation rejection in earlier notes.
 Actual Chromium LDAP login, external directory-account revocation, secret/CA
 publication epochs and distributed lifecycle qualification remain unfinished.
 The deployed native-MFA image remains unchanged; no operational LDAP is configured.
+
+## External MFA HTTPS transport implementation — 2026-10-14
+
+Hopae now has a native external-factor HTTPS connector primitive. It binds the
+configured factor/revision and exact challenge/user/session/service/generation,
+uses an operator credential reference, enforces 1–1000 ms total deadlines and
+8 KiB declared/streamed reply limits, and admits 64 exchanges per connector
+without waiting. The dedicated pool caps idle connections at 64 per origin
+for 30 seconds. HTTP, redirects and environment proxies are refused; private
+HTTPS destinations require explicit opt-in, with CA/server-name verification
+retained. Resolved verifier secrets and custom CA contents fence connector reuse.
+
+Owned TLS tests exercise accept/reject, actual connection reuse, wrong CA,
+context/assurance injection, malformed replies, chunked/header limits while the
+server holds the stream open, body timeouts, admission, cancellation, circuit
+recovery and clock rollback. Context-valid rejection is healthy; bare HTTP denial
+or malformed evidence is a verifier fault. Three faults open a 30-second circuit.
+
+The connector returns parsed evidence only. It is not enabled in portal/provider
+configuration, cannot grant assurance, and has no replay cache. Durable proof and
+challenge consumption, native owner elevation, runtime snapshot publication,
+process-wide admission and constrained Lua host calls remain required. Earlier
+notes saying external HTTPS execution is absent now describe historical state;
+operational external MFA remains unimplemented. The deployed image is unchanged.
+
+Validation: full serial Hopae gates pass 841 tests, 42 ignored, including the four
+owned HTTPS transport tests; fmt/clippy/boundaries/docs/scenario coverage and the
+existing scoped dependency audit pass. Cross-component contracts pass six schemas
+and 21 adversarial/privacy cases. No public release or operational external MFA
+activation is claimed by this source-only step.

@@ -254,3 +254,15 @@ Internal Hopae remains schema v3. The next upgrade/rollback qualification must
 cover v3-to-v5 migration and restoration of a consistent v3 backup; image rollback
 alone is insufficient. Complete challenge/session atomicity, enrollment/recovery/UI,
 key management and real internal MFA dogfooding before marking OTP support complete.
+
+## Actual internal owner migration evidence — 2026-10-13
+
+Offline qualification against a consistent copy of the actual internal Hopae DB
+passes v3→v5 migration, integrity and preservation of all 13 existing business tables.
+Backup restoration reproduces v3 and original contents. The deployed old image's
+isolated `admin list` opens restored v3 and refuses verified v5. WAL-safe SQLite backup
+is required for every copy; copying just the main file can silently omit the upgrade.
+Tools and EN/KO evidence are on Hopae main (`d876909`). This qualifies offline
+migration/CLI rollback, not full application boot or operational deployment.
+Production is unchanged. Next: build the candidate image, qualify full boot and existing
+service/SSO/console flows, and perform migration-aware rollout with backup restoration.

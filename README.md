@@ -10,8 +10,10 @@ The architecture and contract repository for a zero-trust backbone built around
 Hangang enforces admission and resource policy. Hopae owns user identity,
 sessions and external authentication providers. Sumunjang (the Guard component)
 owns network controls and risk evidence. Pumgye owns deterministic service roles,
-permissions, information classes and user/IP authorization matrices; its core is
-embedded in Hangang. Jangbu, existing Sacho, Sillok and Saheon observability/audit
+permissions, information classes and user/IP authorization matrices. The required
+architecture deploys Hopae, Sumunjang and Pumgye as independent servers; Pumgye
+core and server are separate crates. Earlier embedded enforcement remains the
+qualified baseline while authenticated distributed integration is being built. Jangbu, existing Sacho, Sillok and Saheon observability/audit
 integration remain design work, with Prometheus and ClickHouse connections.
 
 **This repository contains design proposals, example contracts and validation,
@@ -25,10 +27,10 @@ are tracked separately; a diagram is not a production assurance claim.
 flowchart TB
   subgraph DP["Request enforcement"]
     C[Client] --> H[Hangang enforcement]
-    H <-->|authenticated native calls| I[Hopae identity / sessions]
-    I <-->|OIDC / Google| P[External providers]
+    H <-->|authenticated native calls| I[Hopae authentication gateway / sessions]
+    I <-->|OIDC / Google / LDAP / API / local: mixed-auth design| P[Authentication sources]
     H <-->|authenticated native calls| G[Sumunjang: Guard network controls]
-    H --> D[Pumgye authorization: planned]
+    H --> D[Pumgye authorization server: distributed integration pending]
     D --> CL[Compiled classification / catalog]
     V[Device / workload evidence: proposed] -.-> D
     H --> B[Application / resource]
@@ -40,6 +42,7 @@ flowchart TB
     A -->|validated policy / catalog bundles| H
     A --> I
     A --> G
+    A --> D
   end
   subgraph OP["Observability and security automation: planned integration"]
     E[Jangbu: bounded logs / traces] --> CH[ClickHouse logs / traces / events]
@@ -50,6 +53,8 @@ flowchart TB
     N --> S[Sillok ontology / provenance]
     S --> J[Jikji automatic / semi-automatic workflows]
     J <-->|bounded judgment / scoring| HE[Hearim: one intelligence backend]
+    J <-->|bounded LLM requests| DG[Dorang: LLM Gateway]
+    DG <-->|provider routing| LP[LLM providers / model endpoints]
     J --> K[Scope / authorization / revision validation]
     K -->|scoped changes| A
     R[Canary / post-change pentest / regression checks] -->|verified outcomes| N
@@ -72,6 +77,8 @@ flowchart LR
   O[Logs / traces / metrics + scoped pentest] --> S[Sillok facts / relationships / evidence]
   S --> J[Jikji investigation / proposal]
   J <-->|judgment assistance| HE[Hearim / other backends]
+  J <-->|LLM assistance| DG[Dorang: LLM Gateway]
+  DG <-->|provider routing| LP[LLM providers / model endpoints]
   J --> V[Pre-authorized scope or reviewed approval + domain validation]
   V --> A[Guard mitigation / Hangang routing patch]
   A --> T[Canary + post-change pentest + normal-traffic checks]
@@ -111,6 +118,15 @@ mitigations and validated Hangang routing patches; see
 
 [Closed-loop design](docs/FEEDBACK_LOOP.md) connects logging, distributed tracing,
 monitoring and scoped pentesting to ontology-backed action and verified outcome reuse.
+
+## Dorang LLM gateway
+
+[Dorang](https://github.com/ziozzang/dorang) is the LLM Gateway in the package
+architecture. Jikji's LLM-assisted workflows use Dorang to reach model/provider
+endpoints; Hearim remains a separate judgment backend. This integration is planned.
+Dorang does not own resource authorization or policy publication. Model calls stay
+on the bounded control plane, with identity, service permissions, evidence
+minimization and audit enforced by the surrounding zero-trust components.
 
 ## Hearim judgment backend
 

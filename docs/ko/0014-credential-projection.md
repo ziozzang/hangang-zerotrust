@@ -72,3 +72,5 @@ receipt schema·암호 검증·별도 네이티브 단계·소유자 게시/회�
 메커니즘의 완료 증거가 아닙니다.
 
 호패 `535dc57`은 signer/key epoch, 신원 authority epoch, namespace가 결합된 신원/종류/AAL, 신원 revision/자격 generation, 서비스/대상/요청 digest의 canonical binding을 구현합니다. permit은 서명 인증 receipt 해시, decision/resource/action과 품계 authority/catalog/policy/network/route/plan 버전을 추가합니다. 인증은 다른 도메인의 정책·네트워크 상태를 주장하지 않습니다. 테스트 3건에 독립 Python 벡터와 신원 epoch·plan 버전·인증 chain 변경 후 실제 Ed25519 거부를 포함합니다. signing endpoint·검증된 소유자 입력·key registry·원자적 회수/replay는 후속이며 배포된 자격 발급은 아닙니다.
+
+호패 `fc49a8a`는 네이티브 authority·용도·key epoch로 수신 키를 고르고 canonical binding·엄격한 서명을 검사하는 불변 registry를 추가합니다. 메모리 갱신은 제거 floor와 과거 공개 자료 소유권을 보존해 오래된 epoch·부활·회수된 인증 자료의 다른 authority/용도 이동을 거부합니다. 활성 항목 64개·floor 128개·과거 공개 값 256개로 제한하고 조회 시 issuer 문자열을 할당하지 않습니다. 테스트 2건·fmt·clippy·경계·문서 검사가 통과했습니다. 재시작 유지 DB floor·소유자 게시/원자적 활성화·시계/replay/회수·endpoint는 후속이며 새 registry가 없는 이력을 복원하지는 못합니다.

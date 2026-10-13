@@ -281,3 +281,18 @@ present in the image but enrollment/step-up routes are not implemented. The full
 authentication gateway, factor/session atomicity, recovery/UI, distributed scaling,
 full-stack performance and public multi-platform releases remain mandatory unfinished
 work. Dogfooding now runs the latest validated runtime source.
+
+## Initial TOTP portal source integration — 2026-10-13
+
+Hopae main now connects keyring bootstrap, recent owner-session write fencing and
+encrypted enrollment to EN/KO portal preparation/confirmation. An actual owned OIDC
+process fixture verifies login, setup material, independent OTP calculation, confirmation,
+Origin/CSRF/HTTP/anonymous/replay refusal, no seed in logs/refresh and unchanged AAL 1.
+Full gates pass (443 library, 15 other integration, 367 scenarios; 41 ignored).
+Chromium form testing confirmed same-origin referrer policy is necessary for exact
+Origin checks; secrets remain in the creation body, never URLs.
+
+This is initial registration, not OTP sign-in/step-up. QR/mobile scan, full browser UI,
+account/distributed admission, recent-auth refresh/cancel/removal/recovery UX, atomic
+challenge/session elevation, Hangang navigation and operational MFA rollout remain open.
+Current internal image is still owner-v5-d876909 with no keyring/enrollment enabled.

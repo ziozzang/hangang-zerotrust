@@ -865,3 +865,19 @@ identities/providers are deployed. Tagged 0.0.3 assets and draft status remain
 unchanged. Broader composition/translation, human/local authentication lifecycle,
 followers/membership/stream revocation, full-stack performance and pending releases
 remain part of the original active goal.
+
+## Native console profile overview — 2026-10-14
+
+Hopae `31678bd`, console package 0.1.4, adds service/realm, native-key count/relay,
+issuer, prefix, Lua and fallback overview from the active DB document. Local JSON
+preview leaves revision-checked publication authoritative; EN/KO guidance explains
+DB precedence and mixing. Owned Chromium EN/admin and KO/viewer fixtures verify
+read-only controls, invalid JSON, hostile issuer text and no publish calls. The
+actual authenticated Hangang screen matches DB profiles with invalid/restored
+preview, zero JS errors and unchanged document/revision.
+
+Internal registry manifest/assets are hash-pinned and the 0.1.4 reload passes.
+The first anonymous `/healthz` probe received 401 and rolled back; corrected `/ui/`
+readiness and authenticated module loading pass. Previous registry backup remains;
+Hopae image `0.0.3-mixed-f14287a` and business configuration are unchanged. This
+management improvement does not complete the remaining original integration goal.

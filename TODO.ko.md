@@ -783,3 +783,17 @@ Origin·네이티브 회귀가 통과했습니다. 실제 운영 DB profile은 �
 없는 자체 자격이며 fixture 신원·provider를 배포하지 않았습니다. 태그 0.0.3 asset·
 초안은 유지합니다. 더 넓은 조합·변환·사람·자체 인증 수명주기·follower·membership·
 기존 stream 회수·전체 스택 성능·미완료 릴리스는 원래 전체 진행 목표에 남아 있습니다.
+
+## 네이티브 콘솔 프로필 개요 — 2026-10-14
+
+호패 `31678bd`의 콘솔 패키지 0.1.4는 실제 DB 문서에서 서비스·realm·자체 key 개수/
+relay·issuer·접두사·Lua·대체 설정을 표로 보여줍니다. 로컬 JSON 미리보기는 revision
+확인 publication의 소유권을 유지하고 EN·KO 안내는 DB 우선순위와 혼합을 설명합니다.
+소유한 Chromium EN/admin·KO/viewer fixture에서 조회 전용 제어·JSON 오류·악성
+issuer 텍스트·게시 호출 없음이 통과했습니다. 실제 인증된 Hangang 화면의 DB 일치,
+JSON 오류·복원 미리보기, JS 오류 없음과 문서·revision 유지도 통과했습니다.
+
+내부 registry에 manifest·asset hash를 고정하고 0.1.4 reload를 검증했습니다.
+첫 익명 `/healthz` 검사는 401로 복구했고 실제 `/ui/` 응답 및 인증된 모듈 로딩으로
+수정해 통과했습니다. 이전 registry 백업을 유지하고 호패 `0.0.3-mixed-f14287a`
+이미지·업무 설정은 바뀌지 않았습니다. 관리 개선 단계이며 나머지 원래 전체 목표는 후속입니다.

@@ -637,3 +637,34 @@ boundary/docs/scenario checks and the existing scoped audit pass. Startup smoke
 now accounts for the separate required registry event. Individual authority
 publication uses `factor.authority_published`, keeping `config.loaded` specific
 to the application. Cross-component checks pass six schemas and 21 cases.
+
+## Native external MFA browser forms — 2026-10-14
+
+Configured external verifiers now enable native document step-up and appear in
+an authenticated owner-context chooser alongside optional TOTP. Selection binds
+the approved factor to the challenge. `/stepup/external` has a response form and
+POST using a distinct CSRF purpose bound to transaction/portal cookie/handle/
+factor, exact Origin and HTTPS, strict four-field input, 4096-byte response cap
+and shared IP admission. It cannot select backend URLs or claim user/role/AAL.
+Failure does not trigger a weaker-provider fallback.
+
+The adapter verifies before generating replacement credentials; TOTP and external
+paths share the issuance helper. Native completion accepts a recent nonfuture
+creation timestamp across a second boundary, with matching handle activity/code
+creation and existing actor/proof wall/monotonic/pre-commit fences. Verifier
+requests include server-owned verification_started_at to bound proof expiry.
+
+The owned OIDC/HTTPS real-process HTTP client test covers first-factor login,
+chooser/form, no backend call for Origin/CSRF/additional-field failures, typed
+rejection, cross-user/assurance injection refusal, successful elevated handoff,
+protected request and old-handle refusal. Timing tests cover boundary/stale/future
+issuance. This is not Chromium or an operational organization's account test.
+Actual-browser/fleet/performance/deployment, service-specific factor eligibility,
+external enrollment/recovery, account admission and Lua remain required work.
+Internal v5 is unchanged; historical missing-form notes are superseded in source.
+
+Validation: full serial Hopae gates pass 856 tests, 42 ignored, including the
+owned first-factor/HTTPS/form/handoff path and timestamp-boundary qualification.
+Fmt/clippy/boundaries/docs/scenario coverage and the existing scoped dependency
+audit pass. Cross-component validation passes six schemas and 21 privacy/
+adversarial cases. No production external MFA or Chromium qualification is claimed.

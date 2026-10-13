@@ -585,3 +585,29 @@ TOTP 인증등급 동작은 유지하며 이 설정만으로 외부 브라우저
 시나리오와 기존 범위 audit를 통과했습니다. 시작 smoke는 별도 필수 registry 이벤트를
 검증합니다. 개별 authority는 `factor.authority_published`로 기록하여 `config.loaded`는
 전체 앱 로딩을 나타냅니다. 통합 계약도 schema 6건과 사례 21건을 통과했습니다.
+
+## 네이티브 외부 MFA 브라우저 폼 — 2026-10-14
+
+설정된 외부 verifier가 문서 step-up을 활성화하고 소유자 문맥을 검증한 chooser에
+선택적인 TOTP와 함께 표시됩니다. 선택은 승인된 factor를 challenge에 결합합니다.
+`/stepup/external`의 응답 폼·POST는 별도 CSRF purpose를 transaction·portal cookie·
+handle·factor에 묶고 정확한 Origin·HTTPS·네 필드·응답 4096바이트 상한·공유 IP 제한을
+적용합니다. backend URL·사용자·role·AAL을 선택할 수 없고 더 약한 provider로 자동
+fallback하지 않습니다.
+
+adapter는 검증 후 새 자격을 생성하며 TOTP·외부 발급 helper를 공유합니다. 소유자는
+초 경계를 넘어도 최근·비미래 생성 시각과 handle 활동·code 시각의 일치, 기존 actor·proof
+벽시계·단조·commit 직전 검사를 적용합니다. verifier 요청은 서버 소유
+verification_started_at로 증명 수명을 제한합니다.
+
+자체 OIDC·HTTPS 실제 프로세스 HTTP 클라이언트 테스트는 1차 로그인·chooser·폼,
+Origin·CSRF·추가 필드 실패의 backend 미호출, 타입 거절, 사용자 교차·등급 주입 거부,
+높은 등급 handoff·보호 요청·이전 handle 거부를 검증합니다. 시간 테스트는 경계·오래된·
+미래 발급을 다룹니다. Chromium이나 운영 조직 계정 검증은 아닙니다. 실제 브라우저·fleet·
+성능·배포, 서비스별 factor 자격, 외부 등록·복구·계정 유입 제한·Lua는 후속입니다.
+내부 v5 이미지는 유지하며 과거 폼 부재 기록을 소스에서 대체합니다.
+
+검증: 자체 1차 인증·HTTPS·폼·handoff와 시각 경계를 포함하여 전체 직렬 호패 gates가
+856건 통과, 42건 제외입니다. fmt·clippy·boundary·문서·시나리오와 기존 범위의 의존성
+audit를 통과했습니다. 통합 계약도 schema 6건과 개인정보·적대적 사례 21건을 통과했습니다.
+운영 외부 MFA나 Chromium 검증을 주장하지 않습니다.

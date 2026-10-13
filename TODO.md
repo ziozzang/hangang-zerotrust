@@ -203,3 +203,26 @@ account/distributed admission and directory session revocation. Local passwords,
 credential translation/composition, memory-session/distributed followers, full-stack
 10k/100k throughput and public multi-platform releases also remain open. These source
 and test results do not complete the overall zero-trust runtime goal.
+
+## Internal deployment and dogfooding acceptance — 2026-10-13
+
+Internal deployment and dogfooding are required for each completed runtime increment,
+in addition to source tests and public publication. Use private consistent backups,
+versioned artifacts, migration-aware rollback, and real Hangang request/console checks.
+Keep credentials outside public evidence. GitHub Actions remain disabled by operator
+choice; qualification and release builds run locally.
+
+The current internal Hangang/Hopae/Pumgye/Sumunjang services were checked again:
+HTTPS service authentication, scoped method refusal, guest/invalid/spoofed identity
+refusal, removal of upstream credentials, all three management menus, matrix loading,
+SSO entry, logout and anonymous/origin isolation, and authenticated native HGD1 passed.
+All three user services are active. These checks did not mutate routing or policy.
+Hangang runs image `0.3.2-service-api-647c93b`; Hopae runs
+`0.0.2-profile-console-9b307c0`. Later LDAP source is not deployed or enabled.
+
+- [ ] Qualify and deploy the next Hopae snapshot with schema-v3 backup and tested
+  schema-v4 restore rollback, then repeat service and console regressions.
+- [ ] Complete real LDAP browser/gateway and revocation qualification plus hard BER
+  bounds and commit fencing before enabling directory authentication internally.
+- [ ] Sustain internal dogfooding and record failure/recovery, latency, memory and
+  throughput before claiming production completion or public performance targets.

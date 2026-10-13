@@ -809,3 +809,27 @@ and live API/matrix/module/SSO/logout/Origin/native regressions pass. Production
 external factors/scripts remain unconfigured, with no fixture identities introduced.
 Public tagged 0.0.3 artifacts remain the earlier non-Lua release candidate; the
 draft/Intel execution gap and complete remaining integration scope are unchanged.
+
+## Service-profile Lua authentication conditions — 2026-10-14
+
+Hopae source `5125ff7` extends `authentication_gateway.profiles` with optional
+bounded `eligibility_lua` after native API-key/API-relay verification. Invalid
+credentials/IPs are refused before scripting. Scripts can reject verified service
+identity but cannot change issuer/realm/subject/kind/audience or grant assurance.
+Missing scripts retain serialized bindings and the native indexed path. Capacity,
+syntax, typed results and evidence expiry fail closed; relay plus script time is
+accounted for without extending absolute freshness. Presented denied credentials
+do not fall back to human sessions.
+
+Linux gates pass 865 tests, 42 ignored. An augmented actual HTTP/pooled HOP1
+scenario verifies allowed, backend-denied, outage and Lua-denied identities;
+formatting/clippy/boundary checks pass after that augmentation. Five native
+macOS runtime tests pass. The optimized private candidate with service and factor
+scripts passes HTTP/pooled mTLS parity and Chromium external MFA/TOTP/old-handle
+checks. Internal `0.0.3-service-lua-5125ff7` runs schema v6; live API/matrix/module/
+SSO/logout/Origin/native regressions pass with original configuration/keys retained,
+consistent v6 owner/delegation backups and previous image preserved. Production
+scripts/external factors remain unconfigured and tagged 0.0.3 assets unchanged.
+General connector composition, credential translation, human first-factor hooks,
+local passwords/recovery, followers/stream revocation and full-stack throughput
+remain required; the full original goal is not complete.

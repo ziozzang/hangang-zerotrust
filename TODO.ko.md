@@ -734,3 +734,24 @@ API·매트릭스·모듈·SSO·logout·Origin·네이티브 회귀가 통과했
 스크립트는 설정하지 않고 fixture 신원을 넣지 않았습니다. 공개 0.0.3 태그 asset은
 이전의 Lua 없는 릴리스 후보를 유지하며 초안·Intel 실행 검증과 나머지 전체 통합 범위는
 그대로 후속입니다.
+
+## 서비스 profile Lua 인증 조건 — 2026-10-14
+
+호패 소스 `5125ff7`은 `authentication_gateway.profiles`의 선택적 `eligibility_lua`를
+네이티브 API key·API relay 검증 후 적용합니다. 잘못된 자격·IP는 스크립트 전에
+거부합니다. 스크립트는 검증된 서비스 신원을 거부할 수 있지만 issuer·realm·subject·
+종류·대상·인증등급을 바꾸지 못합니다. 생략하면 직렬화 binding과 네이티브 인덱스
+경로를 유지합니다. 동시성·문법·반환형·근거 만료를 거부 방식으로 처리하고 relay·스크립트
+시간을 계산해 절대 신선도를 연장하지 않습니다. 제시된 자격을 거부하면 사람의 session으로
+우회하지 않습니다.
+
+Linux gates는 865건 통과·42건 ignored입니다. 실제 HTTP·지속 HOP1 시나리오에
+허용·backend 거절·장애·Lua 신원 거부를 추가 검증하고 fmt·clippy·boundary도
+통과했습니다. macOS 네이티브 runtime 테스트 5건이 통과했습니다. 서비스·factor
+스크립트를 설정한 최적화 비공개 후보의 HTTP·지속 mTLS·Chromium 외부 MFA·TOTP·
+이전 handle 거부도 통과했습니다. 내부 `0.0.3-service-lua-5125ff7`·schema v6의
+라이브 API·매트릭스·모듈·SSO·logout·Origin·네이티브 회귀가 통과했고 기존 설정·키,
+일관된 v6 owner·delegation 백업과 이전 이미지를 유지합니다. 운영 스크립트·외부 factor는
+설정하지 않고 태그 0.0.3 asset도 유지합니다. 범용 커넥터 조합·자격 변환·사람 1차 인증
+hook·자체 비밀번호·복구·follower·기존 stream 회수·전체 스택 성능은 후속이며 전체
+원래 목표는 완료되지 않았습니다.

@@ -1,6 +1,7 @@
 # ADR 0014: 권한 허용 후 서비스 자격 변환
 
-상태: 제안 설계입니다. projection endpoint·wire format은 아직 구현하지 않았습니다.
+상태: 런타임 통합 제안입니다. 호패에 receipt 암호·키 소유권·증명 쌍 원자 승인 소스가
+있지만 projection endpoint는 아직 활성화하지 않았습니다.
 
 구조 prototype은 [요청 schema](../../schemas/projection_request.schema.json),
 [가상 요청](../../examples/projection_request.json), [검증기](../../tools/validate_contracts.py)에
@@ -8,7 +9,8 @@
 1초 한계를 검사하며 소비된 nonce 쌍을 거부합니다. 함께 위조한 subject, 호출자 권한
 필드, 범위 변경·오래된 버전·만료 사례를 포함합니다. 실행 가능한 계약 테스트이며 서명
 인증·실시간 회수 store·원자적 replay ledger·자격 발급 구현은 아닙니다. 요청 digest는
-네이티브 문맥에서 제공하며 canonical hashing과 receipt 인증은 런타임 구현이 필요합니다.
+네이티브 문맥에서 제공하며 canonical hashing·receipt 인증의 호패 라이브러리 구현은
+아래에 기록합니다. 네이티브 요청·endpoint 통합은 남아 있습니다.
 예제의 과거 시각은 실제 자격 lease가 아닙니다.
 
 호패 소스 `1322163`은 digest 기본 함수를 구현했습니다. domain
@@ -84,3 +86,5 @@ receipt schema·암호 검증·별도 네이티브 단계·소유자 게시/회�
 호패 `6aa88d8`는 독립 SQLite 연결 8개의 동기화 소비에서 한 호출만 commit하고 관련 작업 count도 정확히 1이며 DB 재연결 후 재사용을 거부함을 검증합니다. 마지막 actor 회수는 nonce·작업을 함께 취소하고 이후 허용된 재시도는 성공합니다. receipt 테스트 14건·fmt·clippy·경계·문서 검사가 통과했습니다. transaction 남용 검증이며 활성 발급 endpoint·분산 membership 보장·처리량 benchmark는 아니고 운영은 유지합니다.
 
 Hopae `5a6befb`는 호출자 작업·마지막 권한 검사 후 만료 검사와 commit 직전에 DB registry revision을 재검사합니다. 작업 내부 registry 변경 시 registry·nonce·작업이 함께 rollback되고 정상 재시도는 성공하는 회귀 테스트를 포함해 receipt 테스트 15건 및 fmt/clippy/boundary/docs 검사가 통과했습니다. 자격 endpoint 활성화·분산 검증은 남아 있으며 운영 상태는 유지됩니다.
+
+Hopae `21dba4c`는 인증된 자격 변환 증명 쌍 승인을 추가합니다. 용도별로 검증한 두 receipt의 네이티브 신원 epoch·subject/종류/AAL·신원 revision/자격 generation·서비스/대상/요청 digest가 일치하고 permit은 서명을 포함한 전체 인증 receipt의 SHA-256과 결합해야 합니다. 비공개·Clone 불가능한 승인 객체는 두 nonce와 소유자 작업을 하나의 SQLite transaction에서 소비합니다. 두 번째 nonce 재사용·어느 receipt든 만료되면 첫 소비와 작업까지 취소합니다. 새 공격 테스트 4건은 정상 서명된 문맥 불일치·chain hash 변경·더 빠른 인증 만료·두 번째 nonce 거부 시 rollback·독립 연결 8개에서 정확히 한 전체 commit을 확인합니다. 인증 gateway 테스트 총 44건과 fmt/clippy/경계/문서 검사가 통과했습니다. 실시간 신원/정책/네트워크/plan 소유권은 네이티브 guard가 검사해야 하며 소스 승인 단계이지 자격 발급·endpoint 활성화·분산 검증·처리량 보장이 아닙니다.

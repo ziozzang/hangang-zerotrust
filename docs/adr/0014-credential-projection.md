@@ -1,6 +1,7 @@
 # ADR 0014: Service credential projection after authorization
 
-Status: proposed design; no projection endpoint or wire format is implemented.
+Status: proposed runtime integration. Hopae implements source-only receipt crypto,
+key ownership and atomic chain admission; no projection endpoint is activated.
 
 Structural prototype: [request schema](../../schemas/projection_request.schema.json),
 [synthetic request](../../examples/projection_request.json) and
@@ -11,8 +12,8 @@ fixtures include jointly forged subject values, forbidden caller authority field
 changed scopes, stale revisions and expiry. These checks are executable contract
 tests, not signature authentication, a live revocation store, an atomic replay
 ledger or credential issuance. The request digest is supplied from native context;
-canonical request hashing and authenticated receipt verification still need runtime
-implementation. Historical fixture timestamps are never live credential leases.
+canonical request hashing and authenticated receipt verification have Hopae library
+implementations below, but still need native request/endpoint integration. Historical fixture timestamps are never live credential leases.
 
 Hopae source `1322163` now implements the digest primitive: domain
 `hangang-zerotrust:credential-projection:request:v1` plus NUL, then SHA-256 over
@@ -105,3 +106,5 @@ Hopae `96f9d85` adds a source-only atomic consumption helper for opaque checked 
 Hopae `6aa88d8` qualifies consumption across eight independent SQLite connections: one synchronized consumer commits and associated owner-work count is exactly one. Reopening the DB refuses reuse. Final actor revocation rolls back both nonce and work, allowing a later authorized retry. Fourteen receipt tests and fmt/clippy/boundary/docs checks pass. This is adversarial transaction qualification, not an active issuance endpoint, distributed membership guarantee or throughput benchmark; production remains unchanged.
 
 Hopae `5a6befb` repeats the durable registry revision check after caller work and the final authorization guard, immediately before expiry validation and commit. A regression mutates the registry within owner work and confirms that registry, nonce and work all roll back; a valid retry succeeds. Fifteen receipt tests and fmt/clippy/boundary/docs checks pass. Credential endpoint activation and distributed qualification remain pending; production is unchanged.
+
+Hopae `21dba4c` adds authenticated projection chain admission. Native identity epoch, subject/kind/AAL, identity revision/credential generation, service/audience/request digest must agree across separately purpose-verified receipts; the permit binds SHA-256 of the complete signed authentication receipt. Private non-Clone admissions consume both nonces with owner work in one SQLite transaction. A used second nonce or either expired receipt rolls back the first and all work. Four adversarial tests cover correctly signed conflicting contexts, chain-hash mismatch, earlier authentication expiry, second-nonce rollback and eight independent concurrent connections with one complete commit. All 44 authentication-gateway tests and fmt/clippy/boundary/docs checks pass. The native guard must still inspect live identity/policy/network/plan ownership; this is source-only admission, not credential issuance, endpoint activation, distributed qualification or a throughput claim.

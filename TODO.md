@@ -342,3 +342,32 @@ Validation: full serial Hopae gates pass 831 tests (449 library, 15 other
 integration, 367 scenarios), 41 ignored; fmt/clippy/boundary/docs/scenario coverage
 and dependency audit pass under the existing scoped advisory policy. Cross-component
 contract validation passes six schemas and 21 adversarial/privacy cases.
+
+## Request step-up enforcement — 2026-10-13
+
+Hopae's session request engine now applies configured canonical-path assurance
+rules rather than using them only to disable caching. AAL 2 requires actual
+second-factor evidence and both session/issued-handle levels; factor freshness
+uses the latest satisfaction time. Missing/number-only/OIDC-only, expired/future
+OTP and older issued handles are refused. Fresh OTP can satisfy factor freshness
+independently of an old primary authentication time. Nonmatching paths retain
+ordinary authentication. Browser completion remains unfinished: documents fail
+closed with 403 and API/session requests return 401 `step_up_required` without
+clearing the handle or minting an unsupported challenge.
+
+The shared HTTP/HOP1 service authentication pipeline also checks the current app
+snapshot after credential authentication. AAL 0 API keys/relays cannot satisfy a
+matching human assurance rule or authenticate into a disabled/unknown app.
+This closes an authentication-profile bypass; it does not replace independent
+Pumgye service permission enforcement. HTTP/native parity, uppercase/encoded
+prefixes, unchanged nonmatching paths and profile revocation fallback refusal
+are covered. Browser step-up bootstrap/completion, live policy publication epoch
+fencing and operational MFA activation remain mandatory.
+
+The native admin adapter preserves `aal_insufficient` response/metric/required
+audit classification for engine step-up refusal. Prefix matching avoids per-rule
+lowercase string allocation while preserving segment/UTF-8 behavior. Full serial
+Hopae gates pass 832 tests (449 library, 15 other integration, 368 scenarios),
+41 ignored, with formatting/clippy/boundary/docs/scenario coverage and the existing
+scoped dependency advisory policy. Contract validation passes six schemas and
+21 adversarial/privacy cases. Internal deployment is unchanged.

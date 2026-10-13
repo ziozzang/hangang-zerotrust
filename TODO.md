@@ -896,3 +896,5 @@ management improvement does not complete the remaining original integration goal
 - [x] Pumgye `1972ace`: real pinned-HTTPS read-only RBAC polling, complete bounded pagination, CA/token reload, immutable diagnostic snapshots, failure fencing/recovery; owned HTTPS fixture and native regressions pass. Scalable watches and authoritative application mapping/publication are pending.
 
 - [x] Pumgye `c4168da`: explicit cluster/UID/scope/subject/rule mapping produces native compiled candidate policies; source deletion removes candidate assignments and Guard/network constraints remain. Live mapped HTTPS and actual CLI checks pass. Durable authoritative publication and verified workload association remain pending.
+
+- [x] Hopae `8aecbd5`: native Pod-bound TokenReview connector and owned TLS qualification; Workload identities remain distinct and source failures have bounded circuits. Root/profile/HTTP/HOP1 integration, true cluster qualification, source deletion fences and Pumgye association remain pending.

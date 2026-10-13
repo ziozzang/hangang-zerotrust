@@ -70,3 +70,5 @@ signer·provider 장애는 동시성·시간·서킷 제한으로 거부하며 �
 receipt schema·암호 검증·별도 네이티브 단계·소유자 게시/회전 API·위임 UI·stream 회수·
 전체 스택 10k/100k 성능은 구현해야 합니다. 기존 gates는 기존 계약을 검사하며 이 제안
 메커니즘의 완료 증거가 아닙니다.
+
+호패 `535dc57`은 signer/key epoch, 신원 authority epoch, namespace가 결합된 신원/종류/AAL, 신원 revision/자격 generation, 서비스/대상/요청 digest의 canonical binding을 구현합니다. permit은 서명 인증 receipt 해시, decision/resource/action과 품계 authority/catalog/policy/network/route/plan 버전을 추가합니다. 인증은 다른 도메인의 정책·네트워크 상태를 주장하지 않습니다. 테스트 3건에 독립 Python 벡터와 신원 epoch·plan 버전·인증 chain 변경 후 실제 Ed25519 거부를 포함합니다. signing endpoint·검증된 소유자 입력·key registry·원자적 회수/replay는 후속이며 배포된 자격 발급은 아닙니다.

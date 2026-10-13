@@ -91,3 +91,5 @@ Open work: receipt schema and cryptographic verifier, dedicated native protocol
 phase, owner publication/rotation APIs, delegated management UI, stream revocation
 and full-stack 10k/100k-QPS qualification. Existing gates validate existing contracts;
 they do not prove this proposed mechanism.
+
+Hopae `535dc57` implements canonical receipt bindings for signer/key epoch, identity authority epoch, canonical namespaced principal/kind/AAL, identity revision/credential generation and service/audience/request digest. Permit adds the signed authentication receipt hash, decision/resource/action and Pumgye authority/catalog/policy/network/route/plan revisions. Authentication does not assert another domain's policy/network state. Three tests include independent Python vectors and actual Ed25519 rejection after identity epoch, plan revision or authentication-chain changes. Signing endpoints, verified owner-derived inputs, key registries and atomic revocation/replay remain required; these library primitives are not deployed credential issuance.

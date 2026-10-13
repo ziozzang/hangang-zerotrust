@@ -95,3 +95,11 @@ enabled Hangang administrator; no account/grant is created or altered.
 - [x] Workspace / packaging / strict Clippy / real signed upgrade and rollback qualification.
 - [x] Signature-verified Linux deployment and unified-console / SSO regression checks.
 - [x] Four native platforms, public v0.3.2 release and live GitHub updater confirmation.
+
+## Hopae authentication gateway
+
+- [x] Record multi-source authentication / network evidence direction (ADR 0011).
+- [ ] Common principal/evidence and connector contract; preserve multiple OIDC providers.
+- [ ] LDAP and API auth relay adapters with bounded credential translation.
+- [ ] Any/all/step-up composition, network principals and Pumgye kind constraints.
+- [ ] Native/HTTP parity, unified management, failure/revocation/security qualification and deployment.

@@ -27,7 +27,7 @@ HOP1/HGD1 실 프로세스에서 허용·guest/observe/차단 거부, CAS 충돌
 
 ## 수문장 실행 파일·릴리즈 완료
 
-2026-10-13 Guard #3 머지 및 [수문장 v0.3.2](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.2)
+2026-10-13 Guard #3 머지 및 [수문장 v0.3.2](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.2)
 공개 완료. main CI 38322290197에서 네 플랫폼이 모두 통과했습니다. 업로드된 22개
 자산의 크기와 GitHub SHA-256을 대조했고 기본/호환 서명 쌍을 Ed25519 공개키로
 독립 검증했습니다.

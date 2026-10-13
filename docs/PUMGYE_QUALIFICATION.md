@@ -2,7 +2,7 @@
 
 Verified Linux deployment: 2026-10-13. Integration source is merged in
 [Hangang #5](https://github.com/ziozzang/hangang/pull/5),
-[Guard #2](https://github.com/ziozzang/hangang-guard/pull/2) and
+[Guard #2](https://github.com/ziozzang/sumunjang/pull/2) and
 [Hopae #3](https://github.com/ziozzang/hopae/pull/3).
 [Pumgye](https://github.com/ziozzang/pumgye) is public.
 
@@ -44,10 +44,10 @@ runtime integrations remain future work by the user's scoped instruction.
 
 ## Sumunjang executable / release completion
 
-2026-10-13: [Guard #3](https://github.com/ziozzang/hangang-guard/pull/3) merged;
-[Sumunjang v0.3.2](https://github.com/ziozzang/hangang-guard/releases/tag/v0.3.2)
+2026-10-13: [Guard #3](https://github.com/ziozzang/sumunjang/pull/3) merged;
+[Sumunjang v0.3.2](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.2)
 is public. Main-source native qualification
-[run 38322290197](https://github.com/ziozzang/hangang-guard/actions/runs/38322290197)
+[run 38322290197](https://github.com/ziozzang/sumunjang/actions/runs/38322290197)
 passed all four platforms. All 22 uploaded asset sizes and GitHub SHA-256 digests
 matched the signed staging tree. Both primary and compatibility manifest pairs
 were independently verified with the pinned Ed25519 public key.

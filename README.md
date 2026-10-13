@@ -5,7 +5,7 @@
 The architecture and contract repository for a zero-trust backbone built around
 [Hangang](https://github.com/ziozzang/hangang),
 [Hopae](https://github.com/ziozzang/hopae), and
-[Guard](https://github.com/ziozzang/hangang-guard).
+[Guard](https://github.com/ziozzang/sumunjang).
 
 Hangang enforces admission and resource policy. Hopae owns user identity,
 sessions and external authentication providers. Sumunjang (the Guard component)

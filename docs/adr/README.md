@@ -28,3 +28,6 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 [ADR 0008: implemented HOP1 and console delegation](0008-hopae-native.md).
 
 [ADR 0013: required snapshot backbone and scale-out membership](0013-snapshot-membership-scaleout.md).
+
+[ADR 0014: proposed credential projection after authorization](0014-credential-projection.md)
+([한국어](../ko/0014-credential-projection.md)).

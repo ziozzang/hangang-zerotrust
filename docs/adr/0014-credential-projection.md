@@ -1,0 +1,61 @@
+# ADR 0014: Service credential projection after authorization
+
+Status: proposed design; no projection endpoint or wire format is implemented.
+
+Current evidence: Hopae returns verified identity through its auth-proxy response.
+Hangang copies configured response headers before evaluating Pumgye permission.
+Returning an upstream secret through this existing path would release it before
+authorization. Explicit mixed-token routing unwraps inbound credentials only;
+it does not implement outbound credential translation.
+
+The proposed sequence is:
+
+1. Hopae authenticates the human/service/workload and issues a short, opaque
+   authentication receipt. Sumunjang supplies revisioned network evidence.
+2. Hangang resolves the native route/catalog classification and requests Pumgye's
+   decision for the exact principal, service, resource and action.
+3. After permit, Hangang requests projection from Hopae with the authentication
+   receipt and a verifiable Pumgye decision receipt. Guest/deny/error never reaches
+   secret resolution. Receipt signing/channel binding needs a separate executable
+   contract; trusting a caller-supplied `allowed:true` is insufficient.
+4. Hopae rechecks identity freshness/revocation, policy/route revisions, requested
+   audience, approved credential reference and receipt replay state. A native
+   transaction/admission fence owns issuance; Lua cannot mint receipts or grants.
+5. Hangang installs the result only into the bound upstream request after stripping
+   client authentication headers. Route rematch, redirects, stale state or failed
+   revalidation discard the result. Secrets never enter ordinary auth-response
+   headers, browser responses, module RPCs, telemetry or decision caches.
+
+Projection plans cover verified identity headers, audience-bound short JWTs,
+approved bearer references, request-bound HMAC and workload mTLS. Each plan fixes
+target audience, methods, header allowlist, maximum assurance/privileges and secret
+references in native configuration. Cross-provider canonical identity linking is
+explicit; a new token cannot increase source identity assurance. Pumgye retains
+authorization, Hopae identity/issuance, Sumunjang network control and Hangang
+routing/enforcement. No shared multi-writer business schema is introduced.
+
+Issuance is bounded by the earliest identity, network, permission and plan expiry,
+with a proposed decision lease no longer than one second. Credential lifetime and
+connection lifetime are separate: changed policy or revoked identity must also
+terminate affected streams. Snapshot epochs/membership prevent stale replicas
+issuing credentials. An unavailable signer/provider fails closed with bounded
+concurrency/timeouts and circuit breaking, without connector fallback.
+
+Required adversarial qualification before implementation is activated:
+
+| Input/change | Required outcome |
+| --- | --- |
+| Guest or forged permit | No secret lookup or projection |
+| Replayed receipt | No second issuance |
+| Changed host/service/method/path | Reject audience/request mismatch |
+| Revocation or revision change between permit and issuance | Reject stale authorization |
+| Client Authorization or protected identity header | Strip; never merge |
+| Lua-selected URL, key or assurance | Reject undeclared capability |
+| Redirect or reused upstream connection to another audience | Discard credential |
+| HMAC upload exceeds buffering budget | Explicit bounded streaming design or refusal |
+| Signer outage, cancelled call, expired decision | No credential, no weaker fallback |
+
+Open work: receipt schema and cryptographic verifier, dedicated native protocol
+phase, owner publication/rotation APIs, delegated management UI, stream revocation
+and full-stack 10k/100k-QPS qualification. Existing gates validate existing contracts;
+they do not prove this proposed mechanism.

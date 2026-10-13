@@ -721,3 +721,16 @@ qualification. Public signed releases/assets, broader provider/identity gateway
 mixing, Lua, enrollment/recovery/account limits, memory followers and existing
 stream revocation remain required. Earlier internal-v5 notes are historical and
 the complete original goal remains active.
+
+## Authentication extension completion — 2026-10-14
+
+- [x] Native RFC 6238 TOTP compatible with Google Authenticator and equivalent apps; external HTTPS second-factor verification with atomic single-use completion. Source and private candidate qualification exist; production external factors remain unconfigured.
+- [ ] Complete operator/user enrollment, reset, recovery and service-specific factor eligibility with audited changes and account-level admission limits.
+- [ ] Embed a bounded Lua runtime for approved authentication connector orchestration. Apply this extension contract to first-factor authentication, step-up and service-specific credential translation, not only OTP verification.
+- [ ] Keep connector destinations, secret references, TLS policy, factor independence and maximum assurance in native revisioned configuration. Scripts receive minimal typed context and opaque connector references; they cannot assign permissions/AAL or write sessions.
+- [ ] Enforce memory/instruction/wall-time/concurrency budgets, cancellation and circuit breaking. Distinguish valid credential rejection from provider failure; neither script failure nor provider outage enables weaker authentication automatically.
+- [ ] Test mixed-provider flows, challenge/proof replay, publication during in-flight authentication, sandbox escape attempts, secret leakage and Hangang auth-proxy denial. No OTP/proof decision cache may bypass single-use owner commits.
+
+Pumgye owns authorization decisions; Sumunjang contributes network evidence;
+Hopae validates identity and authentication evidence and issues credentials.
+Lua support above is required implementation work, not a released capability.

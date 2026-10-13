@@ -218,3 +218,20 @@ v4 운영 업그레이드 복구에는 일관된 v3 DB 백업이 필요합니다
   완료한 뒤 내부 디렉터리 인증을 활성화합니다.
 - [ ] 내부 도그푸딩을 지속하고 장애·복구·지연·메모리·처리량을 기록한 뒤
   운영 완성과 공개 성능 목표 달성 여부를 판단합니다.
+
+## 필수 2차 인증·확장 작업 — 2026-10-13
+
+- [ ] Google Authenticator 호환 네이티브 TOTP: 등록 확인, 사용자별 seed 암호화,
+  복구·해제, 시도 제한, 프로세스 간 원자 counter 재사용 방지·시계 역행 방어.
+- [ ] 서비스별 step-up과 브라우저·user·audience에 묶인 single-use challenge,
+  코어의 보증 수준·세션·stream 회수, Hangang 통합 관리.
+- [ ] 인증된 binding 응답, 고정 egress·deadline·서킷을 갖춘 외부 인증·요인 API
+  adapter. 필수 요인 장애에서 우회하지 않음.
+- [ ] CPU·메모리·시간 상한, 승인 host 호출, 감사·revision 배포를 갖춘 선택적
+  Lua capability 확장. Script의 세션 발급·AAL 선택은 금지.
+- [ ] 알고리즘·호환성·수명주기·동시성·장애·sandbox·내부 도그푸딩 검증.
+  현재는 설계 요구사항이며 이미 구현된 MFA로 취급하지 않음.
+
+영문·한국어 계약은 호패 main의 `docs/AUTH_GATEWAY.md`에 기록했습니다.
+LDAP 중첩 BER 검사·악성 TLS peer는 소스에서 검증했지만 내부 활성화와 전체
+인증 게이트웨이 완성은 아직 남아 있습니다.

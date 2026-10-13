@@ -226,3 +226,21 @@ Hangang runs image `0.3.2-service-api-647c93b`; Hopae runs
   bounds and commit fencing before enabling directory authentication internally.
 - [ ] Sustain internal dogfooding and record failure/recovery, latency, memory and
   throughput before claiming production completion or public performance targets.
+
+## Required second-factor and extensibility work — 2026-10-13
+
+- [ ] Native TOTP compatible with Google Authenticator: verified enrollment, encrypted
+  per-user seeds, recovery/removal, bounded attempts, atomic cross-process counter
+  replay protection and clock rollback defense.
+- [ ] Service-scoped step-up with browser/user/audience-bound single-use challenges;
+  core-owned assurance and session/stream revocation, integrated Hangang management.
+- [ ] External authentication/factor API adapters with authenticated bound responses,
+  fixed egress, deadlines, circuits and no required-factor bypass.
+- [ ] Capability-limited optional Lua extensions with CPU/memory/time limits, approved
+  host calls and audited revisioned publication. Scripts cannot mint sessions or AAL.
+- [ ] Algorithm/interoperability, lifecycle, concurrency, outage, sandbox and internal
+  dogfooding qualification. These are design requirements, not existing MFA support.
+
+The EN/KO contract is recorded in Hopae `docs/AUTH_GATEWAY.md` on main. LDAP nested
+BER preflight and malicious TLS peers are qualified in source; internal activation
+and full authentication gateway completion remain open.

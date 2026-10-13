@@ -609,3 +609,31 @@ and complete-publication tests; fmt/clippy/boundaries/docs/scenario coverage and
 the existing scoped dependency audit pass. Cross-component validation passes six
 schemas and 21 adversarial/privacy cases. This remains source-only publication
 work, with root activation, browser qualification and public deployment pending.
+
+## External MFA startup configuration and activation — 2026-10-14
+
+Hopae now parses `external_verifiers` as a strict reference-only root setting,
+validates capacity/duplicates/HTTPS/revision/deadline and requires authenticated
+gateway callers. Credentials and CA/client configuration compile before state
+creation/migration/listeners. Startup publishes the full desired set under the
+current owner epoch and snapshot revision before installing its Services registry.
+An empty set reconciles removed authorities on restart. Invalid material and
+publication conflicts refuse startup, with redacted material diagnostics.
+
+`factor.registry_published` is a separate required atomic event, preserving the
+meaning of application `config.loaded`; 33 event kinds include 28 required and
+five diagnostic kinds. Owned real-process qualification proves configured
+startup publication and removal/restart disable without remote verifier calls.
+Unit tests cover missing material before state creation, duplicates, caller
+authentication and secret redaction. This supersedes missing-root-wiring notes.
+
+The browser chooser/response forms, external enrollment, Lua, live reconfiguration
+and distributed rollout remain open. TOTP assurance behavior is unchanged; this
+setting alone does not enable external browser MFA. Operational schema-v5 image
+is unchanged and public release/deployment remain part of the active full goal.
+
+Validation: final serial Hopae gates pass 854 tests, 42 ignored; fmt/clippy,
+boundary/docs/scenario checks and the existing scoped audit pass. Startup smoke
+now accounts for the separate required registry event. Individual authority
+publication uses `factor.authority_published`, keeping `config.loaded` specific
+to the application. Cross-component checks pass six schemas and 21 cases.

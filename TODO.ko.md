@@ -562,3 +562,26 @@ snapshot, 잘못된 epoch, 뒤늦은 factor 충돌과 최종 감사 실패를 �
 42건 제외입니다. fmt·clippy·boundary·문서·시나리오 커버리지와 기존 범위의 의존성
 audit를 통과했습니다. 통합 계약도 schema 6건과 적대적·개인정보 사례 21건을
 통과했습니다. 소스 게시 단계이며 root 활성화·브라우저 검증·공개 배포는 후속입니다.
+
+## 외부 MFA 시작 설정·활성화 — 2026-10-14
+
+호패가 `external_verifiers`를 엄격한 참조 전용 root 설정으로 파싱하고 용량·중복·HTTPS·
+revision·기한을 검사하며 gateway caller 인증을 요구합니다. 자격·CA·클라이언트는 상태
+생성·마이그레이션·리스너 전에 컴파일합니다. 시작 시 소유자 epoch·snapshot revision으로
+전체 원하는 구성을 게시한 뒤 Services registry를 설치하며 빈 구성도 재시작 시 제거를
+정합 처리합니다. 잘못된 값·게시 충돌은 시작을 거부하고 비밀 값은 오류에 출력하지 않습니다.
+
+별도 필수 원자 이벤트 `factor.registry_published`로 전체 앱 `config.loaded`의 의미를
+유지합니다. 이벤트 33개 중 필수 28개·진단 5개입니다. 자체 실제 프로세스 검증으로 원격
+verifier 호출 없이 설정된 시작 게시와 설정 제거·재시작의 비활성화를 확인합니다. 단위
+테스트는 상태 생성 전 비밀 누락, 중복, caller 인증과 비밀 출력 방지를 다룹니다.
+과거 root 연결 부재 기록을 대체합니다.
+
+브라우저 chooser·응답 폼, 외부 등록, Lua, 실시간 재설정과 분산 운영은 후속입니다.
+TOTP 인증등급 동작은 유지하며 이 설정만으로 외부 브라우저 MFA가 활성화되지는 않습니다.
+운영 schema v5 이미지도 유지하고 공개 릴리스·배포는 전체 활성 목표에 남아 있습니다.
+
+검증: 최종 직렬 호패 gates는 854건 통과, 42건 제외이며 fmt·clippy·boundary·문서·
+시나리오와 기존 범위 audit를 통과했습니다. 시작 smoke는 별도 필수 registry 이벤트를
+검증합니다. 개별 authority는 `factor.authority_published`로 기록하여 `config.loaded`는
+전체 앱 로딩을 나타냅니다. 통합 계약도 schema 6건과 사례 21건을 통과했습니다.

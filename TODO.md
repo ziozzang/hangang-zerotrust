@@ -319,3 +319,26 @@ integration, 367 scenarios), 41 ignored, plus formatting, clippy, boundary, docs
 scenario coverage and dependency audit under the existing scoped advisory policy.
 Cross-component contract validation passes six schemas and 21 adversarial/privacy
 cases. This is source validation, not an operational external-MFA rollout.
+
+## Atomic native TOTP completion — 2026-10-13
+
+Hopae now implements a native service/owner-storage transaction that verifies a
+real TOTP code and atomically consumes a bound `stepup` transaction plus the
+revision-fenced counter, records the factor, raises session/portal AAL, advances
+credential generation, revokes all prior handles and pending handoffs, and
+inserts the new portal handle plus exact-target elevated handoff. Primary
+provider authentication time is preserved. Required audit/outbox writes share
+the transaction. Native factor actors now also fence stored provider kind/config
+changes between authorization and final owner commit.
+
+Tests cover the success state, one concurrent winner and rollback on invalid
+code/audit/challenge/target/generation/handle/provider/state/expiry/enrollment.
+Browser step-up creation, CSRF/both browser bindings, live application-policy
+and publication-epoch checks, recovery/navigation and operational MFA activation
+remain mandatory. This primitive is not an enabled browser endpoint. Source
+schema remains v5; the internal owner-v5-d876909 image is unchanged.
+
+Validation: full serial Hopae gates pass 831 tests (449 library, 15 other
+integration, 367 scenarios), 41 ignored; fmt/clippy/boundary/docs/scenario coverage
+and dependency audit pass under the existing scoped advisory policy. Cross-component
+contract validation passes six schemas and 21 adversarial/privacy cases.

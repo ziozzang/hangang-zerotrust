@@ -775,3 +775,24 @@ failures. All original eight macOS failures are resolved. Release Rust sources,
 dependencies/templates/vendor remain identical to `v0.0.3`; assets/deployment
 are unchanged. Intel macOS execution qualification is still pending; the release
 remains a draft. Lua and the rest of the full integration goal remain open.
+
+## Embedded Lua eligibility source — 2026-10-14
+
+Hopae main `1341bae` embeds vendored Lua 5.4.9 through mlua 0.12.2 and connects
+optional `external_verifiers[].eligibility_lua` to native HTTPS factor verification.
+The script sees only owner service/connector/subject identifiers in a fresh VM;
+standard libraries, secrets, network/filesystem, session writes and grant/AAL
+authority are unavailable. Strict boolean false rejects without upstream calls;
+errors fail closed; true still requires transport-authenticated bound proof and
+native atomic completion. Limits: source 16 KiB, heap 256 KiB, at most 20,100
+instructions, total evaluation five milliseconds and 64 calls per connector.
+The script participates in the revisioned authority fingerprint; omitted scripts
+preserve existing serialized binding material.
+
+Linux gates pass 863 tests, 42 ignored, including hostile execution, sandbox
+capabilities, syntax/startup configuration and real owned HTTPS denial/proof
+validation. Source-only qualification does not prove optimized artifacts, macOS
+native Lua execution, browser Lua behavior or deployment. Existing 0.0.3 tag,
+draft assets and internal image remain unchanged. Full Lua connector orchestration,
+first-factor integration, credential translation, service enrollment/recovery,
+global/account admission and the remaining distributed/performance goal stay open.

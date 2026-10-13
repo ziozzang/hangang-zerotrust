@@ -705,3 +705,20 @@ Linux gates와 네이티브 macOS ARM64 테스트는 각각 860건 통과·42건
 기존 macOS 실패 8건을 모두 해결했습니다. 릴리스 Rust 소스·의존성·template·vendor는
 `v0.0.3`과 같고 asset·배포도 유지합니다. Intel macOS 실행 검증은 아직 남아 릴리스는
 초안입니다. Lua와 나머지 전체 통합 목표도 후속입니다.
+
+## 내장 Lua 사용 조건 소스 — 2026-10-14
+
+호패 main `1341bae`는 mlua 0.12.2로 vendored Lua 5.4.9를 내장하고 선택적인
+`external_verifiers[].eligibility_lua`를 네이티브 HTTPS factor 검증에 연결했습니다.
+매 실행의 새 VM에는 소유자의 서비스·커넥터·사용자 식별자만 제공하며 표준 라이브러리·
+비밀·네트워크·파일·session 쓰기·권한·AAL 지정은 제공하지 않습니다. boolean false는
+upstream 호출 전에 거부하고 오류도 거부합니다. true도 인증된 전송의 결합된 proof와
+네이티브 원자적 완료를 거칩니다. 소스 16 KiB·heap 256 KiB·최대 20,100개 명령·
+전체 실행 5ms·커넥터별 동시 호출 64개를 제한합니다. 스크립트는 버전 authority
+fingerprint에 포함되며 생략하면 기존 직렬화한 binding을 유지합니다.
+
+Linux gates는 863건 통과·42건 ignored로 악성 실행·sandbox 기능·문법·시작 설정과
+실제 소유 HTTPS 거절·proof 검증을 포함합니다. 소스 검증만으로 최적화 artifact·macOS
+네이티브 Lua·브라우저 Lua·배포를 주장하지 않습니다. 기존 0.0.3 태그·초안 asset·
+내부 이미지는 유지합니다. 범용 Lua 커넥터 조합·1차 인증 연결·자격 변환·서비스별
+등록·복구·전체·계정 유입 제한과 나머지 분산·성능 목표는 후속입니다.

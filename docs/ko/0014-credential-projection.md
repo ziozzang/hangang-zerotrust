@@ -82,3 +82,5 @@ receipt schema·암호 검증·별도 네이티브 단계·소유자 게시/회�
 호패 `96f9d85`는 불투명한 검증 receipt의 소스 단계 원자적 소비 helper를 추가합니다. immediate 소유자 transaction에서 registry revision·네이티브 시각·권한을 다시 확인하고 authority/용도/nonce hash를 한 번 기록하며 관련 DB 작업을 함께 commit합니다. 작업 실패·작업 중 만료는 둘 다 취소합니다. 저장된 clock floor·monotonic 시간 검사는 정리/rollback을 보호하고 정렬된 meta 만료 인덱스는 호출당 최대 128개 쌍을 정리하며 활성 100만 개 한계를 둡니다. receipt 테스트 12건·fmt·clippy·경계·문서 검사가 통과했습니다. callback은 commit 전에 자격·취소 불가능한 네트워크 결과를 노출하면 안 됩니다. endpoint·분산 복원 floor·전체 스택 성능은 후속/미검증이며 운영 상태는 유지합니다.
 
 호패 `6aa88d8`는 독립 SQLite 연결 8개의 동기화 소비에서 한 호출만 commit하고 관련 작업 count도 정확히 1이며 DB 재연결 후 재사용을 거부함을 검증합니다. 마지막 actor 회수는 nonce·작업을 함께 취소하고 이후 허용된 재시도는 성공합니다. receipt 테스트 14건·fmt·clippy·경계·문서 검사가 통과했습니다. transaction 남용 검증이며 활성 발급 endpoint·분산 membership 보장·처리량 benchmark는 아니고 운영은 유지합니다.
+
+Hopae `5a6befb`는 호출자 작업·마지막 권한 검사 후 만료 검사와 commit 직전에 DB registry revision을 재검사합니다. 작업 내부 registry 변경 시 registry·nonce·작업이 함께 rollback되고 정상 재시도는 성공하는 회귀 테스트를 포함해 receipt 테스트 15건 및 fmt/clippy/boundary/docs 검사가 통과했습니다. 자격 endpoint 활성화·분산 검증은 남아 있으며 운영 상태는 유지됩니다.

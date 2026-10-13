@@ -447,3 +447,30 @@ Recovery/key lifecycle/account/fleet admission/navigation, real production-user
 MFA, external MFA API/Lua, distributed memory followers, stream revocation,
 full-stack 10k/100k performance and public releases remain required unfinished
 work. Earlier internal image notes record prior stages; the full goal stays active.
+
+## LDAP credential decoder and dispatch hardening — 2026-10-14
+
+Hopae's credential-only ldap3 fork now gates response semantics before upstream
+infallible parsers: message/result/entry/referral/control shape, integer bounds,
+UTF-8 and control Boolean lengths. Binary attribute values and the AD outer-OID
+workaround remain supported. Each single response is matched to its request
+operation; wrong search result kinds become I/O errors. Credential searches
+are capped at eight response frames before enqueueing, independent of a server
+size-limit hint (512 KiB maximum queued wire payload per operation at the existing
+64 KiB frame cap; parser/connection overhead is additional).
+
+Six vendored tests cover valid/malformed downstream parsing and deterministic
+wire mutations. The owned directory fixture passes real LDAPS and mandatory
+StartTLS plus peers holding connections open after empty/malformed/control/
+wrong-operation responses or nine search entries without completion; client
+closure and unavailable classification occur within one second. This is not a
+complete generic LDAP/control/GSSAPI review. Runtime configuration remains
+activation-gated until actual LDAP browser/session/revocation qualification.
+The internal native-MFA image is unchanged by this source-only work.
+
+Validation: full serial Hopae gates pass 837 tests, 41 ignored, and the existing
+scoped audit policy. The first full run saw one 503 in the owned OTP bootstrap;
+the isolated test and complete rerun passed. Failure diagnostics now include only
+the public refusal reason. Its cause is not established and the intermittent
+condition remains a qualification issue to investigate, not a performance pass.
+Cross-component validation passes six schemas and 21 adversarial/privacy cases.

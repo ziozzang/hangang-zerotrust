@@ -132,3 +132,11 @@ v0.3.2 이하 바이너리는 고정된 구 GitHub API의 리다이렉트를 거
 고정 키 서명/해시를 검증한 수문장 0.3.4 GNU·Hangang 정적 바이너리를 내부 설치하고 독립 수문장 CA의 mTLS 네이티브 질의 연결을 적용했습니다. 기존 observe 정책·collector/admin 자격 정보·provider/유저/서비스 할당은 유지했습니다. 실제 HTTPS에서 세 메뉴·품계 조회·호패 SSO 진입·로그아웃을 확인했습니다. 배포된 HGD1 핸드셰이크/질의의 인증서/이름 검증을 통과했고 클라이언트 인증서 없는 연결을 거부했습니다. 일관된 DB 백업과 롤백 자료는 비공개입니다.
 
 공개 크로스플랫폼 0.3.4 자산은 아직 게시하지 않았습니다. 감독형 updater는 활성 상태이며 내부 설치 0.3.4를 더 낮은 공개 0.3.3으로 내리지 않고 현재 이를 거부합니다. 전체 인증 connector/변환/수명주기·전체 처리량 검증은 남아 있고 네이티브 전송 테스트를 전체 스택 100k QPS 근거로 사용하지 않습니다.
+
+## 서비스 API 권한·내부 dogfooding — 2026-10-13
+
+호패 main에 인메모리 SHA-256 index·IPv4/IPv6 prefix tree의 서비스 범위 API 인증을 추가했습니다. 환경변수 참조·realm·host/port audience·제한된 만료를 명시적으로 설정합니다. credential이 없을 때만 설정에 따라 기존 세션 엔진을 사용할 수 있고, 제시한 credential이 잘못되면 유효한 브라우저 세션으로 전환하지 않습니다. 서비스 신원은 사람 신원과 분리하고 AAL 0과 인증 서비스 audience를 전달합니다. Hangang main은 강제되는 품계 게이트·정확한 audience·명시적인 subject 권한·메서드/등급/network 조건·명시적으로 AAL 0을 허용한 역할을 요구합니다. 정책/변환 전에 credential을 소비하고 upstream 직전에 다시 제거합니다.
+
+실제 debug 및 로컬 정적 바이너리의 mTLS HOP1/PPG1 세 프로세스 fixture에서 영속 권한 회수/복원·Guest 거부·network/등급/사람 assurance 요구 거부·서비스 범위 격리·품계 장애 시 거부를 통과했습니다. 이 fixture에 수문장은 포함하지 않습니다. 기존 신원/서비스/grant를 유지한 채 생성한 서비스 전용 프로브 credential 하나와 읽기 전용 품계 권한으로 내부 배포했습니다. 네이티브 TLS ingress에서 실제 서비스 인증·미등록/잘못된/위조 신원/메서드 거부·upstream Authorization 제거를 통과했습니다. 브라우저에서 서비스 매트릭스·통합 모듈 메뉴·기존 SSO·로그아웃 정리도 검증했습니다.
+
+내부 프로브에는 명시적인 named HTTPS listener 범위가 필요합니다. network 정책은 지정된 사설망과 루프백만 허용하고 이 범위 밖의 공인 DNS hairpin 요청은 의도적으로 거부합니다. 일관된 백업·credential·재사용 가능한 비공개 검증은 공개 저장소 밖에 둡니다. 새 공개 크로스플랫폼 릴리즈는 아닙니다. 현재 파일 소유 API profile 변경에는 재시작이 필요합니다. DB 게시·관리·credential 회전/변환·스트리밍 credential 회수·LDAP/자체 비밀번호/원격 API 릴레이·전체 처리량 검증은 남아 있습니다.

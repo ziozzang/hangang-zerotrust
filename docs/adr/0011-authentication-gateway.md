@@ -57,6 +57,32 @@ Keep incoming credentials, verified identity and outgoing credentials distinct.
 Only an authorized upstream request receives translated credentials; browser
 responses, caches, logs, traces and ontology records must not expose them.
 
+## Full lifecycle and native auth-proxy integration
+
+Hopae is a native authentication subsystem of the Hangang stack. Reuse the
+Hangang auth-proxy request path, trusted transport context, configuration authority
+and console; provider-specific logic remains Hopae-owned. The pipeline is input
+extraction -> Hopae verification/composition -> Pumgye permission decision ->
+service-bound credential rendering -> authorized upstream request.
+
+Support external and local authentication through the same connector contract.
+Separate inbound protocols from outbound service adapters: verified identity can
+be rendered as explicitly configured identity headers, Basic, bearer/JWT or token
+exchange. Formats are extensible, but an adapter is only supported once its actual
+runtime and tests exist. Secrets are not generic template variables or browser
+outputs. Credentials remain bound to target service, audience, principal and policy
+revision; output delivery must occur only after access authorization.
+
+Own the complete lifecycle: login/logout, step-up, sessions, token issuance,
+translation, rotation, expiration, revocation, administrative disablement and audit.
+Per-connector and per-output-endpoint circuit breakers have closed/open/half-open
+states, bounded thresholds, deadlines/concurrency and limited recovery probes.
+Transient outage and security quarantine are separate outcomes. Quarantined trust
+requires explicit reapproval; an outage/open mandatory breaker cannot grant access
+through an undeclared weaker fallback. Surface health and breaker reason/state in
+unified administration. Current browser-OIDC paths must retain their existing
+security properties during the migration.
+
 ## Implementation procedure and acceptance gates
 
 1. Define bounded evidence/principal schemas and connector health/capabilities.

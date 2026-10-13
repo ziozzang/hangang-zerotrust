@@ -158,3 +158,15 @@ for mapping, request/session checks and ownership boundaries.
 [Scale-out design](docs/adr/0013-snapshot-membership-scaleout.md) records memory snapshots, domain DB backbones, leased membership and Hangang pool/watch obligations. Implementation and fleet qualification remain pending.
 
 [Kubernetes and IAM source integration](docs/adr/0015-kubernetes-iam-authority.md): Hangang already supports Ingress; complete Hopae/Pumgye/Sumunjang authority adapters remain proposed.
+
+```mermaid
+flowchart LR
+  K["Kubernetes API: source of truth / 원천 (proposed)"] -->|Ingress / Service: implemented| H[Hangang]
+  K -.->|ServiceAccount / TokenReview| O[Hopae]
+  K -.->|Role / Binding / extension policy| P[Pumgye]
+  K -.->|NetworkPolicy / selectors| S[Sumunjang]
+  U[Hangang console] -.->|source-aware publication| K
+  O --> H
+  S --> H
+  H --> P
+```

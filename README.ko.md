@@ -128,3 +128,15 @@ logprob 기반 후보 분포를 판단 보조에 활용하며 다른 백엔드�
 [스케일아웃 설계](docs/ko/0013-snapshot-membership-scaleout.md)에 메모리 스냅샷·도메인 DB 백본·lease 멤버십·Hangang 풀/구독 의무를 기록했습니다. 실제 fleet 구현·검증은 진행 예정입니다.
 
 [Kubernetes·IAM 원천 연동](docs/ko/0015-kubernetes-iam-authority.md): 한강 Ingress는 구현되어 있으며, 호패·품계·수문장 원천 연결기는 별도 구현 예정입니다.
+
+```mermaid
+flowchart LR
+  K["Kubernetes API: source of truth / 원천 (proposed)"] -->|Ingress / Service: implemented| H[Hangang]
+  K -.->|ServiceAccount / TokenReview| O[Hopae]
+  K -.->|Role / Binding / extension policy| P[Pumgye]
+  K -.->|NetworkPolicy / selectors| S[Sumunjang]
+  U[Hangang console] -.->|source-aware publication| K
+  O --> H
+  S --> H
+  H --> P
+```

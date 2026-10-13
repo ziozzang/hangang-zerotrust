@@ -14,6 +14,15 @@ ledger or credential issuance. The request digest is supplied from native contex
 canonical request hashing and authenticated receipt verification still need runtime
 implementation. Historical fixture timestamps are never live credential leases.
 
+Hopae source `1322163` now implements the digest primitive: domain
+`hangang-zerotrust:credential-projection:request:v1` plus NUL, then SHA-256 over
+u32 big-endian length-prefixed service, audience, method, exact origin-form target
+and complete entity SHA-256. Encoding/query order are preserved. Native tests
+and an independent Python vector agree for `ab`, `c`, `GET`, `/private?x=1`, empty
+entity: `234488f459d8b3069a74d308d639fa9bfb402b12a9544a413c06c6136a8dab11`.
+Two tests and fmt/clippy/boundary/docs checks pass. Routing integration, receipt
+authentication and issuance remain unfinished; no deployment behavior changes.
+
 Current evidence: Hopae returns verified identity through its auth-proxy response.
 Hangang copies configured response headers before evaluating Pumgye permission.
 Returning an upstream secret through this existing path would release it before

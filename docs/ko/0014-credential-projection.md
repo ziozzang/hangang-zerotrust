@@ -11,6 +11,15 @@
 네이티브 문맥에서 제공하며 canonical hashing과 receipt 인증은 런타임 구현이 필요합니다.
 예제의 과거 시각은 실제 자격 lease가 아닙니다.
 
+호패 소스 `1322163`은 digest 기본 함수를 구현했습니다. domain
+`hangang-zerotrust:credential-projection:request:v1`과 NUL 뒤에 서비스·대상·method·
+정확한 origin-form target·완전한 entity SHA-256을 u32 big-endian 길이와 함께
+해시하며 encoding·query 순서를 유지합니다. `ab`, `c`, `GET`, `/private?x=1`, 빈
+entity의 네이티브·독립 Python 벡터는
+`234488f459d8b3069a74d308d639fa9bfb402b12a9544a413c06c6136a8dab11`로 일치합니다.
+테스트 2건·fmt·clippy·경계·문서 검사가 통과했습니다. 라우팅 연결·receipt 인증·발급은
+후속이며 현재 배포 동작은 바뀌지 않습니다.
+
 현재 호패는 auth-proxy 응답으로 검증된 신원을 반환하고 한강은 설정된 응답 header를
 복사한 뒤 품계 권한을 판단합니다. 이 경로로 upstream 비밀을 반환하면 권한 확인 전에
 자격을 전달하게 됩니다. 현재 접두사 혼합 라우팅은 입력 자격을 풀어 전달하는 기능이며

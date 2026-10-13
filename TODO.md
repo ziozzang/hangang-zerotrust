@@ -796,3 +796,16 @@ native Lua execution, browser Lua behavior or deployment. Existing 0.0.3 tag,
 draft assets and internal image remain unchanged. Full Lua connector orchestration,
 first-factor integration, credential translation, service enrollment/recovery,
 global/account admission and the remaining distributed/performance goal stay open.
+
+## Lua optimized/native qualification and dogfooding — 2026-10-14
+
+The optimized static Linux `1341bae` candidate passes actual Chromium external
+MFA with service/connector Lua eligibility, TOTP coexistence, old-handle refusal
+and HTTP/pooled mTLS HOP1 service parity on a private owner-state copy. Three
+native macOS ARM64 Lua/HTTPS tests pass. Internal Hopae now runs
+`0.0.3-lua-1341bae`, schema v6; existing configuration and keys are preserved,
+consistent stopped v6 owner/delegation backups and the previous image are retained,
+and live API/matrix/module/SSO/logout/Origin/native regressions pass. Production
+external factors/scripts remain unconfigured, with no fixture identities introduced.
+Public tagged 0.0.3 artifacts remain the earlier non-Lua release candidate; the
+draft/Intel execution gap and complete remaining integration scope are unchanged.

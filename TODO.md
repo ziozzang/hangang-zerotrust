@@ -266,3 +266,18 @@ Tools and EN/KO evidence are on Hopae main (`d876909`). This qualifies offline
 migration/CLI rollback, not full application boot or operational deployment.
 Production is unchanged. Next: build the candidate image, qualify full boot and existing
 service/SSO/console flows, and perform migration-aware rollout with backup restoration.
+
+## Latest internal Hopae rollout — 2026-10-13
+
+Hopae is now deployed internally as `0.0.2-owner-v5-d876909` with actual schema v5.
+A parallel candidate and consistent v3 backup preceded the upgrade. Live Hangang
+HTTPS service authorization/denial/credential stripping, module menus, independent
+Pumgye matrix, SSO entry/logout/origin isolation and native mTLS regressions passed.
+Original configuration/provider selection is unchanged; private migration-aware rollback
+material is retained. Earlier notes saying internal schema v3 describe prior state.
+
+LDAP remains activation-gated; TOTP primitives/encrypted lifecycle/verification are
+present in the image but enrollment/step-up routes are not implemented. The full
+authentication gateway, factor/session atomicity, recovery/UI, distributed scaling,
+full-stack performance and public multi-platform releases remain mandatory unfinished
+work. Dogfooding now runs the latest validated runtime source.

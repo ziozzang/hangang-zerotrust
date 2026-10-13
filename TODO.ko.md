@@ -110,3 +110,11 @@ v0.3.2 이하 바이너리는 고정된 구 GitHub API의 리다이렉트를 거
 - [ ] 호패·수문장·품계의 인증된 snapshot/outbox 어댑터, 보호된 검증 인덱스와 세션/토큰 회수.
 - [ ] lease 멤버십 authority, Hangang watch/재동기화·제한된 풀·incarnation/리비전 fencing·드레인.
 - [ ] 실제 복제본 증감·partition·통지 유실·오래된 근거·세션/네트워크/역할 회수와 지속 전체 경로 스케일아웃 검증.
+
+## 독립 품계 검증·내부 배포 — 2026-10-13
+
+[Pumgye #1](https://github.com/ziozzang/pumgye/pull/1)에서 순수 권한 코어·제한된 PPG1 codec·지속 mTLS client·독립 SQLite 소유 서버를 분리했습니다. [Pumgye #2](https://github.com/ziozzang/pumgye/pull/2)는 실제 Hangang/품계 두 프로세스 검증을 추가했습니다. [Hangang #7](https://github.com/ziozzang/hangang/pull/7)은 머지되었으며 원격 네이티브 판단·소유 서버의 정책/상태/감사 위임·권한 범위 CAS·정책 변경/서버 장애 시 스트림 종료를 구현합니다. 이 회귀 검증에서 호패/수문장의 근거는 소유한 프로토콜 fixture이며 실제 컴포넌트 서버는 아닙니다.
+
+독립 품계 서버를 내부에 배포했습니다. mTLS 필수, 판단/관리 자격 분리, 초기 서비스 매트릭스 비어 있음, 정책 revision 1입니다. 배포된 PPG1에서 미등록 서비스 거부와 클라이언트 인증서 없는 연결 거부를 확인했습니다. 사용자/서비스 권한은 부여하지 않았습니다. Hangang 0.3.2 CLI·OpenAPI 검증은 통과했으며 로컬 정적 릴리즈 빌드와 게이트웨이/콘솔 활성화는 진행 중입니다. 비용에 관한 사용자 요청에 따라 GitHub Actions는 비활성 상태로 유지합니다.
+
+복제 서버 membership·분산 snapshot·호패 전체 인증 게이트웨이 connector 구현은 남아 있습니다. 이번 배포를 해당 보장이나 전체 스택 100k QPS의 근거로 사용하지 않습니다.

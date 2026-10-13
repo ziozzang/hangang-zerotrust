@@ -127,3 +127,11 @@ Binaries through v0.3.2 require a one-time signature-verified v0.3.3 bootstrap b
 - [ ] Authenticated snapshot/outbox adapters for Hopae, Sumunjang and Pumgye; protected verification indexes and session/token revocation.
 - [ ] Leased membership authority and Hangang watch/resync, bounded endpoint pools, incarnation/revision fencing and drain handling.
 - [ ] Actual replica churn, partitions, lost notifications, stale proofs, session/network/role revocation and sustained end-to-end scale-out qualification.
+
+## Independent Pumgye qualification and internal deployment — 2026-10-13
+
+[Pumgye #1](https://github.com/ziozzang/pumgye/pull/1) separates the pure authorization core, bounded PPG1 codec, persistent mTLS client and independently owned SQLite-backed authority server. [Pumgye #2](https://github.com/ziozzang/pumgye/pull/2) adds the owned two-process Hangang qualification. [Hangang #7](https://github.com/ziozzang/hangang/pull/7) is merged: native remote decisions, owner-delegated policy/status/audit, authority-scope CAS, and stream retirement on policy changes or authority outage. The regression uses actual Hangang/Pumgye processes; Hopae and Sumunjang evidence sources in that regression are owned protocol fixtures, not full component processes.
+
+The independent Pumgye server is running internally with required mTLS, separate decision/management credentials, an empty initial service matrix and policy revision 1. Deployed native PPG1 denied an unassigned service; missing client certificates were rejected. No user/service permissions were granted. Hangang 0.3.2 CLI and OpenAPI checks passed; its local static release build and gateway/console activation are still pending. GitHub Actions stays disabled at the owner's request to avoid CI costs.
+
+Replica membership, fleet snapshots and full Hopae authentication-gateway connectors remain implementation work. This deployment does not establish those guarantees or whole-stack 100k QPS.

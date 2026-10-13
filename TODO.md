@@ -103,3 +103,11 @@ enabled Hangang administrator; no account/grant is created or altered.
 - [ ] LDAP and API auth relay adapters with bounded credential translation.
 - [ ] Any/all/step-up composition, network principals and Pumgye kind constraints.
 - [ ] Native/HTTP parity, unified management, failure/revocation/security qualification and deployment.
+
+## Independent distributed runtimes
+
+- [x] Required independent Hopae / Sumunjang / Pumgye ownership (ADR 0012).
+- [ ] Standalone Pumgye authority, persistence/CAS and decision server.
+- [ ] Authenticated remote HOP1/HGD1/Pumgye transport and scoped admin delegation.
+- [ ] Replica revision/expiry/revocation and breaker/failover qualification.
+- [ ] Three-process native integration and sustained/end-to-end throughput evidence.

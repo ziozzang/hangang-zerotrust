@@ -99,3 +99,5 @@ Jangbu/Sacho/Sillok/Saheon remain separately scoped observability/ontology/audit
 integration designs. Models cannot produce authenticated evidence or grant rights.
 
 Reference contracts: [OAuth token introspection (RFC 7662)](https://www.rfc-editor.org/rfc/rfc7662), [token exchange (RFC 8693)](https://www.rfc-editor.org/rfc/rfc8693), and [LDAP authentication (RFC 4513)](https://www.rfc-editor.org/rfc/rfc4513). These are design references; protocol support requires implementation evidence.
+
+Independent runtime ownership is required by [ADR 0012](0012-independent-runtime.md).

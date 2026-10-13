@@ -244,3 +244,13 @@ Hangang runs image `0.3.2-service-api-647c93b`; Hopae runs
 The EN/KO contract is recorded in Hopae `docs/AUTH_GATEWAY.md` on main. LDAP nested
 BER preflight and malicious TLS peers are qualified in source; internal activation
 and full authentication gateway completion remain open.
+
+## TOTP owner schema and deployment follow-up — 2026-10-13
+
+Hopae main now includes schema v5 encrypted enrollment lifecycle and monotonic
+counter consumption. Source tests qualify competing independent SQLite writers,
+owner/revision refusal and revocation; the portal does not invoke these primitives.
+Internal Hopae remains schema v3. The next upgrade/rollback qualification must
+cover v3-to-v5 migration and restoration of a consistent v3 backup; image rollback
+alone is insufficient. Complete challenge/session atomicity, enrollment/recovery/UI,
+key management and real internal MFA dogfooding before marking OTP support complete.

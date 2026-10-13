@@ -542,3 +542,23 @@ root 설정·snapshot 게시, 서비스별 factor 선택·등록, UI·CSRF·유�
 이벤트 개수·테이블 목록 기대값을 갱신했습니다. v6 소스에서 자체 LDAP LDAPS·필수
 StartTLS 런타임 검증도 통과했습니다. 통합 계약은 schema 6건과 적대적·개인정보 사례
 21건을 통과했습니다. 공개 릴리스와 운영 v6 활성화는 남아 있습니다.
+
+## 외부 MFA registry 원자적 정합 처리 — 2026-10-14
+
+호패 불변 registry가 승인된 원하는 전체 구성을 한 소유자 쓰기로 게시합니다. 영속
+게시 revision이 오래된·동시 snapshot을 차단하며 개별 factor 변경도 같은 revision을
+증가시킵니다. 전역 설정 epoch 검사는 별도로 유지합니다. 누락된 활성 authority는
+revision이 있는 disable tombstone으로 바꾸고 인덱스로 관련 elevated session·handle·
+code를 회수합니다. 기존 tombstone의 반복 누락은 revision을 유지하며 proof 해시와
+용량 이력도 유지합니다.
+
+자체 TLS·소유자 테스트로 동시 단일 승자, 제거·회수, proof 유지, 개별 변경 뒤 오래된
+snapshot, 잘못된 epoch, 뒤늦은 factor 충돌과 최종 감사 실패를 검증합니다. 게시 실패는
+새 행·tombstone·세션 회수·감사·게시 revision을 모두 롤백합니다. 게시 성공 후에만
+메모리 registry를 활성화해야 합니다. root·portal 연결, Lua, follower 전파와 운영
+릴리스·배포는 남아 있으며 배포된 schema v5 이미지는 그대로입니다.
+
+검증: registry·전체 게시 테스트를 포함하여 전체 직렬 호패 gates가 851건 통과,
+42건 제외입니다. fmt·clippy·boundary·문서·시나리오 커버리지와 기존 범위의 의존성
+audit를 통과했습니다. 통합 계약도 schema 6건과 적대적·개인정보 사례 21건을
+통과했습니다. 소스 게시 단계이며 root 활성화·브라우저 검증·공개 배포는 후속입니다.

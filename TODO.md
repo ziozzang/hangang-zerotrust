@@ -585,3 +585,27 @@ legacy event-count/table-catalog expectations were updated for the new required
 event and v6 tables. Owned LDAP LDAPS/mandatory-StartTLS runtime qualification
 also passes on v6 source. Cross-component validation passes six schemas and 21
 adversarial/privacy cases. Public release and operational v6 activation remain open.
+
+## Atomic external MFA registry reconciliation — 2026-10-14
+
+Hopae's immutable registry now publishes its complete approved desired set in one
+owner write. A durable publication revision fences stale/concurrent snapshots;
+changed individual factor publication advances the same revision. Global config
+epoch checks remain separate. Omitted enabled authorities become revisioned
+disable tombstones and related elevated sessions/handles/codes are revoked using
+the indexed mapping. Repeated omission retains an existing tombstone revision.
+Proof hashes and capacity history remain intact.
+
+Owned TLS-to-owner tests cover a single concurrent winner, removal/revocation,
+proof retention, a stale snapshot after an individual change, invalid epoch,
+late per-factor conflict and final audit failure. Failed publication rolls back
+new rows, tombstones, session revocations, audit and the publication revision.
+The registry must be activated in memory only after publication succeeds.
+Root/portal wiring, Lua, follower propagation and operational release/deploy are
+still open; the deployed schema-v5 image is unchanged.
+
+Validation: full serial Hopae gates pass 851 tests, 42 ignored, including registry
+and complete-publication tests; fmt/clippy/boundaries/docs/scenario coverage and
+the existing scoped dependency audit pass. Cross-component validation passes six
+schemas and 21 adversarial/privacy cases. This remains source-only publication
+work, with root activation, browser qualification and public deployment pending.

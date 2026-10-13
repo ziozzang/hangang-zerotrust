@@ -2,6 +2,15 @@
 
 상태: 제안 설계입니다. projection endpoint·wire format은 아직 구현하지 않았습니다.
 
+구조 prototype은 [요청 schema](../../schemas/projection_request.schema.json),
+[가상 요청](../../examples/projection_request.json), [검증기](../../tools/validate_contracts.py)에
+있습니다. 요청·결정을 별도의 네이티브 문맥에 결합하고 신원·네트워크·plan·결정 만료 및
+1초 한계를 검사하며 소비된 nonce 쌍을 거부합니다. 함께 위조한 subject, 호출자 권한
+필드, 범위 변경·오래된 버전·만료 사례를 포함합니다. 실행 가능한 계약 테스트이며 서명
+인증·실시간 회수 store·원자적 replay ledger·자격 발급 구현은 아닙니다. 요청 digest는
+네이티브 문맥에서 제공하며 canonical hashing과 receipt 인증은 런타임 구현이 필요합니다.
+예제의 과거 시각은 실제 자격 lease가 아닙니다.
+
 현재 호패는 auth-proxy 응답으로 검증된 신원을 반환하고 한강은 설정된 응답 header를
 복사한 뒤 품계 권한을 판단합니다. 이 경로로 upstream 비밀을 반환하면 권한 확인 전에
 자격을 전달하게 됩니다. 현재 접두사 혼합 라우팅은 입력 자격을 풀어 전달하는 기능이며

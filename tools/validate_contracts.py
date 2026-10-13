@@ -7,7 +7,7 @@ from jsonschema import Draft202012Validator,FormatChecker,ValidationError
 ROOT=Path(__file__).resolve().parents[1]
 def load(name):return json.loads((ROOT/name).read_text())
 validators={}
-for name in ['catalog','policy','bundle','decision','event','membership']:
+for name in ['catalog','policy','bundle','decision','event','membership','projection_request']:
  s=load(f'schemas/{name}.schema.json');Draft202012Validator.check_schema(s);validators[name]=Draft202012Validator(s,format_checker=FormatChecker());validators[name].validate(load(f'examples/{name}.json'))
 def check(c,p,b,check_hashes=False):
  validators['catalog'].validate(c);validators['policy'].validate(p);validators['bundle'].validate(b)
@@ -91,10 +91,52 @@ reject_membership('unapproved epoch reset',lambda m:m.update(authority_epoch='ot
 # Privacy fixture: event envelopes have no credential/body/header escape hatch.
 v=load('examples/event.json');v['authorization']='fixture secret'
 assert not validators['event'].is_valid(v),'credential telemetry must be rejected'
+# Proposed projection structure only; this is not receipt authentication or issuance.
+projection=load('examples/projection_request.json');decision=load('examples/decision.json')
+context={key:copy.deepcopy(value) for key,value in projection.items()}
+for name in ['identity_valid_until','network_valid_until','plan_valid_until']:
+ context[name]=projection['valid_until']
+def projection_structure(request,permit,expected,now,consumed=()):
+ validators['projection_request'].validate(request);validators['decision'].validate(permit)
+ assert permit['outcome']=='allow','non-permit projection'
+ for key in ['request_id','decision_id','subject_ref','resource_id','action','revisions']:
+  assert request[key]==permit[key],'decision binding mismatch'
+ for key in ['request_id','decision_id','subject_ref','resource_id','action','service_id','plan_ref','audience_ref','method','request_digest','authentication_receipt_ref','issuance_nonce']:
+  assert request[key]==expected[key],'native request/plan binding mismatch'
+ assert request['revisions']==expected['revisions'],'stale native revision'
+ issued=datetime.fromisoformat(request['issued_at'].replace('Z','+00:00'))
+ expires=datetime.fromisoformat(request['valid_until'].replace('Z','+00:00'))
+ ceiling=min(datetime.fromisoformat(value.replace('Z','+00:00')) for value in
+  [permit['valid_until'],expected['identity_valid_until'],expected['network_valid_until'],expected['plan_valid_until']])
+ assert issued<=now<expires<=ceiling and 0<(expires-issued).total_seconds()<=1,'invalid projection lease'
+ assert (request['decision_id'],request['issuance_nonce']) not in consumed,'replayed issuance'
+projection_now=datetime.fromisoformat('2026-10-12T00:00:29.750+00:00')
+projection_structure(projection,decision,context,projection_now)
+def reject_projection(name,mutate,permit=None,consumed=()):
+ candidate=copy.deepcopy(projection);mutate(candidate)
+ try:projection_structure(candidate,permit or decision,context,projection_now,consumed)
+ except (AssertionError,ValidationError):cases.append(name);return
+ raise AssertionError('unsafe projection structure accepted: '+name)
+for key in ['subject_ref','service_id','plan_ref','audience_ref','method','request_digest','authentication_receipt_ref','revisions']:
+ replacement={'revisions':{**projection['revisions'],'identity':2},'method':'POST','request_digest':'b'*64}.get(key,'other')
+ reject_projection('projection changed '+key,lambda p,k=key,v=replacement:p.update({k:v}))
+for key in ['authorization','allowed','aal','upstream_url']:
+ reject_projection('projection caller authority '+key,lambda p,k=key:p.update({k:'forged'}))
+reject_projection('projection denied',lambda p:None,{**decision,'outcome':'deny'})
+reject_projection('projection replay',lambda p:None,consumed=[(projection['decision_id'],projection['issuance_nonce'])])
+reject_projection('projection future',lambda p:p.update(issued_at='2026-10-12T00:00:29.900Z'))
+reject_projection('projection expired',lambda p:p.update(valid_until='2026-10-12T00:00:29.700Z'))
+reject_projection('projection prolonged',lambda p:p.update(issued_at='2026-10-12T00:00:28Z'))
+reject_projection('projection jointly forged subject',lambda p:p.update(subject_ref='other'),{**decision,'subject_ref':'other'})
+for name in ['identity_valid_until','network_valid_until','plan_valid_until']:
+ shorter={**context,name:'2026-10-12T00:00:29.800Z'}
+ try:projection_structure(projection,decision,shorter,projection_now)
+ except AssertionError:cases.append('projection exceeds '+name)
+ else:raise AssertionError('projection ignored native freshness ceiling')
 # JSON fixtures use fixed historical times. This is not a live credential validator.
 for md in ROOT.rglob('*.md'):
  for target in re.findall(r'\]\(([^)]+)\)',md.read_text()):
   target=target.split('#',1)[0]
   if not target or '://' in target or target.startswith('mailto:'):continue
   assert (md.parent/target).exists(),f'broken local link: {md.relative_to(ROOT)} -> {target}'
-print(f'PASS: 6 schemas/examples, compatible bundle and {len(cases)+1} adversarial/privacy cases; local documentation links valid.')
+print(f'PASS: {len(validators)} schemas/examples, compatible bundle and {len(cases)+1} adversarial/privacy cases; local documentation links valid.')

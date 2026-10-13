@@ -2,6 +2,18 @@
 
 Status: proposed design; no projection endpoint or wire format is implemented.
 
+Structural prototype: [request schema](../../schemas/projection_request.schema.json),
+[synthetic request](../../examples/projection_request.json) and
+[validator](../../tools/validate_contracts.py). The validator binds request/decision
+to separately supplied native context, caps lifetime at one second and all native
+identity/network/plan/decision deadlines, and rejects consumed nonce pairs. Its
+fixtures include jointly forged subject values, forbidden caller authority fields,
+changed scopes, stale revisions and expiry. These checks are executable contract
+tests, not signature authentication, a live revocation store, an atomic replay
+ledger or credential issuance. The request digest is supplied from native context;
+canonical request hashing and authenticated receipt verification still need runtime
+implementation. Historical fixture timestamps are never live credential leases.
+
 Current evidence: Hopae returns verified identity through its auth-proxy response.
 Hangang copies configured response headers before evaluating Pumgye permission.
 Returning an upstream secret through this existing path would release it before

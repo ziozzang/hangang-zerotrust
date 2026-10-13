@@ -1,0 +1,24 @@
+{
+  "request_id": "example-request-01",
+  "decision_id": "example-decision-01",
+  "subject_ref": "example-subject-01",
+  "resource_id": "finance.reports",
+  "action": "read",
+  "revisions": {
+    "authority_epoch": "example-authority-01",
+    "catalog": 1,
+    "policy": 1,
+    "identity": 1,
+    "network": 1
+  },
+  "schema_version": "0.1.0",
+  "service_id": "finance",
+  "plan_ref": "finance-read-identity",
+  "audience_ref": "finance-upstream",
+  "authentication_receipt_ref": "example-authentication-receipt",
+  "issuance_nonce": "example-single-use-nonce",
+  "method": "GET",
+  "request_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "issued_at": "2026-10-12T00:00:29.500Z",
+  "valid_until": "2026-10-12T00:00:30Z"
+}

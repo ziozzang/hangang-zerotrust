@@ -296,3 +296,26 @@ This is initial registration, not OTP sign-in/step-up. QR/mobile scan, full brow
 account/distributed admission, recent-auth refresh/cancel/removal/recovery UX, atomic
 challenge/session elevation, Hangang navigation and operational MFA rollout remain open.
 Current internal image is still owner-v5-d876909 with no keyring/enrollment enabled.
+
+## External second-factor boundary — 2026-10-13
+
+Hopae now has a dedicated external-factor response validator and an English/Korean
+[extension design](https://github.com/ziozzang/hopae/blob/main/docs/SECOND_FACTOR_EXTENSIONS.md).
+It binds evidence to the server-owned challenge, user, session, exact service/factor,
+configuration revision and credential generation; bounds body/time; rejects extra
+assurance/permission fields; distinguishes context-valid rejection from malformed
+responses. Parsed evidence cannot issue a session or choose AAL. The native core
+retains authority over factor independence, replay consumption and final elevation.
+
+Native TOTP enrollment is implemented in source. External MFA API transport,
+durable proof/challenge consumption, atomic OTP/session step-up, Lua host functions,
+recovery and Hangang navigation remain required implementation work. The existing
+service API relay remains AAL 0 and must never be counted as human MFA. Network/IP
+conditions constrain authentication but do not alone satisfy a second factor.
+Internal image and login policy are unchanged by this source change.
+
+Validation: Hopae serial full gates passed with 828 tests (446 library, 15 other
+integration, 367 scenarios), 41 ignored, plus formatting, clippy, boundary, docs,
+scenario coverage and dependency audit under the existing scoped advisory policy.
+Cross-component contract validation passes six schemas and 21 adversarial/privacy
+cases. This is source validation, not an operational external-MFA rollout.

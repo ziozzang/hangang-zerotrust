@@ -931,3 +931,9 @@ still explicit administrator associations, not automatically verified Hopae
 relationships. Production source mode is not enabled. Automatic workload
 association, followers/watch recovery, CNI integration, full four-component
 Kubernetes deployment and full-chain throughput/release gates remain open.
+
+Hangang `80bdfb4` optimized static console is internally deployed with the previous
+binary retained. Served source-aware assets match exactly; actual unified
+Pumgye/Sumunjang/Hopae menus, policy matrix, logout, native Guard transport and
+SSO checks pass without configuration changes. Production Pumgye remains in native
+mode and its policy is unchanged.

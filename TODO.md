@@ -993,3 +993,35 @@ unchanged. This is real request-chain qualification, not Kubernetes Pod packagin
 Ingress ownership, streaming credential revocation, CNI-wide enforcement,
 distributed watches/followers or full-chain throughput. Conservative polling
 availability intervals and all remaining original goal gates remain open.
+
+
+## Bounded native machine evidence leases — 2026-10-14
+
+Hopae `0cd46ba` exports remaining verified service/workload evidence lifetime over
+HTTP/HOP1 as `x-hopae-evidence-ttl-ms`, capped at 1000 ms; expired evidence produces
+503 without identity. Hangang `ce08314` anchors the lifetime before the native
+exchange, refuses invalid/duplicate/exhausted TTL and attaches expiry to shared
+route retirement, response/upload bodies and upgrades. Legacy trusted peers
+without TTL receive a local one-second cap. The 250 ms retirement polling interval
+is explicit; this is not an exact one-second wire-time guarantee or a cached allow.
+
+An isolated idle-stream test holds policy and origin unchanged and verifies
+retirement within 1.5 seconds. Fifteen resource-policy tests, TTL adversarial unit,
+strict clippy and 892 documentation links pass. The concurrent upstream Ingress
+Host-preservation change was reviewed and integrated without changing Actions
+activation; its test and the resource-policy tests pass after rebase. Hopae native
+library lifetime assertions, actual HTTP/HOP1 retirement scenario, strict clippy
+and EN/KO documentation checks pass. Optimized binaries qualify against the real
+owned v1.37.0 API/four native processes: explicit TTL is present over HTTP and
+mTLS HOP1, a machine stream closes within the evidence/source bound, and previous
+request/credential/revocation checks still pass. Pumgye `f45f38b` maintains that
+qualification. The actual source fixture can retire a stream via source freshness
+as well; the isolated unchanged-policy test proves the native expiry path.
+
+This conservative first lease implementation ends machine operations/streams
+lasting beyond the short evidence lifetime. Authenticated renewal and targeted
+Hopae credential-revocation subscription remain necessary for sustained valid
+long-lived streams. Production images were not switched in this phase; policy,
+keys and release tags remain unchanged. Distributed watches/followers, full
+Kubernetes packaging, remaining providers/lifecycle, full-chain performance and
+public release/operational completion gates remain active.

@@ -90,3 +90,18 @@ display an error and retain its stale revision, and the protected request must
 remain 401 without backend dispatch. No browser storage/session credentials or
 API responses are injected. This gate checks lost-update prevention across console
 delegation and the owning DB authority, not administrator-role isolation.
+
+## Shared-runtime package revision qualification
+
+The actual browser/world fixture also passes with static nonroot images from
+Hopae 6eb07d3, Sumunjang 5de28f3 and Pumgye 200ed48, all pinning runtime
+819177c (0.1.2). Static native and gRPC local four-process chains passed before
+packaging; image archive checksums matched on transfer and images were imported
+on both test nodes. The Kubernetes fixture completed with exit zero and removed
+its owned namespace while retaining synthetic PVs under the existing Retain policy.
+Scope includes the selected gRPC data plane, management mTLS, independent browser
+logins/stale-publication refusal, profile revocation/restoration and Hopae Pod
+replacement, Pumgye durable revocation/Pod replacement, Hangang state persistence
+and network authority outage. Existing ingress regression and operator services
+remain healthy. This qualifies these package revisions on the test cluster; it is
+not production adoption, all native protocol deployment modes or full-stack performance.

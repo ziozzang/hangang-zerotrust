@@ -1478,3 +1478,5 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Sumunjang 5de28f3 shares HGD1 connection ownership, preserving role/TLS/loopback semantics; 35 server tests, workspace/update regressions, strict Clippy, actual management delegation and supervised HUP pass. All three updated authority binaries pass both four-process durable-restart transport chains.
 - [ ] Package the shared-runtime authority revisions and qualify the actual Kubernetes/browser fixture before release/operational adoption.
+
+- [x] Package shared-runtime revisions Hopae 6eb07d3/Sumunjang 5de28f3/Pumgye 200ed48 as qualified static nonroot images, transfer with matching checksums, import both nodes and pass the full actual Kubernetes/browser fixture with stale publication, persisted revocation, Pod replacement and outage checks. Namespace cleanup and existing ingress/operator regression checks pass. Public release and production adoption remain open.

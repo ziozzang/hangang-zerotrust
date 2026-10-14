@@ -295,3 +295,27 @@ not a fleet throughput or sustained real-cluster renewal claim. Production image
 configuration and release tags were not changed. Actual source continuity/watch,
 long-lived real provider qualification, rollout, remaining lifecycle/provider
 features, distributed followers and full performance/release gates remain active.
+
+
+## Actual native workload stream renewal — 2026-10-14
+
+Pumgye `fb53091` maintains `--qualify-renewal` in the actual four-component owned
+Kubernetes fixture. Normal source-authoritative RBAC deletion/recreation, failure
+and restart checks remain. A separate native Pumgye DB holds the previously
+verified candidate fixed to isolate credential renewal from polling health
+withdrawal. This is an explicitly named test isolation, not production fallback
+or Kubernetes RBAC watch-continuity qualification.
+
+Actual Hangang/Hopae/Sumunjang/Pumgye processes and real signed Pod-bound
+credentials sustain heartbeat streaming beyond 2.2 seconds with native evidence
+renewal enabled. Actual Pod deletion closes the stream within the fixture's
+1.5-second post-delete deadline and subsequent authentication returns 401.
+Canonical identity/kind/service/AAL and absence of backend Authorization remain
+verified. The upgraded optimized gateway and the owned v1.37.0 API pass the
+complete fixture; owned processes/resources are cleaned up and production state
+is unchanged. This proves actual provider-backed renewal and credential withdrawal
+under fixed authorization, not dynamic RBAC continuity or fleet performance.
+
+Source watch/follower continuity, failure topology, complete Kubernetes packaging,
+remaining mixed-provider/lifecycle features, full performance, release and rollout
+gates remain active under the original objective.

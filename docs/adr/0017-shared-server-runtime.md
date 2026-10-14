@@ -62,3 +62,16 @@ whole-batch deadline, decoding limits and coherent batch revisions are enforced.
 Hopae/Sumunjang gRPC clients, full actual gateway request-chain qualification,
 credential/channel lifecycle qualification and Kubernetes/production adoption remain
 open; this is not proof of complete gRPC application proxy support.
+
+Hangang 42cc000 adds the Sumunjang gRPC client, selected by
+`--guard-decision-grpc` at the configured decision address with mandatory mTLS.
+Owned actual-server qualification (Sumunjang tool 83092e6) proves enforced
+allow/deny, same-channel block removal/restoration, administrator-role refusal,
+server-name mismatch, no HTTP fallback and cancellation, alongside native parity
+and supervised listener handover. Twenty-two guard tests passed (one existing
+ignored), plus strict Clippy and documentation/publication checks. Admission and
+fresh mandatory authorization evidence now share a monotonic observed revision,
+preventing stale replies from rolling back newer evidence across HTTP signals and
+native/gRPC queries. Optional admission still follows its configured failure policy;
+mandatory Pumgye network evidence is unavailable on failure. Hopae client adoption,
+full gateway request-chain and Kubernetes/production rollout remain unqualified.

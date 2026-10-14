@@ -87,3 +87,23 @@ verification status, repeated cookies, identity and terminal response handling a
 reused, with no HTTP/native fallback or decision caching. Console SSO still uses
 HOP1. Full actual gateway chain, channel/credential lifecycle, Kubernetes and
 production rollout remain unqualified; the overall goal remains incomplete.
+
+## Actual four-process request-chain qualification
+
+Hopae tool 6107b4c qualifies actual Hangang, Hopae, Sumunjang and Pumgye processes
+through an HTTPS protected application route, over both mTLS HOP1/PPG1/HGD1 and
+all-three gRPC decision exchanges. Scope: native API-key or external API relay
+service identities, network evidence, service/IP/class/method permissions,
+guest/invalid credential denial, audience isolation, credential consumption,
+permission revocation/restoration, network block changes and authority outages.
+Every refused request must leave the actual application backend call count unchanged.
+Sumunjang outage/reconnection and Pumgye restart are exercised; revoked permissions
+cannot be resurrected by unchanged bootstrap grants. The gRPC durable-restart case
+also confirms Hopae profile tombstones survive actual restart. External verifier
+variants for both transports prove an open circuit suppresses additional calls.
+The existing three-process fixture also passed as a compatibility regression.
+
+This closes the selected local API-service request-chain gate, not all identity
+flows, all stream modes, generic metadata adapters, actual Kubernetes deployment,
+production release/rollout or fleet performance. Console/UI and Kubernetes package
+qualification remain separate work. No benchmark was run in this functional phase.

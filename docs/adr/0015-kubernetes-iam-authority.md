@@ -159,3 +159,31 @@ Pumgye `ec2fe0f` is qualified against the owned v1.37.0 API for read-only RBAC c
 
 
 Pumgye `f78dda7` implements opt-in sole-writer Kubernetes policy reconciliation using explicit administrator associations. Policy/revision/audit commit before immutable publication; source eligibility is withdrawn before collection and expires at the original one-second observation deadline. A persistent ownership marker rejects native-writer downgrade, startup does not authorize from cached grants, and administrator policy PUT returns 409. Actual owned v1.37.0 API tests verify mTLS HTTP/pooled PPG1 allow/deny parity, durable Binding-deletion revision, recreated UID refusal, credential recovery, writer exclusion and restart fences. Nineteen workspace tests, strict clippy and observation/native transport regressions pass. Hangang `80bdfb4` makes source-owned policies inspectable but read-only; four browser tests pass. This polling mode has collection-time unavailable intervals and is not distributed watch or automatic Hopae identity association; production source mode remains disabled.
+
+
+## UID-pinned Hopae / Pumgye workload association — 2026-10-14
+
+Pumgye `9f203e5` accepts a workload descriptor instead of an opaque native subject
+reference: exact issuer, mapping cluster, namespace, ServiceAccount name/UID and
+Pod name/UID derive Hopae's canonical Workload subject. The RBAC ServiceAccount
+name/namespace must agree, and conflicting native-reference/workload forms fail.
+Identity hashing remains compile-time work; network/Guard/application constraints
+are preserved. This computes an address, not authenticated evidence. Hopae owns
+TokenReview, issuer/audience and live-object UID/deletion verification.
+
+The owned real Kubernetes v1.37.0 fixture uses actual signed Pod-bound credentials
+and the native Hopae connector. Its verified subject matches the Pumgye mapping
+and receives the mapped role over mTLS HTTP/pooled PPG1. A different actually
+verified Pod of the same ServiceAccount remains guest. Pod deletion invalidates
+the original credential; Binding deletion/recreation, source credential recovery,
+writer exclusion and restart fences also pass. Pumgye workspace 20 tests, strict
+clippy, fictional offline example and observer mapping regression pass. Hopae
+`b20ffee` pins the same reserved-example interoperability vector in its native
+attestation test, which passes.
+
+This is administrator-pinned UID association, not automatic Pod discovery or UID
+repinning. Authentication still must arrive through Hangang's trusted native path;
+this fixture does not qualify the full gateway request/stream pipeline. Existing
+production configuration, component images and release tags are unchanged. Watch
+reconciliation, full-chain qualification, followers, remaining identity providers,
+Kubernetes deployment and public-release gates remain part of the active goal.

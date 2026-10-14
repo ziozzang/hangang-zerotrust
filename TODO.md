@@ -1406,3 +1406,22 @@ source diagnostics, not complete NetworkPolicy/Hangang enforcement. Selector pee
 materialization, named ports, scalable watches, contextual native enforcement,
 CNI qualification and distributed authority remain required. Public tags/Actions
 remain unchanged.
+
+## Integrated Kubernetes administration implementation
+
+Pumgye `a6a0e84` now reports bounded source phases, local applied revision,
+remaining source freshness and native write ownership. Hangang `60fcd47` displays
+these facts at the last refresh and keeps unknown/Kubernetes authority read-only.
+Failed reloads clear prior status; logout fences delayed UI results. Server tests
+(16), strict Clippy, authenticated HTTPS collector fixtures, real mTLS HTTP/PPG1
+publication/revocation/restart fixtures and six actual browser fixture tests pass.
+Both are internally deployed with previous binaries and stopped policy DB backup.
+Actual HTTPS console summary, three module menus, SSO/logout, service API and
+native transport pass with policy and routing preserved. Production Pumgye remains
+native-authoritative; these results do not qualify Kubernetes package deployment.
+
+Remaining package work includes validated deployment configuration, domain-owned
+Kubernetes configuration editing/provenance, coherent Sumunjang source enforcement
+and all-four Pod deployment qualification against the provided remote cluster.
+Backup/archive validation and restart checks are complete; full disaster-restore
+rehearsal remains unqualified. Functional testing precedes separate load testing.

@@ -1140,3 +1140,26 @@ This proves connection reuse/rotation behavior, not a full-chain QPS result.
 Production images/configuration and release tags are unchanged. Scalable watches,
 follower continuity, deployment, remaining mixed-provider lifecycle and complete
 performance/release gates remain part of the original active goal.
+
+
+## Internal Pumgye runtime rollout — 2026-10-14
+
+The optimized Pumgye server built from `508bb73` is deployed internally. Its
+previous executable and stopped SQLite backup are retained for rollback. Existing
+native policy mode, policy document/revision, gateway configuration and mTLS
+listener settings are preserved. The source-owner metadata schema initializes
+without changing the committed business policy; authenticated status now reports
+native ownership.
+
+The release executable passes independent mTLS HTTP/PPG1 trust/token isolation,
+bounded pipelining, revision floors, CAS races, immediate policy revocation,
+exclusive DB ownership, audit and restart recovery. Post-rollout read-only actual
+HTTPS API proof verifies scoped service authentication, method/guest/spoof denial
+and no upstream credential. Actual unified menus/matrix/logout and deployed native
+Guard transport pass. The service is active; policy and gateway configuration
+match the captured baseline after qualification.
+
+This operational rollout does not activate Kubernetes source authority or change
+Hopae/Hangang/Sumunjang production images. Public release tags are unchanged.
+The remaining watch/follower continuity, mixed-provider lifecycle, fleet throughput,
+Kubernetes packaging and complete release/rollout gates stay in the active goal.

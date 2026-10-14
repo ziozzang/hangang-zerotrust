@@ -40,3 +40,25 @@ or exercise new optional durable trust resources in Kubernetes. Those remain
 separate gates. Local 55-test/static mTLS qualification covered the new key/scope
 floors and internal Pumgye 0.1.4 was deployed with DB-clone preflight and restart.
 Malformed digest references are now refused before cluster operations.
+
+## Signed native observation releases and internal adoption — 2026-10-15
+
+[Pumgye 0.1.5](https://github.com/ziozzang/pumgye/releases/tag/v0.1.5),
+[Hopae 0.0.7](https://github.com/ziozzang/hopae/releases/tag/v0.0.7) and
+[Sumunjang 0.3.5](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.5)
+were published as Linux amd64 static musl artifacts. Exact newly versioned
+three-authority endpoint tests passed; every downloaded asset matched its
+prepared source bytes and pinned signature/version/target/URL bindings.
+
+Internal adoption passed actual DB/configuration preflight, private consistent
+backups, exact policy and protected identity-data preservation, native mTLS
+refusal and restart. Sumunjang supervised worker handover passed and existing
+observe mode remains. All three operating executable versions were verified;
+Hangang console HTTPS still returns 200. Native issuer/trust/live resources
+remain unconfigured in the existing environment, so this adoption does not
+activate the new receipt-backed decision path or add grants. The actual path
+was qualified only in owned isolated static processes.
+
+Kubernetes combined-endpoint qualification, Hangang request dispatch, signed
+permit/route/projection owners, fleet/restore floors and full objective completion
+remain open. Existing signed release assets are immutable; no Actions were enabled.

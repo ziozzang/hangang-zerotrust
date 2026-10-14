@@ -1518,3 +1518,11 @@ key/scope-floor increment. Exact static release passed the remote four-module
 K3s/browser/resource-catalog fixture; see [packaging evidence](docs/PACKAGING.md).
 Native permit RPC/live owner freshness, signed credential projection/replay,
 distributed restore fences and full objective completion remain open.
+
+## Native authority observation release adoption — 2026-10-15
+
+Pumgye 0.1.5, Hopae 0.0.7 and Sumunjang 0.3.5 are published, independently
+verified and internally deployed with private rollback material and preserved
+policy/identity data. See [packaging evidence](docs/PACKAGING.md). Existing
+operating receipt resources remain unconfigured. Kubernetes combined endpoint,
+Hangang dispatch, permit/projection and distributed restore/fleet gates are open.

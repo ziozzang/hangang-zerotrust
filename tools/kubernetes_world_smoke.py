@@ -23,6 +23,7 @@ def main():
     for name in ['hangang','hopae','sumunjang','pumgye']:parser.add_argument('--'+name+'-image',required=True)
     parser.add_argument('--echo-image',required=True)
     parser.add_argument('--sumunjang-plugin',required=True,type=Path)
+    parser.add_argument('--hopae-plugin',type=Path)
     parser.add_argument('--browser-probe',type=Path)
     parser.add_argument('--node-binary',type=Path)
     args=parser.parse_args();wrapper=args.kubectl.resolve(strict=True)
@@ -44,7 +45,7 @@ def main():
             openssl('req','-new','-newkey','rsa:2048','-nodes','-keyout',root/f'{name}.key','-out',root/f'{name}.csr','-subj',f'/CN={name}')
             ext=root/f'{name}.ext';ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage='+usage+'\nsubjectAltName='+','.join('DNS:'+c+'.'+namespace+'.svc' for c in ['hangang','hopae','sumunjang','pumgye'])+',DNS:app.example.test,IP:127.0.0.1\n')
             openssl('x509','-req','-in',root/f'{name}.csr','-CA',root/'ca.pem','-CAkey',root/'ca.key','-CAcreateserial','-days','1','-extfile',ext,'-out',root/f'{name}.pem')
-        tokens={name:secrets.token_hex(32) for name in ['api','caller','gateway-admin','guard-collector','guard-admin','pum-decision','pum-admin']}
+        tokens={name:secrets.token_hex(32) for name in ['api','caller','gateway-admin','guard-collector','guard-admin','pum-decision','pum-admin','hopae-delegation']}
         def tls(name):return {'server_name':name+'.'+namespace+'.svc','ca':'/tls/ca.crt','certificate':'/tls/client.crt','key':'/tls/client.key'}
         digest=hashlib.sha256(bytes([1]))
         for value in ['hopae:owned','services','worker']:
@@ -52,6 +53,10 @@ def main():
         subject='s_'+digest.hexdigest()[:48]
         hop=json.loads(args.hopae_fixture.read_text());hop['providers']=[];hop['state_dir']='/state'
         hop['listen']={'portal':'0.0.0.0:8700','gateway':'127.0.0.1:8701','grpc_gateway':'0.0.0.0:8703','native_gateway_tls':{'certificate':'/tls/tls.crt','key':'/tls/tls.key','client_ca':'/tls/ca.crt'}}
+        if args.hopae_plugin:
+            hop['listen']['admin']='0.0.0.0:8702'
+            hop['listen']['admin_tls']={'certificate':'/tls/tls.crt','key':'/tls/tls.key','client_ca':'/tls/ca.crt'}
+            hop['admin']={'public_url':'https://admin.example.test','hangang_delegation':{'authority':'hangang','key_env':'HOPAE_CONSOLE_DELEGATION_KEY'}}
         hop['apps'][0].update(app_id='orders',ports=[8443])
         hop['authentication_gateway']={'authority_id':'owned','profiles':[{'service_id':'orders','host':'app.example.test','ports':[8443],'realm':'services','api_keys':[{'token_env':'OWNED_API_KEY','subject':'worker'}],'networks':['127.0.0.1/32']}]}
         policy={'version':1,'information_classes':['internal'],'services':{'orders':{'permissions':['read','write'],'require_guard':True,'roles':{'reader':{'permissions':['read'],'information_classes':['internal'],'minimum_aal':0}},'users':{subject:['reader']},'networks':[{'cidr':'127.0.0.1/32','roles':['reader']}]}}}
@@ -71,6 +76,19 @@ def main():
             config_map['data']['plugin.'+name]=asset.decode()
         binding={'id':plugin_id,'directory':'/state/plugins','manifest_sha256':hashlib.sha256(manifest_bytes).hexdigest(),'backend':f'https://sumunjang.{namespace}.svc:9080','token_env':'HANGANG_GUARD_ADMIN_TOKEN','tls':tls('sumunjang')}
         config_map['data']['plugins.json']=json.dumps({'plugins':[binding],'audit_database':'/state/admin/plugin-audit.sqlite3'})
+        hop_copies=[]
+        if args.hopae_plugin:
+            raw=(args.hopae_plugin/'manifest.json').read_bytes();hop_manifest=json.loads(raw)
+            assert hop_manifest['id']=='hopae'
+            config_map['data']['hopae.manifest.json']=raw.decode()
+            for asset_name,expected in hop_manifest['assets'].items():
+                assert re.fullmatch(r'[A-Za-z0-9_-][A-Za-z0-9_.-]*',asset_name)
+                content=(args.hopae_plugin/asset_name).read_bytes();assert hashlib.sha256(content).hexdigest()==expected
+                config_map['data']['hopae.'+asset_name]=content.decode()
+                hop_copies.append('cp /config/hopae.'+asset_name+' /state/hopae-plugin/'+asset_name)
+            plugins=json.loads(config_map['data']['plugins.json'])
+            plugins['plugins'].append({'id':'hopae','directory':'/state/hopae-plugin','manifest_sha256':hashlib.sha256(raw).hexdigest(),'backend':f'https://hopae.{namespace}.svc:8702','token_env':'HOPAE_CONSOLE_DELEGATION_KEY','delegate_actor':True,'delegation_authority':'hangang','tls':tls('hopae')})
+            config_map['data']['plugins.json']=json.dumps(plugins)
         resource('Secret','world-credentials',stringData=tokens)
         resource('Secret','world-tls',stringData={'tls.crt':(root/'server.pem').read_text(),'tls.key':(root/'server.key').read_text(),'ca.crt':(root/'ca.pem').read_text(),'client.crt':(root/'client.pem').read_text(),'client.key':(root/'client.key').read_text()})
         def env(name,key):return {'name':name,'valueFrom':{'secretKeyRef':{'name':'world-credentials','key':key}}}
@@ -79,7 +97,7 @@ def main():
             'pumgye':['--listen','0.0.0.0:9084','--decision-listen','0.0.0.0:9085','--grpc-listen','0.0.0.0:9087','--readiness-listen','0.0.0.0:9086','--database','/state/pumgye.sqlite3','--policy','/config/pumgye.json','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--client-ca','/tls/ca.crt'],
             'sumunjang':['--management-tls','--listen','0.0.0.0:9080','--decision-listen','0.0.0.0:9081','--grpc-listen','0.0.0.0:9082','--database','/state/sumunjang.sqlite3','--bootstrap-policy','/config/sumunjang.json','--decision-tls-cert','/tls/tls.crt','--decision-tls-key','/tls/tls.key','--decision-client-ca','/tls/ca.crt','--threads','2'],
             'hangang':['--config','/config/hangang.json','--database','sqlite:/state/hangang.sqlite3','--docker-connection-state','/state/docker-connections.json','--admin-users-db','/state/admin/admin-users.sqlite3','--admin-plugins','/state/plugins.json','--listen','0.0.0.0:8443','--admin','127.0.0.1:9080','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--threads','2','--lua-workers','1','--drain-seconds','1','--guard-url','http://127.0.0.1:9','--guard-decision-tcp',f'sumunjang.{namespace}.svc:9082','--guard-decision-grpc','--guard-decision-server-name',f'sumunjang.{namespace}.svc','--guard-decision-ca','/tls/ca.crt','--guard-decision-cert','/tls/client.crt','--guard-decision-key','/tls/client.key','--guard-timeout-ms','1000']}
-        environments={'hopae':[env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
+        environments={'hopae':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
         for name in commands:
             resource('PersistentVolumeClaim',name+'-state',spec={'accessModes':['ReadWriteOnce'],'resources':{'requests':{'storage':'1Gi'}}})
             container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
@@ -92,7 +110,9 @@ def main():
                 init=deployment['spec']['template']['spec']['initContainers'][0]
                 init['volumeMounts'].append({'name':'config','mountPath':'/config','readOnly':True})
                 init['command'][2]+='; '+ '; '.join('cp /config/plugin.'+asset+' /state/plugins/'+asset for asset in manifest['assets'])+'; chmod 0600 /state/plugins.json /state/plugins/*'
-            ports={'hangang':[8443],'hopae':[8703],'pumgye':[9084,9087],'sumunjang':[9080,9082]}[name]
+                if args.hopae_plugin:
+                    init['command'][2]+='; mkdir -p /state/hopae-plugin; chmod 0700 /state/hopae-plugin; cp /config/hopae.manifest.json /state/hopae-plugin/manifest.json; '+ '; '.join(hop_copies)+'; chmod 0600 /state/hopae-plugin/*'
+            ports={'hangang':[8443],'hopae':([8702,8703] if args.hopae_plugin else [8703]),'pumgye':[9084,9087],'sumunjang':[9080,9082]}[name]
             resource('Service',name,spec={'selector':{'app':name},'ports':[{'name':'p'+str(p),'port':p,'targetPort':p} for p in ports]})
         echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;q.resume();r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url}));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
         resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
@@ -139,7 +159,7 @@ def main():
             assert api(admin,f'/v1/plugins/{plugin_id}/policy')[0]==200
             if args.browser_probe:
                 browser_config=root/'browser.json'
-                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id}))
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin)}))
                 subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=90)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
             document['policy']['services']['orders']['users']={}

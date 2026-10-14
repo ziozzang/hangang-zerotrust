@@ -57,3 +57,16 @@ revocation, Pod replacement and outage acceptance before removing its namespace.
 This proves the selected local administrator/Pumgye/Sumunjang browser flow. It does
 not cover Hopae browser management, federated console SSO, all providers or production
 administrator rollout. Browser artifacts and credentials are not published.
+
+## Hopae under the Hangang administrator session
+
+`--hopae-plugin` adds the real digest-pinned Hopae console package and its separate
+mTLS management Service. Hopae explicitly selects Hangang as its console authority.
+The browser probe enters Hopae from the existing local Hangang administrator login
+and reads its actual authentication profiles, without a second Hopae login.
+Every forwarded operation still carries a scoped signed assertion. The receiver
+trusts its exact TCP peer only for a request with both server-authenticated mTLS
+and completely validated delegation; global trusted proxy networks are unchanged.
+Unsigned TLS requests keep the normal proxy/native authorization checks.
+This qualifies remote management/profile reading, not federation login or every
+provider/mutation screen. Native data-plane authentication remains Hopae owned.

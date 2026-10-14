@@ -1332,3 +1332,20 @@ processing must not perform synchronous Kubernetes policy reads.
 
 The current production deployment remains native-authoritative. Owned real-cluster
 qualification is evidence for implemented paths, not full Kubernetes activation.
+
+## LDAP directory credential withdrawal qualification — 2026-10-14
+
+Hopae `5d49a69` extends the owned real OpenLDAP fixture in both LDAPS and required
+StartTLS modes. After successful login and reauthentication, removing the actual
+directory `userPassword` causes password reauthentication to fail without advancing
+session authentication time or creating a session handle. The protected fresh
+endpoint refuses the stale session. A still-valid ordinary endpoint continues to
+accept its issued session: password withdrawal is not a push revocation signal.
+The fixture restores its own directory credential and separately verifies local
+Hopae user disable. Credentials travel through private files/stdin, never command
+arguments or public output. Real TLS/runtime tests, all-target strict clippy,
+boundary checks and synchronized English/Korean documentation checks pass.
+
+This is HTTP runtime qualification, not Chromium qualification. Immediate external
+directory session revocation, production LDAP configuration, secret/CA publication
+epochs and fleet lifecycle remain open. No production binary or release tag changed.

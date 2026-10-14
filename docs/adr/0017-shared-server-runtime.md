@@ -107,3 +107,23 @@ This closes the selected local API-service request-chain gate, not all identity
 flows, all stream modes, generic metadata adapters, actual Kubernetes deployment,
 production release/rollout or fleet performance. Console/UI and Kubernetes package
 qualification remain separate work. No benchmark was run in this functional phase.
+
+## Shared management TLS and console delegation
+
+Runtime 039166b (0.1.1) adds the common mandatory-client-certificate TLS parser and
+a bounded HTTP/1.1 HTTPS management lifecycle. Sumunjang 7851660 adds
+`--management-tls` using its decision identity/CA, preserving collector/admin roles
+and supervised listener handover. Pumgye 6708e1d and Hopae 6411523 reuse the same
+parser for their existing transports; domain handlers and Pumgye peer audit identity
+remain owned by their modules. Qualified: Sumunjang 35 tests and actual HTTPS/gRPC
+fixture including role/certificate refusal and HUP; Pumgye 17 tests plus actual
+HTTP/PPG1/gRPC revocation/recovery fixture; Hopae 14 native scenarios (one existing
+ignored). Strict Clippy passed for each consumer.
+
+Hangang 8c1c78d adds per-plugin mTLS identities/private CA roots, fixed DNS/SNI
+validation and independent client pools. Six plugin tests, strict Clippy and an
+actual Hangang console API -> independent Sumunjang HTTPS read/mutation fixture
+passed. Assets remain digest pinned, operations audited and TLS paths/credentials
+excluded from browser discovery. These latest management changes have not yet
+been deployed/qualified in Kubernetes or production, and the full browser/provider
+administrator suite remains open.

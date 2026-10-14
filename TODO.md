@@ -1451,3 +1451,9 @@ These gates extend the original full goal; they are not implemented by Pod tests
   stream modes with revocation. Existing HTTP/2 is foundation, not completion.
 
 - [ ] Adopt the [shared server runtime](docs/adr/0017-shared-server-runtime.md) across all four components; qualify transport parity, listener handover, shutdown and Kubernetes deployment.
+
+## Common server engine boundary
+
+- [x] Specify common infrastructure vs domain-core ownership and extraction order in [ADR 0017](docs/adr/0017-shared-server-runtime.md).
+- [ ] Compare native accept/connection loops before extracting bounded admission, cancellation and drain into hangang-runtime; preserve each domain codec and independent process.
+- [ ] Qualify shared listener handover/supervision and snapshot-publication primitives in each owning consumer before adoption.

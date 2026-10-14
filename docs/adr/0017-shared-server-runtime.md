@@ -138,3 +138,39 @@ denial and shutdown; configuration and transport-forgery tests plus existing sig
 actor scenarios pass. Full all-features tests: 917 passed, 42 existing cases ignored;
 strict Clippy/documentation/publication checks passed. Remote delegated mTLS in
 Kubernetes, Hopae browser management and federated console SSO are not yet qualified.
+
+## Common engine boundary and extraction order
+
+The common server engine is `hangang-runtime`, consumed as a library by separate
+server binaries. Hangang remains the routing/enforcement gateway; the runtime is
+not a fifth policy authority or a requirement to colocate the four servers.
+
+| Layer | Owner | Sharing boundary |
+| --- | --- | --- |
+| Transport and process infrastructure | hangang-runtime | TLS, connection/stream admission, deadlines, cancellation, draining and listener lifecycle |
+| Protocol contracts | Each domain's contract crate | Versioned codecs and typed messages; transport does not interpret allow/deny |
+| Authentication | Hopae | Providers, credential translation, sessions, MFA and authentication circuits |
+| Network evidence | Sumunjang | IP indexes, GeoIP, scoring, rules and network revision semantics |
+| Authorization | Pumgye | Resource/action metadata, grants and authorization decisions |
+| Routing and enforcement | Hangang | Request context, decision composition and upstream dispatch |
+
+Common snapshot infrastructure may eventually provide atomic publication, generation
+tracking and notification. Each domain still owns validation, DB transactions,
+source leases, revocation and persistence. A common snapshot container must not
+imply common policy schemas or a shared multi-writer database. Separate processes
+retain independent quotas, failure isolation and horizontal scaling.
+
+Extract in small stages: retain the qualified TLS/gRPC/management HTTPS base; next
+compare the existing native accept loops and extract only equivalent connection,
+cancellation and drain behavior behind domain-owned codecs. Then qualify inherited
+listeners/supervision and reusable health/metrics hooks. Do not force Hangang's
+application proxy into the decision-server request model. Configured limits remain
+explicit per listener; generic defaults are not performance qualification.
+
+For every extraction, retain real native/gRPC parity, malformed-input and role
+refusal, same-channel revocation, restart persistence and outage refusal checks.
+Run the owning consumers and actual Kubernetes request chain before rollout.
+The selected four-process chain and Kubernetes console paths have passed separate
+qualification; native lifecycle extraction, all provider flows and production
+adoption remain open. See the current
+[Kubernetes qualification record](../KUBERNETES_WORLD_QUALIFICATION.md) for scope.

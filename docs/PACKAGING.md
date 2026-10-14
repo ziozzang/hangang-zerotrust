@@ -62,3 +62,27 @@ was qualified only in owned isolated static processes.
 Kubernetes combined-endpoint qualification, Hangang request dispatch, signed
 permit/route/projection owners, fleet/restore floors and full objective completion
 remain open. Existing signed release assets are immutable; no Actions were enabled.
+
+## Native observation Kubernetes endpoint — 2026-10-15
+
+The owned four-server world fixture passed with exact signed Hangang 0.3.4,
+Pumgye 0.1.5, Hopae 0.0.7 and Sumunjang 0.3.5 artifacts. The new
+`--authenticated-client` option requires receipt issuance and resource catalog
+qualification, injects explicit public trust/mTLS resources into Pumgye, and
+verifies an actual authenticated resource Allow in the Pod using Hopae live
+receipt validation and Sumunjang Enforce queries over mTLS Service DNS.
+The local static qualification client also verifies Pumgye’s mTLS HTTPS response.
+
+The existing real browser/module delegation, policy/catalog CAS, ordinary
+request revocation/restoration, Pod replacement, failure/no-backend-dispatch
+and logout gates passed. Owned namespace was removed; synthetic Retain PVs
+were preserved. A fresh cold backup passed archive integrity before testing;
+cluster/authentication-container restart and existing DNS/Ingress were checked.
+The new off-host copy is being completed separately; no completed-copy claim
+is made here.
+
+The new Kubernetes endpoint step proves positive combined admission only.
+Receipt-specific withdrawal/outage was qualified in the local static three-
+authority fixture, not repeated through this Kubernetes endpoint step. Hangang
+production dispatch integration, signed permit/projection and fleet/restore
+fences remain open. Existing remote operating services were preserved.

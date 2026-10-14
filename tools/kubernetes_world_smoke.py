@@ -30,7 +30,10 @@ def main():
     parser.add_argument('--node-binary',type=Path)
     parser.add_argument('--resource-catalog',action='store_true')
     parser.add_argument('--receipt-client',type=Path)
+    parser.add_argument('--authenticated-client',type=Path)
     args=parser.parse_args()
+    if args.authenticated_client and not (args.receipt_client and args.resource_catalog):
+        parser.error('authenticated client requires receipt client and resource catalog')
     for component in ['hangang','hopae','sumunjang','pumgye','echo']:
         image=getattr(args,component+'_image')
         if '@' in image and not re.fullmatch(r'[^@\s]+@sha256:[0-9a-f]{64}',image):
@@ -87,6 +90,11 @@ def main():
         def resource(kind,name,**fields):
             obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
         config_map=resource('ConfigMap','world-config',data={'hopae.json':json.dumps(hop),'hangang.json':json.dumps(gateway),'pumgye.json':json.dumps({'revision':0,'policy':policy}),'sumunjang.json':json.dumps({'mode':'enforce','allow':[]})})
+        if args.authenticated_client:
+            config_map['data']['authentication-trust.json']=json.dumps({'entries':[{'issuer_ref':'owned-world','key_epoch':1,'identity_epoch':'world1','service':'orders','audience':'orders-api','minimum_revision':1,'public_key':receipt_pin}]})
+            native_tls={'ca':'/tls/ca.crt','certificate':'/tls/client.crt','key':'/tls/client.key'}
+            config_map['data']['authentication-live.json']=json.dumps(dict(native_tls,issuer_ref='owned-world',address=f'https://hopae.{namespace}.svc:8703',server_name=f'hopae.{namespace}.svc',token_env='HOPAE_TEST_GATEWAY_KEY'))
+            config_map['data']['network-live.json']=json.dumps(dict(native_tls,address=f'https://sumunjang.{namespace}.svc:9082',server_name=f'sumunjang.{namespace}.svc',token_env='HANGANG_GUARD_COLLECTOR_TOKEN'))
         manifest_bytes=(args.sumunjang_plugin/'manifest.json').read_bytes()
         manifest=json.loads(manifest_bytes);plugin_id=manifest['id']
         config_map['data']['plugin.manifest.json']=manifest_bytes.decode()
@@ -120,6 +128,9 @@ def main():
             'hangang':['--config','/config/hangang.json','--database','sqlite:/state/hangang.sqlite3','--docker-connection-state','/state/docker-connections.json','--admin-users-db','/state/admin/admin-users.sqlite3','--admin-plugins','/state/plugins.json','--listen','0.0.0.0:8443','--admin','127.0.0.1:9080','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--threads','2','--lua-workers','1','--drain-seconds','1','--guard-url','http://127.0.0.1:9','--guard-decision-tcp',f'sumunjang.{namespace}.svc:9082','--guard-decision-grpc','--guard-decision-server-name',f'sumunjang.{namespace}.svc','--guard-decision-ca','/tls/ca.crt','--guard-decision-cert','/tls/client.crt','--guard-decision-key','/tls/client.key','--guard-timeout-ms','1000']}
         environments={'hopae':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
         if args.receipt_client:environments['hopae'].append(env('OWNED_RECEIPT_SEED','receipt-seed'))
+        if args.authenticated_client:
+            commands['pumgye']+=['--authentication-trust','/config/authentication-trust.json','--authentication-live','/config/authentication-live.json','--network-live','/config/network-live.json']
+            environments['pumgye']+=[env('HOPAE_TEST_GATEWAY_KEY','caller'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector')]
         for name in commands:
             resource('PersistentVolumeClaim',name+'-state',spec={'accessModes':['ReadWriteOnce'],'resources':{'requests':{'storage':'1Gi'}}})
             container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
@@ -195,6 +206,17 @@ def main():
                     result=subprocess.run([str(args.receipt_client.resolve()),str(receipt_path)],input='allow\n',env=receipt_environment,text=True,stdout=subprocess.PIPE,stderr=log,timeout=10)
                 assert result.returncode==0 and json.loads(result.stdout)['allowed'] is True,'Kubernetes native receipt refused'
                 print('PASS: actual Hopae Pod native issuer and Hangang client verify a request-bound service receipt over mTLS Service DNS')
+                if args.authenticated_client:
+                    pum=forward('pumgye',9084)
+                    authenticated_config=json.loads(json.dumps(receipt_config))
+                    authenticated_config.update(identity_epoch='world1',qualification_ip='127.0.0.1',pumgye_endpoint=f'https://127.0.0.1:{pum}/v1/resource/authenticated-decision')
+                    authenticated_path=root/'authenticated-client.json';authenticated_path.write_text(json.dumps(authenticated_config))
+                    authenticated_environment=dict(receipt_environment,PUMGYE_DECISION_TOKEN=tokens['pum-decision'])
+                    with (root/'authenticated-client.log').open('w') as log:
+                        result=subprocess.run([str(args.authenticated_client.resolve()),str(authenticated_path)],input='allow\n',env=authenticated_environment,text=True,stdout=subprocess.PIPE,stderr=log,timeout=10)
+                    assert result.returncode==0 and json.loads(result.stdout)['allowed'] is True,'Kubernetes authenticated resource endpoint refused'
+                    print('PASS: actual Pumgye Pod authenticated resource endpoint combines Hopae live receipt and Sumunjang Enforce over mTLS Service DNS')
+
 
             status,plugins,_=api(admin,'/v1/plugins');assert status==200 and any(p['id']==plugin_id for p in plugins['plugins'])
             c=http.client.HTTPConnection('127.0.0.1',admin,timeout=3)

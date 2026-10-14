@@ -1310,3 +1310,25 @@ promised gain and do not achieve the full 100k/s target.
 Production gateway image was not switched by this optimization phase. Further
 profiling, open-loop/fleet/provider load, watch/follower continuity, remaining
 provider lifecycle and final deployment/release gates remain active.
+
+## Kubernetes as an original authority — clarified scope
+
+The requirement is source compatibility, not merely container deployment. Keep
+adapters in each owning server and compile validated state into memory; request
+processing must not perform synchronous Kubernetes policy reads.
+
+- [ ] Hangang: qualify Ingress/Service/EndpointSlice reconciliation with protected
+  route references; invalid or missing authorization dependencies must not expose
+  an unprotected route.
+- [ ] Hopae: extend existing TokenReview/live-UID authentication with owned provider
+  configuration references and Secret rotation; preserve mixed external providers.
+- [ ] Pumgye: evolve the implemented authoritative RBAC snapshot mode into bounded
+  list/watch recovery and source-aware console writes, preserving explicit mappings.
+- [ ] Sumunjang: implement NetworkPolicy/selectors as a source adapter with explicit
+  supported semantics; qualify gateway enforcement and CNI enforcement separately.
+- [ ] Test deletion, same-name UID recreation, expired watch/relist, API outage,
+  conflicting edits and join/drain against actual Kubernetes resources. Display
+  source, applied revision and stale/error state in the Hangang console.
+
+The current production deployment remains native-authoritative. Owned real-cluster
+qualification is evidence for implemented paths, not full Kubernetes activation.

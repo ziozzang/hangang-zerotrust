@@ -2,12 +2,14 @@
 
 [한국어](../ko/0015-kubernetes-iam-authority.md)
 
-Status: accepted direction; adapters and complete four-component deployment are
-proposed. Hangang already implements a Kubernetes Ingress controller, offline
-Ingress import and namespace-scoped deployment/RBAC. That routing support does
-not implement Hopae workload authentication, Pumgye RBAC import or Sumunjang
-NetworkPolicy enforcement. Current internal Pumgye integration covers explicitly
-gated probe routes, not every application.
+Status: accepted direction with partial implementation. Hangang implements an
+Ingress controller and offline import. Hopae verifies Pod-bound credentials with
+TokenReview and live ServiceAccount/Pod UID checks. Pumgye implements an opt-in
+Kubernetes-authoritative RBAC source with explicit application mappings and
+bounded in-memory snapshots. These paths have an owned real-cluster qualification.
+Sumunjang NetworkPolicy/selector sourcing, continuous watch recovery, source-aware
+Kubernetes writes and complete four-component Kubernetes deployment remain open.
+Internal production Pumgye currently uses its native database authority.
 
 ## Ownership and data flow
 

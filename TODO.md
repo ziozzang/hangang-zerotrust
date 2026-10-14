@@ -1025,3 +1025,32 @@ long-lived streams. Production images were not switched in this phase; policy,
 keys and release tags remain unchanged. Distributed watches/followers, full
 Kubernetes packaging, remaining providers/lifecycle, full-chain performance and
 public release/operational completion gates remain active.
+
+
+## Opt-in native machine evidence renewal — 2026-10-14
+
+Hangang `058fe3f` adds `auth.renew_native_evidence` for native service/workload
+operations. The same bounded authenticated pool re-verifies original request
+context around half-life; explicit usable TTL and exact unchanged subject/kind/
+AAL/service are required. Denial, outage, exhausted capacity, malformed/short proof,
+changed identity or previous expiry permanently retires the lease. Late evidence
+cannot revive it. The original selected authentication headers remain private in
+memory until close; last-owner drop aborts the task and discards context. There
+are at most 4096 renewal leases per process, plus existing native pool limits.
+Default behavior remains non-renewing expiry; renewal requires a native transport.
+
+Seventeen resource-policy tests and OpenAPI reference validation pass. The owned
+native peer sustains streams beyond two seconds, then verifies closure for denial,
+outage, identity replacement and short expiry with unchanged policy/origin.
+Strict all-target clippy passes. The optimized binary passes the actual four-native-
+component/Kubernetes default-mode regression. Incoming upstream changes were
+reviewed and rebased; they add Ingress documentation/examples/changelog rather
+than altering renewal implementation. Documentation links after rebase: 916 pass.
+
+This qualifies the gateway renewal mechanism against an owned native peer; it
+still needs sustained real Hopae/Kubernetes renewal qualification, cancellation/
+quota saturation measurements, targeted revocation subscription and fleet-scale
+throughput. Kubernetes RBAC polling can independently withdraw source health and
+retire a valid stream, so watch/follower continuity remains necessary. Production
+images/configuration and release tags were not changed by this phase. The original
+full completion goal remains active.

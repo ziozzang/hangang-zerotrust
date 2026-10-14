@@ -1475,3 +1475,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [ ] Adopt and qualify this primitive for Pumgye/Sumunjang native listeners; package and deploy the new revision before claiming Kubernetes/production adoption.
 
 - [x] Pumgye 200ed48 shares native and management/readiness connection ownership. Real authenticated native owner-cancellation test, 25 workspace tests, strict Clippy, actual HTTP/PPG1/gRPC and both four-process durable-restart request chains pass; new packaging/Kubernetes/production adoption remains open.
+
+- [x] Sumunjang 5de28f3 shares HGD1 connection ownership, preserving role/TLS/loopback semantics; 35 server tests, workspace/update regressions, strict Clippy, actual management delegation and supervised HUP pass. All three updated authority binaries pass both four-process durable-restart transport chains.
+- [ ] Package the shared-runtime authority revisions and qualify the actual Kubernetes/browser fixture before release/operational adoption.

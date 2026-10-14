@@ -207,3 +207,14 @@ persistence checks and both four-process durable-restart request chains pass.
 The first Python wire invocation lacked grpc; the existing qualification virtual
 environment completed the same checks. New packaging/Kubernetes/production and
 Sumunjang adoption remain open.
+
+Sumunjang 5de28f3 adopts shared connection ownership for HGD1 and updates the
+management HTTPS runtime pin. Its 256 connection quota, zero drain, loopback-only
+plaintext, mTLS/ALPN and domain decisions remain unchanged. Qualified: 35 distinct
+server tests plus workspace/update regressions, strict all-target workspace Clippy,
+actual HTTPS management/gRPC/native role/certificate refusal, revision fencing,
+same-channel updates, owning Hangang console read/mutation and supervised HUP
+listener handover. The extraction initially left a test-only import in production
+scope; moving it into the test module restored the strict gate. With all three
+new domain-server binaries, both native and gRPC four-process durable-restart
+chains pass. Latest images/Kubernetes/production adoption remain separate gates.

@@ -27,10 +27,10 @@ are tracked separately; a diagram is not a production assurance claim.
 flowchart TB
   subgraph DP["Request enforcement"]
     C[Client] --> H[Hangang enforcement]
-    H <-->|authenticated native calls| I[Hopae authentication gateway / sessions]
+    H <-->|authenticated native / gRPC calls| I[Hopae authentication gateway / sessions]
     I <-->|OIDC / Google / LDAP / API / local: mixed-auth design| P[Authentication sources]
-    H <-->|authenticated native calls| G[Sumunjang: Guard network controls]
-    H --> D[Pumgye authorization core]
+    H <-->|authenticated native / gRPC calls| G[Sumunjang: Guard network controls]
+    H -->|native / gRPC| D[Pumgye authorization core]
     D --> CL[Compiled classification / catalog]
     K8[Kubernetes decision client: proposed] -.-> AD[Typed adapters / plugins: proposed]
     DB[DBMS decision client: proposed] -.-> AD
@@ -43,6 +43,12 @@ flowchart TB
     V[Device / workload evidence: proposed] -.-> D
     H --> B[Application / resource]
   end
+  subgraph SR["Shared library: initial gRPC server transport"]
+    RT[hangang-runtime]
+  end
+  RT -.-> I
+  RT -.-> G
+  RT -.-> D
   subgraph CP["Configuration and management"]
     UI[Hangang console: Sumunjang / Hopae / Pumgye] --> A[Domain-owned management APIs]
     UI <-->|ID/PW or mapped SSO| CA[Hangang console account authority]
@@ -180,3 +186,5 @@ flowchart LR
 ```
 
 [Domain decision cores and metadata adapters](docs/adr/0016-decision-core-metadata-adapters.md) — database-backed memory snapshots, inbound Kubernetes decisions and proposed PostgreSQL integration. Sillok is optional; these new adapters are not shipped.
+
+[Component image packaging](docs/PACKAGING.md) packages qualified static artifacts; local images do not imply Kubernetes or production rollout.

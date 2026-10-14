@@ -33,10 +33,10 @@ Hangang·Hopae·Guard를 기반으로 전체 제로트러스트 구조와 계약
 flowchart TB
   subgraph DP["요청 집행"]
     C[클라이언트] --> H[Hangang 요청 집행]
-    H <-->|인증된 네이티브 호출| I[Hopae 인증 게이트웨이 / 세션]
+    H <-->|인증된 네이티브 / gRPC 호출| I[Hopae 인증 게이트웨이 / 세션]
     I <-->|OIDC / Google / LDAP / API / 자체: 혼합 인증 설계| P[인증 소스]
-    H <-->|인증된 네이티브 호출| G[수문장: Guard 네트워크 제어]
-    H --> D[품계 권한 판정 코어]
+    H <-->|인증된 네이티브 / gRPC 호출| G[수문장: Guard 네트워크 제어]
+    H -->|네이티브 / gRPC| D[품계 권한 판정 코어]
     D --> CL[컴파일된 분류 / 카탈로그]
     K8[Kubernetes 판정 클라이언트: 제안] -.-> AD[타입 어댑터 / 플러그인: 제안]
     DB[DBMS 판정 클라이언트: 제안] -.-> AD
@@ -49,6 +49,12 @@ flowchart TB
     V[단말 / 워크로드 근거: 설계 예정] -.-> D
     H --> B[애플리케이션 / 리소스]
   end
+  subgraph SR["공용 라이브러리: 첫 gRPC 서버 전송 기반"]
+    RT[hangang-runtime]
+  end
+  RT -.-> I
+  RT -.-> G
+  RT -.-> D
   subgraph CP["설정과 관리"]
     UI[Hangang 콘솔: 수문장 / 호패 / 품계] --> A[도메인별 관리 API]
     UI <-->|ID/PW 또는 매핑된 SSO| CA[Hangang 콘솔 계정 권한]
@@ -150,3 +156,5 @@ flowchart LR
 ```
 
 [도메인 판정 코어와 메타데이터 어댑터](docs/ko/0016-decision-core-metadata-adapters.md) — DB 원천 메모리 스냅샷, Kubernetes 역방향 판정과 PostgreSQL 연동 제안. 실록은 선택 사항이며 새 어댑터는 미구현입니다.
+
+[구성요소 이미지 패키징](docs/ko/PACKAGING.md)은 검증한 정적 파일을 패키징합니다. 로컬 이미지는 K8s/운영 배포의 완료를 뜻하지 않습니다.

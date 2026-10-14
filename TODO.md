@@ -1500,3 +1500,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [x] Qualify real owner DB clones with signed publication/withdrawal of a fresh clone-only credential while retaining original expired-credential refusal and protected user/session/MFA data. Internally deploy exact signed v0.0.4 with rollback backups, restart and live Hangang delegated reads.
 - [x] Qualify the published Hopae/Sumunjang/Pumgye static image revisions together on actual Kubernetes/browser fixture; namespace cleanup and existing ingress/nodes pass.
 - [ ] Clarify Unix-millisecond API credential expiration in administrator editing/help; preserve deliberate expiry rather than silently renewing credentials.
+
+- [x] Hangang 519a1e5 prepares v0.3.3 static Linux defaults; five release tests, 922 documentation links, all-target Rust tests and strict Clippy pass. Eight static executables, both real native/gRPC durable-restart chains and five independently signature-verified assets qualify.
+- [ ] Qualify the v0.3.3 gateway package on actual Kubernetes/browser, verify operational configuration/state and publish/roll out the new signed gateway release.

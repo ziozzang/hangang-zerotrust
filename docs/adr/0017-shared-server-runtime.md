@@ -338,3 +338,16 @@ backend non-dispatch and authority outage. Archive checksums matched before use,
 both nodes imported the artifacts, owned namespace cleanup completed and existing
 ingress/node checks remain healthy. General metadata adapters, all identity/source
 flows, automatic Hopae/Pumgye updates and full-stack throughput remain open.
+
+## Hangang v0.3.3 static preparation
+
+Hangang 519a1e5 prepares v0.3.3 with Linux amd64 musl as the release default.
+Staging rejects an ELF interpreter in any of the eight included executables,
+not only the gateway. Five release contract tests, 922 documentation links,
+all-target Rust regressions and strict Clippy pass. All eight actual optimized
+executables are static. Both actual four-process native/gRPC durable-restart
+chains pass with the new gateway and published authority binaries. Five release
+assets use the existing pinned signature identity; independent OpenSSL verification
+checks signature, version/target/URL binding and all checksums. New gateway
+Kubernetes/browser package qualification, operational rollout and publication
+remain separate gates. Existing release tags have not been rewritten.

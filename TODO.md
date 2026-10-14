@@ -1503,3 +1503,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Hangang 519a1e5 prepares v0.3.3 static Linux defaults; five release tests, 922 documentation links, all-target Rust tests and strict Clippy pass. Eight static executables, both real native/gRPC durable-restart chains and five independently signature-verified assets qualify.
 - [ ] Qualify the v0.3.3 gateway package on actual Kubernetes/browser, verify operational configuration/state and publish/roll out the new signed gateway release.
+
+- [x] Actual Hangang v0.3.3/519a1e5 Kubernetes/browser package passes with all three published authority revisions; cleanup and existing ingress/DNS/nodes pass. Actual operational Docker read-only preflight passes. Five signed draft assets verify after upload/download.
+- [ ] Complete live gateway replacement/rollback acceptance and publish Hangang v0.3.3; keep the overall authentication/metadata/fleet/performance requirements active.

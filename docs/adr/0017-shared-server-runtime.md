@@ -351,3 +351,14 @@ assets use the existing pinned signature identity; independent OpenSSL verificat
 checks signature, version/target/URL binding and all checksums. New gateway
 Kubernetes/browser package qualification, operational rollout and publication
 remain separate gates. Existing release tags have not been rewritten.
+
+Hangang 519a1e5 also passes the actual Kubernetes/browser fixture with published
+Hopae 6dccf80, Sumunjang 352e707 and Pumgye d51a8e8 images. Archive checksums
+match on transfer, both nodes import the image, and owning namespace cleanup
+completes. Scope includes actual administrator bootstrap/login, delegated policy
+publication/CAS, authentication revocation/restoration and Pod persistence,
+required-authority outages and refused backend non-dispatch. Existing ingress,
+DNS and both nodes remain healthy. Read-only Docker preflight with the actual
+operational mounts/environment/arguments exits zero. Five signed assets are
+uploaded to the new v0.3.3 draft and independently verify after download.
+This does not yet qualify operational replacement or published release adoption.

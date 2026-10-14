@@ -23,3 +23,20 @@ Local image creation does not publish a registry image, sign a release, deploy P
 prove Kubernetes source adapters or complete the Hangang World package. Actual
 cluster acceptance must include all four independent services, mTLS Service DNS,
 request enforcement, administrator delegation, persistence/restart and failure gates.
+
+## Pumgye 0.1.4 qualification — 2026-10-15
+
+Signed static source `89e5987cfee934f2fb6b9f007064bc6525999715` was independently
+verified after release download, packaged as `hangang-world/pumgye:89e5987cfee9`
+and imported into both remote K3s nodes after matching archive hashes. The owned
+four-server fixture passed with Hangang 0.3.4, Hopae 0.0.6 and Sumunjang 0.3.4:
+actual browser/module delegation, resource metadata CAS, immediate/persistent
+revocation, Pod replacement, outage and refused backend non-dispatch. Existing
+backup/off-host copy, DNS, Ready nodes and HTTPS services were preserved.
+
+This fixture also verified a Hopae service receipt with the real Hangang client.
+It does not activate Pumgye permit RPC, prove distributed receipt owner freshness
+or exercise new optional durable trust resources in Kubernetes. Those remain
+separate gates. Local 55-test/static mTLS qualification covered the new key/scope
+floors and internal Pumgye 0.1.4 was deployed with DB-clone preflight and restart.
+Malformed digest references are now refused before cluster operations.

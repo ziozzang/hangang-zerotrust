@@ -6,6 +6,7 @@ import hashlib
 import http.client
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import shutil
@@ -29,7 +30,12 @@ def main():
     parser.add_argument('--node-binary',type=Path)
     parser.add_argument('--resource-catalog',action='store_true')
     parser.add_argument('--receipt-client',type=Path)
-    args=parser.parse_args();wrapper=args.kubectl.resolve(strict=True)
+    args=parser.parse_args()
+    for component in ['hangang','hopae','sumunjang','pumgye','echo']:
+        image=getattr(args,component+'_image')
+        if '@' in image and not re.fullmatch(r'[^@\s]+@sha256:[0-9a-f]{64}',image):
+            parser.error(component+' image requires a canonical SHA-256 digest')
+    wrapper=args.kubectl.resolve(strict=True)
     node=str(args.node_binary.resolve(strict=True)) if args.node_binary else shutil.which('node')
     if args.browser_probe and not node:parser.error('browser probe requires --node-binary when node is not in PATH')
     namespace='owned-world-'+secrets.token_hex(6);created=False;forwards=[]
@@ -85,7 +91,6 @@ def main():
         manifest=json.loads(manifest_bytes);plugin_id=manifest['id']
         config_map['data']['plugin.manifest.json']=manifest_bytes.decode()
         for name,digest_value in manifest['assets'].items():
-            import re
             assert re.fullmatch(r'[A-Za-z0-9_-][A-Za-z0-9_.-]*',name),'invalid owned plugin asset name'
             asset=(args.sumunjang_plugin/name).read_bytes()
             assert hashlib.sha256(asset).hexdigest()==digest_value,'owned plugin digest mismatch'

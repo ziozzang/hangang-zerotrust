@@ -1510,3 +1510,11 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [x] Publish Hangang v0.3.3/519a1e5 with five verified signed static assets; internally replace the live gateway with backups/drain, exact artifact, management socket, same credentials/UID/network and strict normalized configuration/refusal checks. First comparison failure rolled back; isolated diagnosis validates only new native transport defaults.
 - [ ] Qualify operator enforcement/permission policy: existing protected demonstration returns 503 on both old/new gateways while Sumunjang is observe; do not count this as authenticated app-flow acceptance or silently widen/renew authority.
 - [ ] Upgrade remaining auxiliary console/bridge processes as required and qualify live integrated/federated administrator flows separately from the gateway rollout.
+
+## Pumgye 0.1.4 signed static adoption — 2026-10-15
+
+Published, independently verified and internally deployed the durable receipt
+key/scope-floor increment. Exact static release passed the remote four-module
+K3s/browser/resource-catalog fixture; see [packaging evidence](docs/PACKAGING.md).
+Native permit RPC/live owner freshness, signed credential projection/replay,
+distributed restore fences and full objective completion remain open.

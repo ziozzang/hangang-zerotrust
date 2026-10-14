@@ -385,3 +385,29 @@ This operational rollout does not activate Kubernetes source authority or change
 Hopae/Hangang/Sumunjang production images. Public release tags are unchanged.
 The remaining watch/follower continuity, mixed-provider lifecycle, fleet throughput,
 Kubernetes packaging and complete release/rollout gates stay in the active goal.
+
+
+## Internal Hopae evidence-lifetime rollout — 2026-10-14
+
+Hopae `48c8015` moves the machine lifetime wire assertions into the gateway domain
+so the full boundary gate passes. A pre-existing saturation timing failure (133
+rather than 136 overload responses) passed in isolation; the test's hold window
+was widened without reducing its rejection threshold, and full rerun passes.
+Full native gates: 912 passed, 42 ignored; strict check/boundary, documentation and
+scenario coverage pass. Dependency audit retains the existing scoped verification-
+only RSA exception and rustls-pemfile maintenance warning, not an unrestricted
+clean audit claim.
+
+The optimized copied-state candidate passes Kubernetes workload HTTP/pooled mTLS,
+prefix isolation, external relay/Lua, browser external MFA/TOTP coexistence and
+old-handle refusal. Internal image `hopae:0.0.3-evidence-48c8015` is deployed with
+consistent stopped v6 owner/delegation DB backups and the previous image retained.
+Configuration files, authentication profiles and key material are preserved.
+Actual API/matrix/module/SSO/native regressions pass; direct deployed verification
+returns bounded remaining evidence TTL with service identity/AAL zero.
+
+Production remains native-profile-only: Kubernetes/external verifier/projection
+activation was not enabled. Hangang renewal rollout remains a separate step.
+Public release tags and broader provider/lifecycle, watch/follower continuity,
+Kubernetes packaging and full-chain performance/completion gates remain unchanged
+and active under the original goal.

@@ -1384,3 +1384,25 @@ bound source snapshots; pooled API list/watch/relist; authenticated contextual
 request protocol and Hangang enforcement; source-aware admin/mutation ownership;
 CNI packet qualification; large-policy indexing/throughput and distributed rollout.
 Offline parsing and evaluation do not satisfy those runtime requirements.
+
+## Sumunjang continuous diagnostics and internal rollout — 2026-10-14
+
+Source `df394d9` adds authenticated CA-pinned namespaced policy collection,
+complete bounded pagination and immutable in-memory diagnostic candidates with
+one-second start-anchored freshness. A conservative cancellable follower withdraws
+before recollection; failure or expiry refuses evaluation. Admin-only status/query
+routes and digest-pinned console plugin v0.1.2 are internally deployed. Compiling
+late cannot create a candidate and expired status returns 503. Server has 32 passing
+tests and strict clippy; optimized release qualifies 18 owned TLS boundaries and
+actual 129-policy pagination/deletion/UID recreation/follower failure/recovery.
+Actual Hangang HTTPS UI/proxy, API permission matrix, SSO/logout and native mTLS
+HGD1 pass. Previous binaries, stopped SQLite and registry backups are retained.
+
+Owned probe rotation required durable profile publication: bootstrap file edits
+cannot override Hopae's established DB authority. Corrected authenticated console
+publication keeps scope/identity and other profiles unchanged; fresh key allowed,
+retired key refused. Production Kubernetes source is still unconfigured. This is
+source diagnostics, not complete NetworkPolicy/Hangang enforcement. Selector peer
+materialization, named ports, scalable watches, contextual native enforcement,
+CNI qualification and distributed authority remain required. Public tags/Actions
+remain unchanged.

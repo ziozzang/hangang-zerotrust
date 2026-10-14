@@ -1443,3 +1443,9 @@ rehearsal remains unqualified. Functional testing precedes separate load testing
 
 ADR 0016 records the accepted direction, with EN/KO README diagrams updated.
 These gates extend the original full goal; they are not implemented by Pod tests.
+
+- [ ] Provide gRPC decision endpoints in all three domain servers and a Hangang
+  pooled mTLS decision client with native semantic parity and no failure fallback.
+- [ ] Qualify Hangang gRPC application proxy separately: full RPC method mapping,
+  TE/metadata/status trailers, error translation, deadlines/cancellation and all
+  stream modes with revocation. Existing HTTP/2 is foundation, not completion.

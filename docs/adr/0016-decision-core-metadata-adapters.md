@@ -135,6 +135,29 @@ References: [gRPC performance](https://grpc.io/docs/guides/performance/),
 [deadlines](https://grpc.io/docs/guides/deadlines/),
 [Envoy external authorization](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto.html).
 
+### Hangang integration roles
+
+Require gRPC decision endpoints in Hopae, Pumgye and Sumunjang, not only a single
+adapter in front of an unrelated policy system. Each endpoint calls its existing
+core and snapshot. Hangang selects native or gRPC per authority configuration;
+transport selection must not change decision semantics or silently fail over after
+a denial or an unavailable authority.
+
+Hangang has two separate gRPC integration responsibilities:
+
+1. A pooled mTLS decision client for all three cores, preserving caller roles,
+   evidence provenance, revision floors, expiry and cancellation.
+2. A gRPC application proxy over HTTP/2, preserving message frames, metadata and
+   grpc-status trailers, with qualified unary/server/client/bidirectional streams.
+
+Existing Hangang HTTP/2 and response-trailer paths are implementation foundations,
+not full gRPC qualification. Validate TE/trailers, protocol negotiation, gRPC-aware
+authentication/authorization/unavailable errors, deadline propagation, flow control,
+cancellation, stream revocation and source outage. Preserve identity-header isolation.
+Bind application authorization to the full RPC method and owned resource/action
+mapping; a generic POST permission must not implicitly authorize every RPC method.
+The native protocols remain supported as direct low-overhead transports.
+
 ## Performance and acceptance
 
 Preserve the fast path: no request-time database/ontology/analytics call, no policy

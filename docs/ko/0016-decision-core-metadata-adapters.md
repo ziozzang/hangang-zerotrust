@@ -117,6 +117,25 @@ Envoy ext_authz는 헤더·문맥 신뢰와 실패 거부를 명시한 별도 �
 [deadline](https://grpc.io/docs/guides/deadlines/),
 [Envoy 외부 인가](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto.html).
 
+### 한강의 두 연동 역할
+
+호패·품계·수문장 각각에 gRPC 판정 endpoint를 제공하고 기존 코어·스냅샷을
+호출해야 합니다. 한강은 권위 서버별 설정에서 native/gRPC를 선택하며 판정
+의미를 바꾸거나 거부·판단 불가 뒤에 다른 전송으로 조용히 fallback하지 않습니다.
+
+한강에는 두 가지 역할이 필요합니다.
+
+1. 세 코어의 pooled mTLS 판정 클라이언트: 호출 역할·근거 원천·최소 revision·
+   만료·취소를 유지합니다.
+2. HTTP/2 애플리케이션 gRPC 프록시: message frame·metadata·grpc-status trailer와
+   unary·server/client/bidirectional stream을 검증합니다.
+
+기존 HTTP/2와 응답 trailer 경로는 기반 구현이며 완전한 gRPC 검증이 아닙니다.
+TE/trailer·프로토콜 협상·gRPC 인증/권한/판단 불가 오류·deadline·flow control·
+취소·stream 회수·원천 장애와 신원 헤더 격리를 검증합니다. 전체 RPC method를
+소유한 자원·행위에 매핑하며 일반 POST 권한으로 모든 RPC method를 허용하지
+않습니다. 기존 네이티브 프로토콜은 직접적인 고속 경로로 유지합니다.
+
 ## 성능과 완료 기준
 
 요청 중 DB·온톨로지·분석 조회, 정책 컴파일, 범용 그래프 탐색, 코어의 JSON/SQL

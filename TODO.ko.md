@@ -830,3 +830,9 @@ JSON 오류·복원 미리보기, JS 오류 없음과 문서·revision 유지도
 
 ADR 0016과 영문·한국어 README 다이어그램에 반영했습니다. 기존 전체 목표의
 확장 기준이며 개별 Pod 검사만으로 구현된 것으로 취급하지 않습니다.
+
+- [ ] 세 도메인 서버의 gRPC 판정 endpoint와 한강 pooled mTLS 판단 클라이언트,
+  네이티브 의미 일치 및 실패 시 fallback 없음 검증.
+- [ ] 한강 애플리케이션 gRPC 프록시는 별도 검증: 전체 RPC method 권한 매핑,
+  TE/metadata/status trailer·오류 변환·deadline/취소·각 stream 모드와 회수.
+  기존 HTTP/2 지원만으로 완료하지 않습니다.

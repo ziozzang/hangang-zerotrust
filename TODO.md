@@ -1097,3 +1097,26 @@ under fixed authorization, not dynamic RBAC continuity or fleet performance.
 Source watch/follower continuity, failure topology, complete Kubernetes packaging,
 remaining mixed-provider/lifecycle features, full performance, release and rollout
 gates remain active under the original objective.
+
+
+## Source collection age consumes freshness — 2026-10-14
+
+Pumgye `ecf4544` changes the source observation lease to expire one second after
+collection starts. Previously a slow multi-list collection could receive another
+second at completion. The whole collection now times out after one second, and
+post-normalization/hash age and clock overflow are checked before publishing.
+Mapping/compilation/durable installation continue to consume that original budget.
+No stale or partial observation becomes a usable grant.
+
+Twenty-one workspace tests and strict clippy pass. The owned HTTPS fixture delays
+a complete response for 1.2 seconds, verifies unavailable and subsequent recovery;
+the deadline arithmetic test verifies elapsed time cannot restart freshness.
+The actual v1.37.0/four-native-component fixture, including isolated real workload
+renewal and Pod deletion withdrawal, passes with the tightened source budget.
+Production configuration/images and release tags remain unchanged.
+
+This fixes source-age inflation; it does not claim cross-kind atomicity or watch
+continuity. Slow/large sources exceeding the budget are unavailable rather than
+silently receiving extended authority. Scalable watches/followers, deployment,
+remaining provider/lifecycle functions and full performance/release completion
+remain required by the original active goal.

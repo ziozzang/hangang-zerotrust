@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--hopae-plugin',type=Path)
     parser.add_argument('--browser-probe',type=Path)
     parser.add_argument('--node-binary',type=Path)
+    parser.add_argument('--resource-catalog',action='store_true')
     args=parser.parse_args();wrapper=args.kubectl.resolve(strict=True)
     node=str(args.node_binary.resolve(strict=True)) if args.node_binary else shutil.which('node')
     if args.browser_probe and not node:parser.error('browser probe requires --node-binary when node is not in PATH')
@@ -61,6 +62,11 @@ def main():
         hop['authentication_gateway']={'authority_id':'owned','profiles':[{'service_id':'orders','host':'app.example.test','ports':[8443],'realm':'services','api_keys':[{'token_env':'OWNED_API_KEY','subject':'worker'}],'networks':['127.0.0.1/32']}]}
         policy={'version':1,'information_classes':['internal'],'services':{'orders':{'permissions':['read','write'],'require_guard':True,'roles':{'reader':{'permissions':['read'],'information_classes':['internal'],'minimum_aal':0}},'users':{subject:['reader']},'networks':[{'cidr':'127.0.0.1/32','roles':['reader']}]}}}
         gateway={'http':[{'id':'orders','host':'app.example.test','path_prefix':'/secure','access_mode':'protected','backends':[f'http://echo.{namespace}.svc:8080'],'auth':{'url':'http://127.0.0.1:8701/_hopae/verify','native':{'transport':'grpc','address':f'hopae.{namespace}.svc:8703','tls':tls('hopae')},'request_headers':['authorization'],'response_headers':['x-forwarded-user','x-hopae-aal','x-hopae-principal-kind'],'static_request_headers':{'x-hopae-gateway-key':{'env':'FIXTURE_KEY'},'x-hopae-contract':'1'},'forward_response':True},'resource_policy':{'resource_id':'orders','principal':{'source':'external','subject_header':'x-forwarded-user'},'allow':[],'pumgye':{'service_id':'orders','information_class':'internal','permissions':{'GET':['read'],'POST':['write']}}}}],'pumgye_authority':{'transport':'grpc','decision_address':f'pumgye.{namespace}.svc:9087','management_address':f'pumgye.{namespace}.svc:9084','decision_token_env':'PUMGYE_DECISION_TOKEN','admin_token_env':'PUMGYE_ADMIN_TOKEN','tls':tls('pumgye'),'timeout_ms':1000}}
+        if args.resource_catalog:
+            policy['information_classes'].append('restricted')
+            policy['services']['billing']=json.loads(json.dumps(policy['services']['orders']))
+            policy['resources']={'db:orders':{'service':'orders','information_class':'internal','actions':{'select':'read','update':'write'},'minimum_aal':0}}
+            route=gateway['http'][0]['resource_policy'];route.pop('pumgye');route['pumgye_resource']={'service_id':'orders','resource':'db:orders','actions':{'GET':'select','POST':'update'}}
         items=[]
         def resource(kind,name,**fields):
             obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
@@ -136,7 +142,19 @@ def main():
             class Gateway(http.client.HTTPSConnection):
                 def connect(self):self.sock=ctx.wrap_socket(socket.create_connection(('127.0.0.1',public),timeout=3),server_hostname='app.example.test')
             def backend_count():
-                c=http.client.HTTPConnection('127.0.0.1',backend,timeout=3);c.request('GET','/__count');r=c.getresponse();data=json.loads(r.read());c.close();return data['count']
+                # Only the idempotent diagnostic read may retry a port-forward
+                # transport failure. Never replay the protected application call.
+                deadline=time.monotonic()+10
+                for attempt in range(3):
+                    c=http.client.HTTPConnection('127.0.0.1',backend,timeout=min(3,max(.1,deadline-time.monotonic())))
+                    try:
+                        c.request('GET','/__count');r=c.getresponse();data=json.loads(r.read())
+                        assert r.status==200 and type(data['count']) is int and data['count']>=0
+                        return data['count']
+                    except (OSError,http.client.HTTPException):
+                        if attempt==2 or time.monotonic()>=deadline:raise
+                        print('Read-only backend counter transport retry',flush=True)
+                    finally:c.close()
             def request(method='GET',key=tokens['api']):
                 c=Gateway('app.example.test',8443,timeout=3);headers={'Host':'app.example.test','x-forwarded-user':'forged','x-hopae-aal':'3'}
                 if key:headers['Authorization']='Bearer '+key
@@ -159,9 +177,24 @@ def main():
             assert api(admin,f'/v1/plugins/{plugin_id}/policy')[0]==200
             if args.browser_probe:
                 browser_config=root/'browser.json'
-                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace}}))
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace}}))
                 subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=240)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
+            if args.resource_catalog:
+                baseline=json.loads(json.dumps(document['policy']['resources']))
+                for field,value in [('information_class','restricted'),('minimum_aal',1),('service','billing')]:
+                    document['policy']['resources']['db:orders'][field]=value
+                    status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
+                    assert status==200 and request()[0]==403,'catalog change failed to refuse '+field
+                    document['policy']['resources']=json.loads(json.dumps(baseline))
+                    status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
+                    assert status==200 and request()[0]==200
+                document['policy']['resources']={}
+                status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
+                assert status==200 and request()[0]==403
+                document['policy']['resources']=baseline
+                status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
+                assert status==200 and request()[0]==200
             document['policy']['services']['orders']['users']={}
             status,updated,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']});assert status==200 and request()[0]==403
             # Persisted revocation must survive an actual Pod replacement.

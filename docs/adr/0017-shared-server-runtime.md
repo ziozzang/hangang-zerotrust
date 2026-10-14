@@ -419,3 +419,21 @@ was removed; Retain storage and previous node backup/off-host copy are preserved
 These are functional gates, not throughput qualification, full provider
 interoperability, in-flight gRPC shutdown, projection RPC activation, inbound
 Kubernetes authorization webhook or fleet snapshot replication completion.
+
+## Native resource gates: candidate Kubernetes qualification
+
+Hangang 4186b5f and Pumgye 2f6101cb296d add owner-managed resource/action
+classification, mandatory native service binding and gateway resource dispatch.
+The new statically built candidates passed the actual four-process mTLS gRPC
+chain and remote Kubernetes package with published Hopae 8ce0b8a99391 and
+Sumunjang 352e707674f2. Chromium verifies the integrated resource catalog and
+owner policy publication; owner class/AAL/service reassignment, catalog deletion,
+revocation, Pod replacement and network outage refuse upstream dispatch.
+Existing node backup/off-host checksums and nodes/DNS/Ingress were preserved.
+The owned test namespace was removed; synthetic Retain PVs remain.
+
+The first run stopped on a diagnostic counter read timeout. Only idempotent
+counter reads now retry transport errors under bounded time; protected requests
+are never replayed. The passing run needed no retry. These candidates are not
+new signed releases or operating migrations. Signed permission/projection receipts,
+full provider coverage, fleet replication and throughput remain separate gates.

@@ -66,7 +66,12 @@ The browser probe enters Hopae from the existing local Hangang administrator log
 and reads its actual authentication profiles, without a second Hopae login.
 It publishes a disabled profile configuration through the real editor, verifies
 that the protected application returns 401 without increasing the backend call
-count, restores the original configuration and verifies 200. These requests use
+count, replaces the actual Hopae Pod while leaving its bootstrap configuration
+unchanged, verifies the persisted disabled configuration and 401, then restores
+the original configuration and verifies 200. Reconnection may return 503; every
+observed status must be 401 or 503 before restoration. The restart command is
+restricted to the owned namespace and deployment/hopae; it uses the explicit
+kubectl wrapper without passing credentials on the command line. These requests use
 the fixture CA and real gateway; no API interception is used.
 Every forwarded operation still carries a scoped signed assertion. The receiver
 trusts its exact TCP peer only for a request with both server-authenticated mTLS

@@ -1463,3 +1463,5 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [x] Hangang browser probe 6607562 publishes actual Hopae profile disable/restore under the local Hangang login; actual Kubernetes protected requests change 200 -> 401 -> 200, and rejected requests do not reach the counting application backend.
 - [x] Rerun the whole four-server Kubernetes fixture, policy/PVC/Pod replacement, network outage and original ingress regression after this browser mutation.
 - [ ] Qualify federated console SSO and the remaining provider/lifecycle administrator flows; this selected profile gate does not complete the overall goal or production rollout.
+
+- [x] Browser probe 57d731b verifies that disabled Hopae authentication survives actual Kubernetes Pod replacement with unchanged bootstrap, reloads the owning DB profile through the console and restores authentication. Full four-server fixture and existing ingress regressions passed after correcting an asynchronous tab-navigation test race; the original failed execution is retained in the private qualification record.

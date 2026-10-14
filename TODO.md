@@ -900,3 +900,5 @@ management improvement does not complete the remaining original integration goal
 - [x] Hopae `8aecbd5`: native Pod-bound TokenReview connector and owned TLS qualification; Workload identities remain distinct and source failures have bounded circuits. Root/profile/HTTP/HOP1 integration, true cluster qualification, source deletion fences and Pumgye association remain pending.
 
 - [x] Hopae/Hangang native workload integration, strict root configuration registration, explicit prefix/material references, HTTP/HOP1 retirement guards and canonical workload AAL-0 enforcement qualified and internally deployed; console 0.1.6 scope overview pinned. Production Kubernetes and automatic mapped grants remain unconfigured; full original completion gates remain open.
+
+- [x] Hopae `207396d`: actual owned Kubernetes v1.37.0 signature and object-lifecycle qualification; real negative-response parsing, mandatory namespace scope and live UID/deletion metadata guards. Native regression 911/42, optimized candidate and internal image/console 0.1.7 rollout pass. Production Kubernetes and automated mapped grants remain unconfigured; original completion gates stay open.

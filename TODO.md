@@ -1540,3 +1540,20 @@ Hangang dispatch, permit/projection and distributed restore/fleet gates are open
   actual upstream non-dispatch, release, Kubernetes and internal adoption.
 - [ ] Complete signed permission/projection permits and replay ownership rather
   than treating zero-TTL observations as dispatch leases.
+
+## Actual final native dispatch candidate — 2026-10-15
+
+Hangang 7808c86 adds opt-in auth.native_resource validation and actual upstream
+dispatch wiring. Hopae fixture 82f4cfa qualifies four debug processes over mTLS
+gRPC with final backend base-path composition/nonempty entity, wrong
+pin/issuer/audience, body-budget refusal, restoration, class/AAL/service/guest
+denial, network/authority outage and durable permission/authentication withdrawal.
+Refusals do not dispatch to the origin. The old resource mode also passes.
+Full rerun passes 1,282 tests/58 explicit ignores, strict Clippy and 922 local
+links; an initial existing Lua saturation deadline is retained privately and
+passes isolated/full recheck. This is source/local qualification.
+
+- [ ] Build/sign/download-verify new static candidates and qualify this exact
+  native resource route on backed-up Kubernetes before operating adoption.
+- [ ] Complete signed permission/projection/replay, full identity/provider and
+  fleet requirements and measured throughput; observations are not permits.

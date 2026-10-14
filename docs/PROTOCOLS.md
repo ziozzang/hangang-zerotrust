@@ -115,3 +115,16 @@ Cache hits and retry paths also need the same authorization contract; ordinary
 pre-transform auth-proxy verification cannot substitute for final request binding.
 Static packaging, the new typed endpoint's Kubernetes qualification and signed
 permit/projection/replay gates remain open.
+
+## Final native dispatch source qualification
+
+Hangang 7808c86 wires auth.native_resource into actual upstream attempts after
+transformation and selected backend URI composition. Protected/enforced resource
+configuration and both authorities' mTLS gRPC transports are mandatory. The owned
+four-process HTTP-origin fixture (Hopae 82f4cfa) proves final target/entity and
+credential consumption plus refusal without effects for wrong pin/issuer/audience,
+body budget, permission/class/AAL/service, guest, network and authority failures.
+Durable authentication/permission withdrawal and old-mode regression pass. This
+supersedes the earlier source dispatch gap; new static release, Kubernetes,
+production, complete streaming and signed permit/projection/replay gates remain
+open. Zero-TTL observations do not refresh streaming authorization leases.

@@ -32,6 +32,20 @@ keep independently scalable server processes. Transport parity, supervisor liste
 handover and actual Kubernetes tests are adoption gates, not consequences of code
 reuse. No shared multi-writer business schema is introduced.
 
+## Default linkage and deployment
+
+The shared server runtime is a Rust library compiled and statically linked into
+each component executable. Independent Hopae, Sumunjang, Pumgye and Hangang
+processes remain separately deployable and scalable; reuse introduces no additional
+request-path service or network hop. Pin the library revision and qualify each
+consumer before releasing its rebuilt executable. Linux releases default to musl
+and must pass the existing no-ELF-interpreter artifact checks.
+
+Dynamic shared-library loading is not the default extension mechanism. Provider
+adapters and Lua policy extensions remain domain-owned and do not change this
+linkage boundary. Static linkage does not imply constant policy: database-backed
+in-memory snapshots and supported runtime configuration remain dynamic.
+
 ## Local qualification evidence
 
 Pumgye: 17 server tests, strict workspace Clippy, actual gRPC/native mTLS requests,

@@ -5,7 +5,8 @@
 Status: accepted boundary; initial shared gRPC transport implemented in
 [hangang-runtime](https://github.com/ziozzang/hangang-runtime), revision
 81352ef. Pumgye (878bd2a) and Sumunjang (65856ab) have adopted this transport
-and passed local process qualification. Hopae and Hangang adoption remain open. This does not complete the integrated package.
+and passed local process qualification. Hopae (e1aead3) also adopts the runtime
+for its additional gRPC verification endpoint. Hangang client adoption remains open. This does not complete the integrated package.
 
 Share server infrastructure rather than independently reproducing transport and
 lifecycle behavior in every module. Keep provider/session ownership in Hopae,
@@ -40,3 +41,13 @@ input rejection, revision fence, same-channel policy changes and supervised HUP
 listener handover. Signed updater regression also passed upgrade, policy retention,
 readiness rollback, tamper rejection and cancellation. These are local owned fixtures;
 they do not prove actual Kubernetes gRPC deployment or production rollout.
+
+Hopae e1aead3: actual mTLS gRPC calls through the existing authentication pipeline
+qualified authenticated session allow, HTTP status/reason parity, immediate session
+termination on the same channel, wrong/duplicate caller credentials, injected credential
+headers and client-certificate refusal. Configuration tests cover mandatory mTLS,
+caller authentication and distinct listeners. Full all-features tests: 914 passed,
+42 existing environment-dependent cases ignored; strict all-target/all-feature Clippy
+and EN/KO documentation checks passed. The administrator status reports the bound
+gRPC address. Container build inputs now include protoc, schema and vendored LDAP;
+that container build and actual Kubernetes rollout are not yet qualified.

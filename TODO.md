@@ -1473,3 +1473,5 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [x] Runtime 819177c (0.1.2) shares bounded TCP admission/task ownership/drain; real socket tests and strict Clippy pass. Management HTTPS adopts it.
 - [x] Hopae 6eb07d3 adopts the primitive for HOP1 preserving 256 connections, zero drain, TLS/ALPN and domain authentication. 917 tests pass/42 existing ignored; strict Clippy and actual four-process native/gRPC durable-restart request chains pass.
 - [ ] Adopt and qualify this primitive for Pumgye/Sumunjang native listeners; package and deploy the new revision before claiming Kubernetes/production adoption.
+
+- [x] Pumgye 200ed48 shares native and management/readiness connection ownership. Real authenticated native owner-cancellation test, 25 workspace tests, strict Clippy, actual HTTP/PPG1/gRPC and both four-process durable-restart request chains pass; new packaging/Kubernetes/production adoption remains open.

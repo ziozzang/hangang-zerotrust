@@ -195,3 +195,15 @@ Both actual four-process request chains (mTLS HOP1/PPG1/HGD1 and gRPC) also pass
 including durable profile/permission revocation, actual owner restart and refused
 backend non-dispatch. This new extraction has not yet been packaged or deployed in Kubernetes/production.
 Pumgye/Sumunjang native adoption and inherited-listener gates remain open.
+
+Pumgye 200ed48 adopts shared connection ownership for native PPG1 and management/
+readiness listeners, preserving capacities 4,096/2,048 and existing protocol/TLS
+handlers. Its listener futures retain their existing lifetime; owner cancellation
+now aborts connection tasks. This is not a new OS-signal drain implementation.
+An actual authenticated native socket test verifies owner cancellation closes the
+connection. All 18 server tests (25 workspace tests), strict workspace Clippy,
+actual HTTP/PPG1/gRPC mTLS role/certificate refusal, revision/CAS/revocation/
+persistence checks and both four-process durable-restart request chains pass.
+The first Python wire invocation lacked grpc; the existing qualification virtual
+environment completed the same checks. New packaging/Kubernetes/production and
+Sumunjang adoption remain open.

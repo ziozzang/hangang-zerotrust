@@ -534,3 +534,11 @@ promised gain and do not achieve the full 100k/s target.
 Production gateway image was not switched by this optimization phase. Further
 profiling, open-loop/fleet/provider load, watch/follower continuity, remaining
 provider lifecycle and final deployment/release gates remain active.
+
+## Internal request-local Guard optimization rollout
+
+The qualified `d3742b8` gateway executable is deployed internally. Live native
+API/matrix/modules/SSO checks and an owned renewing stream over 3.2 seconds pass.
+Configuration and policy are preserved, and the previous image is retained for
+rollback. This rollout does not enable Kubernetes authority in production, shared
+Guard caching, instantaneous revocation or sustained fleet throughput.

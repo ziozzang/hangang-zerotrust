@@ -1349,3 +1349,21 @@ boundary checks and synchronized English/Korean documentation checks pass.
 This is HTTP runtime qualification, not Chromium qualification. Immediate external
 directory session revocation, production LDAP configuration, secret/CA publication
 epochs and fleet lifecycle remain open. No production binary or release tag changed.
+
+## Internal rollout of request-local Guard evidence reuse — 2026-10-14
+
+Hangang gateway `d3742b8` is deployed internally. Its executable SHA-256 matches
+`request_local_guard_reuse.gateway_sha256` in Pumgye's checked-in whole-chain
+benchmark. The deployment preserves existing console binary, configuration and
+Pumgye policy; retains the previous gateway image and private rollback backups;
+and rolls back on a failed live regression. Actual API authentication, permission
+matrix, console modules, SSO and native transport regressions pass after replacement.
+An owned temporary route through the live gateway/Hopae/Pumgye also sustains a
+renewing stream beyond 3.2 seconds, strips credentials and releases its origin on
+client close. Temporary route cleanup restores the effective original configuration
+with monotonic CAS revisions; the final live API regression passes.
+
+Guard evidence reuse stays inside one request, bound to authority, IP, revision and
+its issued deadline. It creates no cross-request decision cache and makes no claim
+of instantaneous remote revocation. The controlled loopback throughput result is
+not a production load or 100k whole-chain qualification. No release tag changed.

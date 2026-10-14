@@ -1483,3 +1483,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Sumunjang 2777b9e stages collision-free musl/GNU release archives; six contract tests pass. Qualified Linux amd64 musl canonical/compatibility artifacts use the existing pinned signature identity; independent OpenSSL/payload/checksum verification passes. Seven assets uploaded to v0.3.4 draft.
 - [ ] Qualify and stage the existing GNU updater target before publishing Sumunjang v0.3.4; complete signed rollout/dogfooding.
+
+- [x] User-directed Linux static default: Sumunjang 0c565c7 selects musl and refuses ELF interpreters before signing; seven tests and real byte-identical signed asset preparation pass. GNU compatibility artifacts are not uploaded.
+- [ ] Replace the earlier GNU publication gate with verified one-time static migration for existing GNU installations, then qualify musl update discovery and operational rollback before publication/rollout.

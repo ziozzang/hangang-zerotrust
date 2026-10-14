@@ -230,3 +230,17 @@ version/target/download URL/size/digest and all checksums match. Seven assets ar
 uploaded to the v0.3.4 draft. GNU updater-target qualification and operational
 rollout remain pending; the draft is not a published release. Other platform staging
 support does not imply platform qualification. GitHub Actions remains disabled.
+
+## Static Linux distribution default
+
+User direction supersedes the earlier GNU release-preparation gate: Linux server
+distribution defaults to static musl. Sumunjang 0c565c7 changes the release tool
+default to x86_64-unknown-linux-musl and rejects an ELF interpreter before creating
+or signing musl assets. Seven contract tests pass; real default preparation
+reproduces all seven independently verified draft assets byte for byte. The GNU
+compatibility build/check completed, but those binaries are not release assets.
+Existing GNU installations require a one-time verified musl migration; thereafter
+update discovery uses the actual compiled musl target. Never relabel a binary or
+rewrite a signed target to evade target validation. Operational migration and
+release publication remain open. This direction applies to Linux; other operating
+system builds retain their separate platform qualification requirements.

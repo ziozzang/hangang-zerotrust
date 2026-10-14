@@ -78,8 +78,9 @@ request revocation/restoration, Pod replacement, failure/no-backend-dispatch
 and logout gates passed. Owned namespace was removed; synthetic Retain PVs
 were preserved. A fresh cold backup passed archive integrity before testing;
 cluster/authentication-container restart and existing DNS/Ingress were checked.
-The new off-host copy is being completed separately; no completed-copy claim
-is made here.
+The original off-host transfer subsequently completed: its entire SHA-256
+matched the complete remote archive. Both private full backups are retained;
+the failed auxiliary tail transfer was not used as evidence.
 
 The new Kubernetes endpoint step proves positive combined admission only.
 Receipt-specific withdrawal/outage was qualified in the local static three-

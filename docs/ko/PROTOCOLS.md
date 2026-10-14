@@ -31,3 +31,26 @@ Hangang 연결 풀/네이티브 로그인·로그아웃 → 회수/장애/파서
 deadline·mTLS·네이티브/gRPC 의미 일치가 필수입니다. Kubernetes API 서버
 webhook은 HTTP/JSON 변환을, Envoy ext_authz는 별도 호환 검증을 요구합니다.
 이 설계 수정만으로 gRPC 서버나 플러그인을 제공하지는 않습니다.
+
+## 검증된 네이티브 판정 원천 관측
+
+추가 gRPC 전송은 구현되어 있으며 소유권과 반영 근거는
+[ADR 0017](0017-shared-server-runtime.md)에 기록합니다. 품계의 타입화된
+AuthenticatedResourceAuthorization/Decide는 JSON 문맥 바이트 대신 호패의
+공용 protobuf receipt 문맥을 사용합니다. 실제 호패·수문장 원천에 질의한 뒤
+TTL 0 자원 판정을 반환합니다. 유지하는 로컬 테스트에서 실제 한강 클라이언트를
+세 서버의 지속 mTLS 연결에 연결해 인증/네트워크 회수·복원·장애·신뢰 거부를
+검증했습니다.
+
+한강 연결 계층은 라우트 소유 자원/메서드 범위·IP·최종 요청 digest·불투명한
+검증 서비스 receipt를 받습니다. 이 endpoint의 신원·AAL·네트워크 판정은
+질의자가 지정하지 않습니다. 직접 호패 검증 클라이언트는 정확한 receipt를
+소유 원천에 재확인합니다. 두 결과는 관측이며 서명 권한/변환 permit이 아닙니다.
+새 타입 클라이언트 경로는 미릴리스이며 운영 게이트웨이 전달에는 미연결입니다.
+
+전달 연결은 backend URI 합성 이후의 최종 origin-form target·변환된 본문에
+바인딩하고 라우트/설정 소유권을 유지하며 서비스 자격을 소비하고 upstream 효과
+이전에 오래된 원천을 거부해야 합니다. 캐시 응답과 재시도도 같은 인증 계약이
+필요하며 변환 전의 기존 auth-proxy 검사는 최종 요청 바인딩을 대신할 수 없습니다.
+정적 패키징·새 타입 endpoint의 Kubernetes 검증·서명 permit/변환/재사용 방지
+검증은 후속 작업입니다.

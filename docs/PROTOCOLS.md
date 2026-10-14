@@ -89,3 +89,29 @@ versioned typed transport over existing decision cores. Reused channels, bounded
 messages/deadlines, mTLS and native/gRPC semantic parity are required. Kubernetes
 API-server webhooks need HTTP/JSON translation; Envoy ext_authz requires a separate
 qualified adapter. No gRPC server or plugin is shipped by this design update.
+
+## Qualified native authority observations
+
+The additional gRPC transports are implemented; current ownership and rollout
+evidence is tracked in [ADR 0017](adr/0017-shared-server-runtime.md). Pumgye now
+has a typed `AuthenticatedResourceAuthorization/Decide` endpoint that shares
+Hopae's canonical protobuf receipt context, rather than carrying JSON context
+bytes. It queries actual Hopae and Sumunjang owners before returning a zero-TTL
+resource decision. The maintained local fixture qualifies the actual Hangang
+clients against the three authority processes over persistent mTLS channels,
+including identity/network withdrawal and restoration, outage and trust refusal.
+
+Hangang's authority runtime accepts a route-owned resource/method scope, IP,
+final request digest and opaque checked service receipt; identity, AAL and network
+verdicts are not caller-supplied in this endpoint. Its direct Hopae validation
+client rechecks the exact receipt with the owning issuer. Both results are
+observations, not signed permission or projection permits. The new typed client
+path remains unreleased and is not wired into operating gateway dispatch.
+
+Dispatch integration must bind the final origin-form target after backend URI
+composition and the transformed entity, retain route/configuration ownership,
+consume service credentials, and refuse stale owners before upstream effects.
+Cache hits and retry paths also need the same authorization contract; ordinary
+pre-transform auth-proxy verification cannot substitute for final request binding.
+Static packaging, the new typed endpoint's Kubernetes qualification and signed
+permit/projection/replay gates remain open.

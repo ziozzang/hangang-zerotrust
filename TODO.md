@@ -1526,3 +1526,17 @@ verified and internally deployed with private rollback material and preserved
 policy/identity data. See [packaging evidence](docs/PACKAGING.md). Existing
 operating receipt resources remain unconfigured. Kubernetes combined endpoint,
 Hangang dispatch, permit/projection and distributed restore/fleet gates are open.
+
+## Hangang typed receipt observation clients — 2026-10-15
+
+- [x] Connect the actual Hangang Hopae/Pumgye clients to the three-authority
+  persistent-mTLS gRPC fixture: resource Allow, network block/removal, signed
+  identity-profile withdrawal/restoration, outage and seven trust refusals pass.
+- [x] Connect checked receipt input to the owning Pumgye runtime with route service,
+  method/action and exact digest checks; cross-service, unmapped method and changed
+  digest refuse. Observations do not refresh ordinary authorization leases.
+- [ ] Connect final transformed request/selected backend target, cache and retry
+  paths to native receipt authorization and final owner/route fences; qualify
+  actual upstream non-dispatch, release, Kubernetes and internal adoption.
+- [ ] Complete signed permission/projection permits and replay ownership rather
+  than treating zero-TTL observations as dispatch leases.

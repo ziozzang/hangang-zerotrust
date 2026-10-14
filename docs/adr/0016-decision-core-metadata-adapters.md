@@ -176,3 +176,14 @@ including denial, replacement, source outage and revocation. Measure adapter ove
 allocations, core latency, pooled RPC and whole request latency separately under the
 original throughput targets. Existing HTTP/native qualification cannot substitute for
 Kubernetes API or PostgreSQL enforcement qualification.
+
+## Implementation evidence: first Pumgye gRPC endpoint
+
+Pumgye `c46f42f` implements an optional bounded mTLS gRPC endpoint over the existing
+service-matrix Authority, with a separate protobuf crate and no request-time DB call.
+Workspace tests (24), strict Clippy and actual Python grpcio/mTLS process fixtures
+qualify credential/CA/name isolation, bounded decode, native parity, revision floors
+and immediate revocation. Source-expiry/capacity/default-value unit tests pass.
+This is local component evidence: generic resources, production/Kubernetes gRPC,
+other domain endpoints and Hangang gRPC clients/proxy qualification remain open.
+See [Pumgye gRPC contract](https://github.com/ziozzang/pumgye/blob/main/docs/GRPC.md).

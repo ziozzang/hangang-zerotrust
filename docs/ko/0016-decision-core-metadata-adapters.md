@@ -151,3 +151,13 @@ TE/trailer·프로토콜 협상·gRPC 인증/권한/판단 불가 오류·deadli
 할당, 코어 지연, pooled RPC와 전체 요청 지연을 원래 처리량 목표 아래 별도로
 측정합니다. HTTP/네이티브 검증으로 Kubernetes API나 PostgreSQL 집행 검증을
 대신하지 않습니다.
+
+## 구현 근거: 첫 품계 gRPC endpoint
+
+품계 `c46f42f`는 별도 protobuf crate와 기존 서비스 매트릭스 Authority를
+사용하는 선택적·제한된 mTLS gRPC endpoint를 구현했습니다. 요청 DB 조회는
+없습니다. workspace 테스트 24개, 엄격한 Clippy, 실제 Python grpcio/mTLS
+프로세스 검사로 자격·CA·이름 격리, 입력 제한, 네이티브 의미 일치, 최소
+revision과 즉시 회수를 확인했습니다. 원천 만료·용량·기본값 unit도 통과했습니다.
+로컬 모듈 근거이며 범용 자원·운영/Kubernetes gRPC·다른 도메인 endpoint·
+한강 클라이언트/프록시는 남았습니다. [품계 계약](https://github.com/ziozzang/pumgye/blob/main/docs/GRPC.md)을 참조하세요.

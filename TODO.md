@@ -1213,3 +1213,28 @@ Kubernetes source/watch continuity, broad distributed deployment/membership,
 remaining identity-provider lifecycle, full-chain throughput and final public
 release/completion gates remain active. This phase does not create new release
 tags or enable GitHub Actions.
+
+
+## Live internal renewal stream proof — 2026-10-14
+
+A temporary controlled stream origin and route verify the currently deployed
+Hangang/Hopae/Pumgye canary. Heartbeats continue beyond 3.2 seconds with evidence
+renewal enabled; client closure releases the origin, authenticated subject/AAL
+remain correct, and the bearer credential is absent upstream. Pumgye policy is
+unchanged. The temporary route is removed and existing protected configuration
+restored through revision-fenced publications; actual scoped API proof passes
+again after cleanup. Only monotonic configuration revisions advance.
+
+Initial attempts exposed fixture setup mistakes, not a proven renewal failure:
+appending a narrow path behind the existing prefix route reached the old origin,
+and removing an enforced scope was correctly refused. A distinct resource ID
+inside the established namespace was also correctly refused. Shared resource IDs
+are intentional when policies/authenticators match; they must be disabled and
+restored consistently across the shared scopes. Corrected prefix order and shared
+policy transition make the live proof pass. No validation rule was weakened and
+no erroneous duplicate-ID rejection was added.
+
+This is a short live functional/cancellation canary proof, not sustained load,
+credential-revocation fleet qualification or full-chain QPS measurement. The
+broader original watch/follower, provider lifecycle, Kubernetes packaging,
+performance and final release/completion gates remain active.

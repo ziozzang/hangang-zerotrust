@@ -6,7 +6,8 @@ Status: accepted boundary; initial shared gRPC transport implemented in
 [hangang-runtime](https://github.com/ziozzang/hangang-runtime), revision
 81352ef. Pumgye (878bd2a) and Sumunjang (65856ab) have adopted this transport
 and passed local process qualification. Hopae (e1aead3) also adopts the runtime
-for its additional gRPC verification endpoint. Hangang client adoption remains open. This does not complete the integrated package.
+for its additional gRPC verification endpoint. All three additional gRPC gateway clients are now implemented and locally qualified.
+Full request-chain, Kubernetes and production adoption remain open. This does not complete the integrated package.
 
 Share server infrastructure rather than independently reproducing transport and
 lifecycle behavior in every module. Keep provider/session ownership in Hopae,
@@ -59,7 +60,7 @@ guest/all-permission denial, same-channel policy revocation and monotonic revisi
 fencing. Seven focused authority/response tests, 34 configuration tests, strict
 all-target Clippy and documentation/publication checks passed. Global admission,
 whole-batch deadline, decoding limits and coherent batch revisions are enforced.
-Hopae/Sumunjang gRPC clients, full actual gateway request-chain qualification,
+At that stage, Hopae/Sumunjang gRPC clients and full actual gateway request-chain qualification,
 credential/channel lifecycle qualification and Kubernetes/production adoption remain
 open; this is not proof of complete gRPC application proxy support.
 
@@ -73,5 +74,16 @@ ignored), plus strict Clippy and documentation/publication checks. Admission and
 fresh mandatory authorization evidence now share a monotonic observed revision,
 preventing stale replies from rolling back newer evidence across HTTP signals and
 native/gRPC queries. Optional admission still follows its configured failure policy;
-mandatory Pumgye network evidence is unavailable on failure. Hopae client adoption,
+mandatory Pumgye network evidence is unavailable on failure. At that stage, Hopae client adoption,
 full gateway request-chain and Kubernetes/production rollout remain unqualified.
+
+Hangang 0125779 adds the Hopae gRPC client through a provider-independent pinned
+`hopae-grpc` crate (Hopae contract extraction 7b5a8b8). Hopae scenario 9469182 invokes
+the actual gateway client against its owned session engine: authenticated allow,
+wrong caller key, server-name mismatch and same-channel session termination passed.
+Five client tests, 34 configuration tests, an actual HOP1 proxy regression, strict
+all-target Clippy and EN/KO documentation/publication checks passed. Existing
+verification status, repeated cookies, identity and terminal response handling are
+reused, with no HTTP/native fallback or decision caching. Console SSO still uses
+HOP1. Full actual gateway chain, channel/credential lifecycle, Kubernetes and
+production rollout remain unqualified; the overall goal remains incomplete.

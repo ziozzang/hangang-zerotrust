@@ -1054,3 +1054,22 @@ throughput. Kubernetes RBAC polling can independently withdraw source health and
 retire a valid stream, so watch/follower continuity remains necessary. Production
 images/configuration and release tags were not changed by this phase. The original
 full completion goal remains active.
+
+
+## Renewal cancellation, quota and irreversible expiry — 2026-10-14
+
+Hangang `d963b8d` applies the remaining-lifetime minimum to renewal replies as well
+as initial admission, and marks retained authentication context sensitive for
+formatting. The owned transport test exhausts all 4096 renewal permits, confirms
+new admission fails, then verifies that last-owner drop cancels an actual in-flight
+native socket and returns every permit. Missing renewal response times out without
+extending the lease; once expiry is observed, setting a later deadline cannot
+revive it. The resource-policy short/expired-TTL scenarios now keep identity
+unchanged so identity mismatch cannot mask lifetime rejection.
+
+The lifecycle transport unit, 17 resource-policy tests, strict all-target clippy
+and 916 documentation links pass. This is bounded lifecycle/transport qualification,
+not a fleet throughput or sustained real-cluster renewal claim. Production images,
+configuration and release tags were not changed. Actual source continuity/watch,
+long-lived real provider qualification, rollout, remaining lifecycle/provider
+features, distributed followers and full performance/release gates remain active.

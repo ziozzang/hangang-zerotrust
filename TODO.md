@@ -902,3 +902,5 @@ management improvement does not complete the remaining original integration goal
 - [x] Hopae/Hangang native workload integration, strict root configuration registration, explicit prefix/material references, HTTP/HOP1 retirement guards and canonical workload AAL-0 enforcement qualified and internally deployed; console 0.1.6 scope overview pinned. Production Kubernetes and automatic mapped grants remain unconfigured; full original completion gates remain open.
 
 - [x] Hopae `207396d`: actual owned Kubernetes v1.37.0 signature and object-lifecycle qualification; real negative-response parsing, mandatory namespace scope and live UID/deletion metadata guards. Native regression 911/42, optimized candidate and internal image/console 0.1.7 rollout pass. Production Kubernetes and automated mapped grants remain unconfigured; original completion gates stay open.
+
+- [x] Pumgye `ec2fe0f`: actual v1.37.0 typed-list normalization, live RBAC/mapping candidate deletion/recreation and credential recovery qualified. Native subject association and durable authoritative publication remain pending.

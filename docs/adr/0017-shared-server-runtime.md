@@ -51,3 +51,14 @@ caller authentication and distinct listeners. Full all-features tests: 914 passe
 and EN/KO documentation checks passed. The administrator status reports the bound
 gRPC address. Container build inputs now include protoc, schema and vendored LDAP;
 that container build and actual Kubernetes rollout are not yet qualified.
+
+Hangang 59e531d adds an optional Pumgye gRPC decision client selected by
+`pumgye_authority.transport=grpc` (native remains default). The actual owning-server
+fixture proves mTLS calls, administrator-role refusal, server-name mismatch refusal,
+guest/all-permission denial, same-channel policy revocation and monotonic revision
+fencing. Seven focused authority/response tests, 34 configuration tests, strict
+all-target Clippy and documentation/publication checks passed. Global admission,
+whole-batch deadline, decoding limits and coherent batch revisions are enforced.
+Hopae/Sumunjang gRPC clients, full actual gateway request-chain qualification,
+credential/channel lifecycle qualification and Kubernetes/production adoption remain
+open; this is not proof of complete gRPC application proxy support.

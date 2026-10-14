@@ -188,3 +188,5 @@ flowchart LR
 [Domain decision cores and metadata adapters](docs/adr/0016-decision-core-metadata-adapters.md) — database-backed memory snapshots, inbound Kubernetes decisions and proposed PostgreSQL integration. Sillok is optional; these new adapters are not shipped.
 
 [Component image packaging](docs/PACKAGING.md) packages qualified static artifacts; local images do not imply Kubernetes or production rollout.
+
+[Four-service Kubernetes functional qualification](docs/KUBERNETES_WORLD_QUALIFICATION.md) records the selected actual API request chain, Pod/PVC replacement and failure gates; full administrator/provider and inbound Kubernetes delegation remain open.

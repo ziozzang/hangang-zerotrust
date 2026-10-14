@@ -158,3 +158,5 @@ flowchart LR
 [도메인 판정 코어와 메타데이터 어댑터](docs/ko/0016-decision-core-metadata-adapters.md) — DB 원천 메모리 스냅샷, Kubernetes 역방향 판정과 PostgreSQL 연동 제안. 실록은 선택 사항이며 새 어댑터는 미구현입니다.
 
 [구성요소 이미지 패키징](docs/ko/PACKAGING.md)은 검증한 정적 파일을 패키징합니다. 로컬 이미지는 K8s/운영 배포의 완료를 뜻하지 않습니다.
+
+[네 서비스 K8s 기능 검증](docs/ko/KUBERNETES_WORLD_QUALIFICATION.md)은 실제 API 요청 체인·Pod/PVC 교체·장애 거부를 기록합니다. 전체 관리자/공급자 및 K8s 인증 위임은 남아 있습니다.

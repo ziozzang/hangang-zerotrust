@@ -509,3 +509,26 @@ issuer/TokenReview load. Open-loop arrival overload, denied mix, long renewal
 load, physical/fleet topology and 100k/s optimization remain required, alongside
 watch/follower, provider lifecycle, Kubernetes packaging and final release gates.
 Production images/policies/configuration are unchanged by this benchmark phase.
+
+
+## Request-local authenticated network evidence reuse — 2026-10-14
+
+Hangang `d3742b8` removes redundant admission/authorization Guard RPC when the
+same request already holds current authenticated network evidence. Proof binds
+the actual Guard instance, canonical IP, observed revision and at most one second
+from its original query start. Changed binding or expiry re-queries; snapshot,
+fail-open and optional cache hits cannot issue reusable proof. Each new request
+still performs normal admission; no cross-request decision cache is added. This
+uses a still-valid issued proof, not instantaneous remote-change notification.
+
+Authority/IP/revision/deadline adversarial test, 19 matching Guard-related tests,
+17 resource-policy tests, strict clippy and documentation checks pass. Actual
+Kubernetes/four-process/real renewal and Pod-deletion regression passes. The same
+16-worker closed-loop chain gives 11,764–12,492 verified replies/s, p99
+1,862–2,110 us, zero failures; raw source/hash/counters are recorded in Pumgye
+`7cc84c1`. Prior observed range was 11,081–11,657/s; measurements are not a
+promised gain and do not achieve the full 100k/s target.
+
+Production gateway image was not switched by this optimization phase. Further
+profiling, open-loop/fleet/provider load, watch/follower continuity, remaining
+provider lifecycle and final deployment/release gates remain active.

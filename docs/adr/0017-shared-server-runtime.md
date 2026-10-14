@@ -7,7 +7,7 @@ Status: accepted boundary; initial shared gRPC transport implemented in
 81352ef. Pumgye (878bd2a) and Sumunjang (65856ab) have adopted this transport
 and passed local process qualification. Hopae (e1aead3) also adopts the runtime
 for its additional gRPC verification endpoint. All three additional gRPC gateway clients are now implemented and locally qualified.
-Full request-chain, Kubernetes and production adoption remain open. This does not complete the integrated package.
+Selected request-chain, Kubernetes and production adoption are qualified below; complete provider/fleet adoption remains open. This does not complete the integrated package.
 
 Share server infrastructure rather than independently reproducing transport and
 lifecycle behavior in every module. Keep provider/session ownership in Hopae,
@@ -450,3 +450,16 @@ restart passed. Hangang 0.3.4 source preparation at bd2bdfc passed all-target
 regression (1,266 passed, 58 ignored) and Clippy; its complete static package build,
 signed publication and operating migration remain pending. This does not complete
 provider/fleet/projection or automatic-update requirements.
+
+## Hangang 0.3.4 release and operating console
+
+[Hangang v0.3.4](https://github.com/ziozzang/hangang/releases/tag/v0.3.4) is
+published at bd2bdfc with five independently verified static Linux amd64 assets
+containing eight executables. All uploaded/downloaded assets matched. The exact
+signed Hangang 0.3.4/Pumgye 0.1.3 images passed actual remote Kubernetes/browser
+resource qualification; existing backups and deployments were preserved and the
+owned namespace was removed. The operating gateway and standalone administrator
+console both passed rollback backups, production preflight, configuration/credential
+preservation and actual management/UI checks. The console serves the current
+catalog assets. This closes the selected release/console adoption gate, not full
+provider/projection, fleet replication, automatic updates or throughput scope.

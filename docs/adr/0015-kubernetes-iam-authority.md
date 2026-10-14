@@ -342,3 +342,23 @@ continuity. Slow/large sources exceeding the budget are unavailable rather than
 silently receiving extended authority. Scalable watches/followers, deployment,
 remaining provider/lifecycle functions and full performance/release completion
 remain required by the original active goal.
+
+
+## Persistent pinned source connections — 2026-10-14
+
+Pumgye `508bb73` reuses the Kubernetes HTTPS client across cycles with unchanged
+actual CA/token material. Bounded files are still read/validated each cycle and
+authorization is freshly constructed; changed trust/credential material retires
+its previous pool. Configured roots, no proxy/redirect, one-second source-start
+freshness and failure fencing remain. At most two idle connections per origin
+and ten-second idle expiry apply to transport, not cached authorization.
+
+The owned HTTP/1.1 TLS fixture counts one accepted connection across two complete
+unchanged paginated cycles, and replacement connections for credential change/
+recovery. CA error/recovery, source changes/deletion, redirect/410, slow collection,
+proxy isolation and privacy checks pass. Workspace 21 tests and strict clippy
+pass; the actual v1.37.0/four-native-process and isolated renewal fixture passes.
+This proves connection reuse/rotation behavior, not a full-chain QPS result.
+Production images/configuration and release tags are unchanged. Scalable watches,
+follower continuity, deployment, remaining mixed-provider lifecycle and complete
+performance/release gates remain part of the original active goal.

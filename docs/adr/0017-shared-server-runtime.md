@@ -218,3 +218,15 @@ listener handover. The extraction initially left a test-only import in productio
 scope; moving it into the test module restored the strict gate. With all three
 new domain-server binaries, both native and gRPC four-process durable-restart
 chains pass. Latest images/Kubernetes/production adoption remain separate gates.
+
+## Signed release staging
+
+Sumunjang release tooling 2777b9e adds musl target preparation with distinct
+linux-musl archive names, preserving complete target triples in both canonical
+and compatibility signed manifests. Six release contract tests pass, including
+GNU/musl archive coexistence. The qualified Linux amd64 musl artifacts were signed
+with the existing pinned key and independently verified with OpenSSL; payload
+version/target/download URL/size/digest and all checksums match. Seven assets are
+uploaded to the v0.3.4 draft. GNU updater-target qualification and operational
+rollout remain pending; the draft is not a published release. Other platform staging
+support does not imply platform qualification. GitHub Actions remains disabled.

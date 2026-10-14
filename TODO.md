@@ -1480,3 +1480,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [ ] Package the shared-runtime authority revisions and qualify the actual Kubernetes/browser fixture before release/operational adoption.
 
 - [x] Package shared-runtime revisions Hopae 6eb07d3/Sumunjang 5de28f3/Pumgye 200ed48 as qualified static nonroot images, transfer with matching checksums, import both nodes and pass the full actual Kubernetes/browser fixture with stale publication, persisted revocation, Pod replacement and outage checks. Namespace cleanup and existing ingress/operator regression checks pass. Public release and production adoption remain open.
+
+- [x] Sumunjang 2777b9e stages collision-free musl/GNU release archives; six contract tests pass. Qualified Linux amd64 musl canonical/compatibility artifacts use the existing pinned signature identity; independent OpenSSL/payload/checksum verification passes. Seven assets uploaded to v0.3.4 draft.
+- [ ] Qualify and stage the existing GNU updater target before publishing Sumunjang v0.3.4; complete signed rollout/dogfooding.

@@ -1495,3 +1495,8 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Hopae c5e148d defaults to static release staging, preserves existing signing pin and independently verifies signatures with OpenSSL; six release boundary tests and documentation/publication checks pass. Five Linux amd64 assets signed; candidate matches the qualified image and read-only actual deployment preflight passes.
 - [ ] Qualify current Hopae DB-clone/provider/session lifecycle and operational replacement; refresh stale draft platforms only with current-source evidence before publication.
+
+- [x] Publish Hopae v0.0.4/6dccf80 with five independently verified static signed assets; preserve the older v0.0.3 tag and restore its draft assets. 917 tests/42 existing ignored, strict Clippy, release boundary and static native/gRPC request chains pass.
+- [x] Qualify real owner DB clones with signed publication/withdrawal of a fresh clone-only credential while retaining original expired-credential refusal and protected user/session/MFA data. Internally deploy exact signed v0.0.4 with rollback backups, restart and live Hangang delegated reads.
+- [x] Qualify the published Hopae/Sumunjang/Pumgye static image revisions together on actual Kubernetes/browser fixture; namespace cleanup and existing ingress/nodes pass.
+- [ ] Clarify Unix-millisecond API credential expiration in administrator editing/help; preserve deliberate expiry rather than silently renewing credentials.

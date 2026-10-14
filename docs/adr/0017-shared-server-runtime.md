@@ -303,3 +303,38 @@ environment and database exits zero with no production replacement. DB-clone
 lifecycle, provider/session continuity, operational rollout and refreshing the
 existing multi-platform draft remain open. Older draft platforms must not be
 reported as current-source qualified merely because their version string matches.
+
+## Hopae publication and static operational continuity
+
+[Hopae v0.0.4](https://github.com/ziozzang/hopae/releases/tag/v0.0.4) is
+published at 6dccf80 with five Linux amd64 static signed assets. The existing
+v0.0.3 tag pointed to older source; it was not rewritten or published. Its draft
+assets were restored from the archived originals. Version 0.0.4 passes 917
+all-features tests (42 existing ignored), strict Clippy, release boundary tests,
+both static four-process native/gRPC chains and downloaded signature/checksum
+verification. The new tag points to the qualified source commit.
+
+Actual owner DB clones preserve users, identities, sessions/handles, grants, MFA,
+logical provider/app records and profile configuration. An initial positive probe
+failed in the old binary because the existing credential had expired against the
+engine's millisecond clock. Production expiry was not extended. Only in separate
+clones, a fresh declared credential was published through the actual signed
+administrator API: HTTP/HOP1 mTLS allow, invalid/expired refusal and withdrawal
+passed for both old and candidate engines. Original logical profile contents were
+restored; the expected publication revisions/audits changed only in those clones.
+This does not claim a fresh interactive login to every real external provider.
+
+The internal container now runs the exact signed v0.0.4 executable. Private
+configuration/environment/SQLite rollback backups, preserved logical owner data,
+actual expired/invalid HTTP/native refusal, static ELF/digest, same credentials/
+UID/network, restart and live Hangang delegated profile reads pass. The first
+replacement rolled back on an overly strict environment-list order comparison;
+name/value mapping comparison proves no environment value changed.
+
+The actual Kubernetes/browser fixture also passes using Hopae 6dccf80, Sumunjang
+352e707 and Pumgye d51a8e8 images: scoped request enforcement, administrator
+publication/CAS conflicts, revocation and owning-Pod replacement, persisted state,
+backend non-dispatch and authority outage. Archive checksums matched before use,
+both nodes imported the artifacts, owned namespace cleanup completed and existing
+ingress/node checks remain healthy. General metadata adapters, all identity/source
+flows, automatic Hopae/Pumgye updates and full-stack throughput remain open.

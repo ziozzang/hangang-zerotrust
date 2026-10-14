@@ -79,3 +79,14 @@ and completely validated delegation; global trusted proxy networks are unchanged
 Unsigned TLS requests keep the normal proxy/native authorization checks.
 This qualifies remote management/profile reading and revocation/restoration, not federation login or every
 provider/mutation screen. Native data-plane authentication remains Hopae owned.
+
+## Concurrent administrator publication
+
+The browser probe opens a separate browser context, signs in again with the actual
+local administrator credentials and loads the original Hopae profile revision.
+After the first session publishes revocation, the second submits its stale document
+through the real editor. The real publication response must be 409, the UI must
+display an error and retain its stale revision, and the protected request must
+remain 401 without backend dispatch. No browser storage/session credentials or
+API responses are injected. This gate checks lost-update prevention across console
+delegation and the owning DB authority, not administrator-role isolation.

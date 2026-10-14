@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Owned four-service Kubernetes request enforcement fixture, explicit kubeconfig wrapper."""
+import argparse
+import hashlib
+import http.client
+import json
+import os
+from pathlib import Path
+import secrets
+import socket
+import ssl
+import struct
+import subprocess
+import tempfile
+import time
+
+
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--kubectl',required=True,type=Path)
+    parser.add_argument('--hopae-fixture',required=True,type=Path)
+    for name in ['hangang','hopae','sumunjang','pumgye']:parser.add_argument('--'+name+'-image',required=True)
+    parser.add_argument('--echo-image',required=True)
+    args=parser.parse_args();wrapper=args.kubectl.resolve(strict=True)
+    namespace='owned-world-'+secrets.token_hex(6);created=False;forwards=[]
+    os.umask(0o077)
+    def kube(*argv,body=None,timeout=120):
+        result=subprocess.run([str(wrapper),*argv],input=body,capture_output=True,timeout=timeout)
+        if result.returncode:raise RuntimeError('owned Kubernetes operation failed: '+argv[0])
+        return result.stdout
+    def port():
+        with socket.socket() as sock:sock.bind(('127.0.0.1',0));return sock.getsockname()[1]
+    with tempfile.TemporaryDirectory(prefix='world-owned-pods-') as temporary:
+        root=Path(temporary)
+        def openssl(*argv):subprocess.run(['openssl',*map(str,argv)],check=True,capture_output=True)
+        openssl('req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'ca.key','-out',root/'ca.pem','-days','1','-subj','/CN=Owned world CA','-addext','basicConstraints=critical,CA:TRUE')
+        for name,usage in [('server','serverAuth'),('client','clientAuth')]:
+            openssl('req','-new','-newkey','rsa:2048','-nodes','-keyout',root/f'{name}.key','-out',root/f'{name}.csr','-subj',f'/CN={name}')
+            ext=root/f'{name}.ext';ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage='+usage+'\nsubjectAltName='+','.join('DNS:'+c+'.'+namespace+'.svc' for c in ['hangang','hopae','sumunjang','pumgye'])+',DNS:app.example.test,IP:127.0.0.1\n')
+            openssl('x509','-req','-in',root/f'{name}.csr','-CA',root/'ca.pem','-CAkey',root/'ca.key','-CAcreateserial','-days','1','-extfile',ext,'-out',root/f'{name}.pem')
+        tokens={name:secrets.token_hex(32) for name in ['api','caller','gateway-admin','guard-collector','guard-admin','pum-decision','pum-admin']}
+        def tls(name):return {'server_name':name+'.'+namespace+'.svc','ca':'/tls/ca.crt','certificate':'/tls/client.crt','key':'/tls/client.key'}
+        digest=hashlib.sha256(bytes([1]))
+        for value in ['hopae:owned','services','worker']:
+            value=value.encode();digest.update(struct.pack('!Q',len(value)));digest.update(value)
+        subject='s_'+digest.hexdigest()[:48]
+        hop=json.loads(args.hopae_fixture.read_text());hop['providers']=[];hop['state_dir']='/state'
+        hop['listen']={'portal':'0.0.0.0:8700','gateway':'127.0.0.1:8701','grpc_gateway':'0.0.0.0:8703','native_gateway_tls':{'certificate':'/tls/tls.crt','key':'/tls/tls.key','client_ca':'/tls/ca.crt'}}
+        hop['apps'][0].update(app_id='orders',ports=[8443])
+        hop['authentication_gateway']={'authority_id':'owned','profiles':[{'service_id':'orders','host':'app.example.test','ports':[8443],'realm':'services','api_keys':[{'token_env':'OWNED_API_KEY','subject':'worker'}],'networks':['127.0.0.1/32']}]}
+        policy={'version':1,'information_classes':['internal'],'services':{'orders':{'permissions':['read','write'],'require_guard':True,'roles':{'reader':{'permissions':['read'],'information_classes':['internal'],'minimum_aal':0}},'users':{subject:['reader']},'networks':[{'cidr':'127.0.0.1/32','roles':['reader']}]}}}
+        gateway={'http':[{'id':'orders','host':'app.example.test','path_prefix':'/secure','access_mode':'protected','backends':[f'http://echo.{namespace}.svc:8080'],'auth':{'url':'http://127.0.0.1:8701/_hopae/verify','native':{'transport':'grpc','address':f'hopae.{namespace}.svc:8703','tls':tls('hopae')},'request_headers':['authorization'],'response_headers':['x-forwarded-user','x-hopae-aal','x-hopae-principal-kind'],'static_request_headers':{'x-hopae-gateway-key':{'env':'FIXTURE_KEY'},'x-hopae-contract':'1'},'forward_response':True},'resource_policy':{'resource_id':'orders','principal':{'source':'external','subject_header':'x-forwarded-user'},'allow':[],'pumgye':{'service_id':'orders','information_class':'internal','permissions':{'GET':['read'],'POST':['write']}}}}],'pumgye_authority':{'transport':'grpc','decision_address':f'pumgye.{namespace}.svc:9087','management_address':f'pumgye.{namespace}.svc:9084','decision_token_env':'PUMGYE_DECISION_TOKEN','admin_token_env':'PUMGYE_ADMIN_TOKEN','tls':tls('pumgye'),'timeout_ms':1000}}
+        items=[]
+        def resource(kind,name,**fields):
+            obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
+        resource('ConfigMap','world-config',data={'hopae.json':json.dumps(hop),'hangang.json':json.dumps(gateway),'pumgye.json':json.dumps({'revision':0,'policy':policy}),'sumunjang.json':json.dumps({'mode':'enforce','allow':[]})})
+        resource('Secret','world-credentials',stringData=tokens)
+        resource('Secret','world-tls',stringData={'tls.crt':(root/'server.pem').read_text(),'tls.key':(root/'server.key').read_text(),'ca.crt':(root/'ca.pem').read_text(),'client.crt':(root/'client.pem').read_text(),'client.key':(root/'client.key').read_text()})
+        def env(name,key):return {'name':name,'valueFrom':{'secretKeyRef':{'name':'world-credentials','key':key}}}
+        commands={
+            'hopae':['run','--config','/config/hopae.json'],
+            'pumgye':['--listen','0.0.0.0:9084','--decision-listen','0.0.0.0:9085','--grpc-listen','0.0.0.0:9087','--readiness-listen','0.0.0.0:9086','--database','/state/pumgye.sqlite3','--policy','/config/pumgye.json','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--client-ca','/tls/ca.crt'],
+            'sumunjang':['--listen','127.0.0.1:9080','--decision-listen','0.0.0.0:9081','--grpc-listen','0.0.0.0:9082','--database','/state/sumunjang.sqlite3','--bootstrap-policy','/config/sumunjang.json','--decision-tls-cert','/tls/tls.crt','--decision-tls-key','/tls/tls.key','--decision-client-ca','/tls/ca.crt','--threads','2'],
+            'hangang':['--config','/config/hangang.json','--database','sqlite:/state/hangang.sqlite3','--docker-connection-state','/state/docker-connections.json','--admin-users-db','/state/admin/admin-users.sqlite3','--listen','0.0.0.0:8443','--admin','127.0.0.1:9080','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--threads','2','--lua-workers','1','--drain-seconds','1','--guard-url','http://127.0.0.1:9','--guard-decision-tcp',f'sumunjang.{namespace}.svc:9082','--guard-decision-grpc','--guard-decision-server-name',f'sumunjang.{namespace}.svc','--guard-decision-ca','/tls/ca.crt','--guard-decision-cert','/tls/client.crt','--guard-decision-key','/tls/client.key','--guard-timeout-ms','1000']}
+        environments={'hopae':[env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
+        for name in commands:
+            resource('PersistentVolumeClaim',name+'-state',spec={'accessModes':['ReadWriteOnce'],'resources':{'requests':{'storage':'1Gi'}}})
+            container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
+            probe={'hopae':8700,'pumgye':9086,'sumunjang':9082,'hangang':8443}[name]
+            container['readinessProbe']={'tcpSocket':{'port':probe},'periodSeconds':2}
+            if name=='pumgye':container['readinessProbe']={'httpGet':{'port':9086,'path':'/-/ready'},'periodSeconds':2}
+            deployment=resource('Deployment',name,spec={'replicas':1,'strategy':{'type':'Recreate'},'selector':{'matchLabels':{'app':name}},'template':{'metadata':{'labels':{'app':name}},'spec':{'automountServiceAccountToken':False,'securityContext':{'runAsNonRoot':True,'runAsUser':65532,'runAsGroup':65532,'fsGroup':65532,'seccompProfile':{'type':'RuntimeDefault'}},'containers':[container],'volumes':[{'name':'config','configMap':{'name':'world-config'}},{'name':'tls','secret':{'secretName':'world-tls','defaultMode':416}},{'name':'state','persistentVolumeClaim':{'claimName':name+'-state'}}]}}});deployment['apiVersion']='apps/v1'
+            if name=='hangang':
+                deployment['spec']['template']['spec']['initContainers']=[{'name':'private-admin-state','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['/bin/sh','-ec','umask 077; mkdir -p /state/admin; chmod 0700 /state/admin; for suffix in "" -wal -shm; do f="/state/admin/admin-users.sqlite3$suffix"; if [ -e "$f" ]; then chmod 0600 "$f"; fi; done'],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'volumeMounts':[{'name':'state','mountPath':'/state'}]}]
+            ports={'hangang':[8443],'hopae':[8703],'pumgye':[9084,9087],'sumunjang':[9082]}[name]
+            resource('Service',name,spec={'selector':{'app':name},'ports':[{'name':'p'+str(p),'port':p,'targetPort':p} for p in ports]})
+        echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;q.resume();r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url}));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
+        resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
+        try:
+            kube('create','namespace',namespace);created=True
+            kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode())
+            for name in [*commands,'echo']:
+                kube('-n',namespace,'rollout','status','deployment/'+name,'--timeout=120s',timeout=135)
+                print('Ready: '+name,flush=True)
+            def forward(name,remote):
+                local=port();log=(root/(name+'-'+str(remote)+'.log')).open('wb')
+                process=subprocess.Popen([str(wrapper),'-n',namespace,'port-forward','deployment/'+name,f'{local}:{remote}'],stdout=log,stderr=log);forwards.append(process)
+                for _ in range(100):
+                    if process.poll() is not None:raise RuntimeError('owned port-forward exited')
+                    try:
+                        with socket.create_connection(('127.0.0.1',local),timeout=.1):return local
+                    except OSError:time.sleep(.05)
+                raise RuntimeError('owned port-forward deadline')
+            public=forward('hangang',8443);admin=forward('hangang',9080);guard=forward('sumunjang',9080);backend=forward('echo',8080)
+            ctx=ssl.create_default_context(cafile=str(root/'ca.pem'))
+            class Gateway(http.client.HTTPSConnection):
+                def connect(self):self.sock=ctx.wrap_socket(socket.create_connection(('127.0.0.1',public),timeout=3),server_hostname='app.example.test')
+            def backend_count():
+                c=http.client.HTTPConnection('127.0.0.1',backend,timeout=3);c.request('GET','/__count');r=c.getresponse();data=json.loads(r.read());c.close();return data['count']
+            def request(method='GET',key=tokens['api']):
+                c=Gateway('app.example.test',8443,timeout=3);headers={'Host':'app.example.test','x-forwarded-user':'forged','x-hopae-aal':'3'}
+                if key:headers['Authorization']='Bearer '+key
+                before=backend_count()
+                c.request(method,'/secure',headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
+                assert backend_count()==before+(1 if status==200 else 0),'refused Kubernetes request reached application backend'
+                return status,data
+            def api(local,path,method='GET',body=None,token=None,extra=None):
+                c=http.client.HTTPConnection('127.0.0.1',local,timeout=3);headers={'Authorization':'Bearer '+(token or tokens['gateway-admin']),'Content-Type':'application/json'}
+                if extra:headers.update(extra)
+                c.request(method,path,body=None if body is None else json.dumps(body),headers=headers);r=c.getresponse();data=r.read();status=r.status;metadata=dict(r.getheaders());c.close();return status,json.loads(data),metadata
+            status,body=request();assert status==200,'initial protected request status '+str(status)
+            echoed=json.loads(body);headers={k.lower():v for k,v in echoed['headers'].items()}
+            assert headers['x-forwarded-user']==subject and headers['x-hopae-aal']=='0' and 'authorization' not in headers
+            assert request('POST')[0]==403 and request(key=None)[0]==401
+            status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
+            document['policy']['services']['orders']['users']={}
+            status,updated,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']});assert status==200 and request()[0]==403
+            # Persisted revocation must survive an actual Pod replacement.
+            kube('-n',namespace,'rollout','restart','deployment/pumgye');kube('-n',namespace,'rollout','status','deployment/pumgye','--timeout=120s',timeout=135)
+            for _ in range(20):
+                status=request()[0];assert status in (403,503)
+                if status==403:break
+                time.sleep(.1)
+            else:raise AssertionError('authority reconnect deadline')
+            updated['policy']['services']['orders']['users']={subject:['reader']}
+            status,restored,_=api(admin,'/v1/pumgye/policy','PUT',updated,extra={'If-Match':f'"{updated["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']});assert status==200 and request()[0]==200
+            kube('-n',namespace,'rollout','restart','deployment/hangang')
+            kube('-n',namespace,'rollout','status','deployment/hangang','--timeout=120s',timeout=135)
+            public=forward('hangang',8443);admin=forward('hangang',9080)
+            assert request()[0]==200,'gateway private admin state did not survive Pod replacement'
+            assert api(guard,'/v1/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned K8s fixture'},tokens['guard-admin'])[0]==200
+            assert request()[0]==403
+            assert api(guard,'/v1/blocks','DELETE',{'network':'127.0.0.1/32'},tokens['guard-admin'])[0]==200 and request()[0]==200
+            kube('-n',namespace,'scale','deployment/sumunjang','--replicas=0')
+            kube('-n',namespace,'wait','--for=delete','pod','-l','app=sumunjang','--timeout=60s')
+            assert request()[0]==503
+            print('PASS: actual four independent K8s Pods, nonroot static artifacts, mTLS Service DNS, protected request identity, method/guest denial, delegated policy CAS, immediate revocation, PVC/authority/gateway Pod replacement, private administrator state, refused backend non-dispatch and network authority outage')
+        except Exception:
+            if created:
+                for name in commands:
+                    try:
+                        diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=15').decode(errors='replace')
+                        for value in tokens.values():diagnostic=diagnostic.replace(value,'[redacted]')
+                        for file in ['server.key','client.key','ca.key']:diagnostic=diagnostic.replace((root/file).read_text(),'[redacted key]')
+                        print('Owned diagnostic '+name+': '+diagnostic[:4000],flush=True)
+                    except (RuntimeError,subprocess.TimeoutExpired):pass
+            raise
+        finally:
+            for process in forwards:
+                process.terminate()
+                try:process.wait(timeout=5)
+                except subprocess.TimeoutExpired:process.kill();process.wait()
+            if created:
+                kube('delete','namespace',namespace,'--wait=true','--timeout=120s',timeout=135)
+                print('Owned namespace removed; retained synthetic PVs remain under the cluster Retain policy.')
+
+
+if __name__=='__main__':main()

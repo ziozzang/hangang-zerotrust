@@ -127,3 +127,14 @@ passed. Assets remain digest pinned, operations audited and TLS paths/credential
 excluded from browser discovery. These latest management changes have not yet
 been deployed/qualified in Kubernetes or production, and the full browser/provider
 administrator suite remains open.
+
+Hopae ee94562 adds optional `listen.admin_tls` through shared bounded HTTPS.
+Runtime ba1a06c preserves actual TCP ConnectInfo and injects authenticated TLS peer
+evidence only after a client certificate is present on the accepted TLS connection.
+Hopae signed delegation accepts loopback or that server-provided evidence; HTTP
+headers cannot forge it, and existing signatures/session/grant/assurance checks
+remain required. Actual local mTLS tests qualify certificate refusal, native login
+denial and shutdown; configuration and transport-forgery tests plus existing signed
+actor scenarios pass. Full all-features tests: 917 passed, 42 existing cases ignored;
+strict Clippy/documentation/publication checks passed. Remote delegated mTLS in
+Kubernetes, Hopae browser management and federated console SSO are not yet qualified.

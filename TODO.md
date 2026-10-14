@@ -898,3 +898,5 @@ management improvement does not complete the remaining original integration goal
 - [x] Pumgye `c4168da`: explicit cluster/UID/scope/subject/rule mapping produces native compiled candidate policies; source deletion removes candidate assignments and Guard/network constraints remain. Live mapped HTTPS and actual CLI checks pass. Durable authoritative publication and verified workload association remain pending.
 
 - [x] Hopae `8aecbd5`: native Pod-bound TokenReview connector and owned TLS qualification; Workload identities remain distinct and source failures have bounded circuits. Root/profile/HTTP/HOP1 integration, true cluster qualification, source deletion fences and Pumgye association remain pending.
+
+- [x] Hopae/Hangang native workload integration, strict root configuration registration, explicit prefix/material references, HTTP/HOP1 retirement guards and canonical workload AAL-0 enforcement qualified and internally deployed; console 0.1.6 scope overview pinned. Production Kubernetes and automatic mapped grants remain unconfigured; full original completion gates remain open.

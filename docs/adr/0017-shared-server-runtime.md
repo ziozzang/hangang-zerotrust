@@ -437,3 +437,16 @@ counter reads now retry transport errors under bounded time; protected requests
 are never replayed. The passing run needed no retry. These candidates are not
 new signed releases or operating migrations. Signed permission/projection receipts,
 full provider coverage, fleet replication and throughput remain separate gates.
+
+## Pumgye resource authority release
+
+[Pumgye v0.1.3](https://github.com/ziozzang/pumgye/releases/tag/v0.1.3) is
+published at b8e972b with five static Linux amd64 signed assets. Workspace tests
+(36), strict Clippy, five release boundary tests, the exact signed resource
+API/CAS/restart fixture, independent OpenSSL verification and downloaded asset
+identity passed. Internal adoption preserved policy exactly after a real-DB-clone
+preflight and private rollback backup; management/native mTLS and a second durable
+restart passed. Hangang 0.3.4 source preparation at bd2bdfc passed all-target
+regression (1,266 passed, 58 ignored) and Clippy; its complete static package build,
+signed publication and operating migration remain pending. This does not complete
+provider/fleet/projection or automatic-update requirements.

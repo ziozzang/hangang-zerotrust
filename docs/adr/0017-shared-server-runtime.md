@@ -362,3 +362,25 @@ DNS and both nodes remain healthy. Read-only Docker preflight with the actual
 operational mounts/environment/arguments exits zero. Five signed assets are
 uploaded to the new v0.3.3 draft and independently verify after download.
 This does not yet qualify operational replacement or published release adoption.
+
+## Hangang static operational release
+
+[Hangang v0.3.3](https://github.com/ziozzang/hangang/releases/tag/v0.3.3) is
+published at 519a1e5 with five signed Linux amd64 assets. The internal gateway
+container uses the exact verified static executable with unchanged credentials,
+UID and host networking. Private image/compose/configuration/SQL rollback backups
+and the configured drain window are retained. Management socket readiness/status,
+refusal routing, normalized complete configuration and artifact digest/ELF checks
+pass. The first replacement automatically rolled back on the raw configuration
+comparison: new serialization adds default native transport selectors. An isolated
+owner starts after moving its TCP/additional HTTP listeners to owned ports, and
+only those two documented native defaults are normalized for the production
+comparison; every other configuration change still fails acceptance.
+
+The existing protected local demonstration returns 503 on both old and new
+engines with the network authority in observe mode. This is not an upgrade
+regression or a successful authenticated application-flow claim. Required enforced
+network evidence and operator permission-policy qualification remain open; the
+upgrade does not silently widen admission or renew expired credentials. The
+current gateway deployment and publication do not complete all auxiliary console
+process upgrades, generic metadata/fleet work, all identity flows or performance.

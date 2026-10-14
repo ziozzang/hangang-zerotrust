@@ -1506,3 +1506,7 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Actual Hangang v0.3.3/519a1e5 Kubernetes/browser package passes with all three published authority revisions; cleanup and existing ingress/DNS/nodes pass. Actual operational Docker read-only preflight passes. Five signed draft assets verify after upload/download.
 - [ ] Complete live gateway replacement/rollback acceptance and publish Hangang v0.3.3; keep the overall authentication/metadata/fleet/performance requirements active.
+
+- [x] Publish Hangang v0.3.3/519a1e5 with five verified signed static assets; internally replace the live gateway with backups/drain, exact artifact, management socket, same credentials/UID/network and strict normalized configuration/refusal checks. First comparison failure rolled back; isolated diagnosis validates only new native transport defaults.
+- [ ] Qualify operator enforcement/permission policy: existing protected demonstration returns 503 on both old/new gateways while Sumunjang is observe; do not count this as authenticated app-flow acceptance or silently widen/renew authority.
+- [ ] Upgrade remaining auxiliary console/bridge processes as required and qualify live integrated/federated administrator flows separately from the gateway rollout.

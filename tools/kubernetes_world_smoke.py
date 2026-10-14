@@ -159,7 +159,7 @@ def main():
             assert api(admin,f'/v1/plugins/{plugin_id}/policy')[0]==200
             if args.browser_probe:
                 browser_config=root/'browser.json'
-                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin)}))
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']}}))
                 subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=90)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
             document['policy']['services']['orders']['users']={}

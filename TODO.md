@@ -1457,3 +1457,9 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [x] Specify common infrastructure vs domain-core ownership and extraction order in [ADR 0017](docs/adr/0017-shared-server-runtime.md).
 - [ ] Compare native accept/connection loops before extracting bounded admission, cancellation and drain into hangang-runtime; preserve each domain codec and independent process.
 - [ ] Qualify shared listener handover/supervision and snapshot-publication primitives in each owning consumer before adoption.
+
+## Hopae browser profile enforcement qualification
+
+- [x] Hangang browser probe 6607562 publishes actual Hopae profile disable/restore under the local Hangang login; actual Kubernetes protected requests change 200 -> 401 -> 200, and rejected requests do not reach the counting application backend.
+- [x] Rerun the whole four-server Kubernetes fixture, policy/PVC/Pod replacement, network outage and original ingress regression after this browser mutation.
+- [ ] Qualify federated console SSO and the remaining provider/lifecycle administrator flows; this selected profile gate does not complete the overall goal or production rollout.

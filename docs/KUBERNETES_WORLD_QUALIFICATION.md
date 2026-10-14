@@ -55,7 +55,7 @@ checks logout data clearing. The surrounding fixture then runs actual request
 revocation, Pod replacement and outage acceptance before removing its namespace.
 
 This proves the selected local administrator/Pumgye/Sumunjang browser flow. It does
-not cover Hopae browser management, federated console SSO, all providers or production
+not cover every Hopae management screen, federated console SSO, all providers or production
 administrator rollout. Browser artifacts and credentials are not published.
 
 ## Hopae under the Hangang administrator session
@@ -64,9 +64,13 @@ administrator rollout. Browser artifacts and credentials are not published.
 mTLS management Service. Hopae explicitly selects Hangang as its console authority.
 The browser probe enters Hopae from the existing local Hangang administrator login
 and reads its actual authentication profiles, without a second Hopae login.
+It publishes a disabled profile configuration through the real editor, verifies
+that the protected application returns 401 without increasing the backend call
+count, restores the original configuration and verifies 200. These requests use
+the fixture CA and real gateway; no API interception is used.
 Every forwarded operation still carries a scoped signed assertion. The receiver
 trusts its exact TCP peer only for a request with both server-authenticated mTLS
 and completely validated delegation; global trusted proxy networks are unchanged.
 Unsigned TLS requests keep the normal proxy/native authorization checks.
-This qualifies remote management/profile reading, not federation login or every
+This qualifies remote management/profile reading and revocation/restoration, not federation login or every
 provider/mutation screen. Native data-plane authentication remains Hopae owned.

@@ -904,3 +904,30 @@ management improvement does not complete the remaining original integration goal
 - [x] Hopae `207396d`: actual owned Kubernetes v1.37.0 signature and object-lifecycle qualification; real negative-response parsing, mandatory namespace scope and live UID/deletion metadata guards. Native regression 911/42, optimized candidate and internal image/console 0.1.7 rollout pass. Production Kubernetes and automated mapped grants remain unconfigured; original completion gates stay open.
 
 - [x] Pumgye `ec2fe0f`: actual v1.37.0 typed-list normalization, live RBAC/mapping candidate deletion/recreation and credential recovery qualified. Native subject association and durable authoritative publication remain pending.
+
+
+## Kubernetes sole-writer policy reconciliation — 2026-10-14
+
+Pumgye `f78dda7` adds an explicit Kubernetes-authoritative server mode using the
+bounded HTTPS collector and administrator-owned mapping. Changed mapped policies
+commit policy/revision/audit before immutable publication; unchanged renewal avoids
+audit churn. Source refresh withdraws eligibility, and the original one-second
+observation expiry includes compilation and commit. Failed collection/mapping or
+expired leases cannot reuse a previous permit. Restart begins unavailable; a
+persisted owner marker prevents native-writer downgrade. Administrator policy PUT
+is rejected in source mode. Native mode remains independently supported.
+
+Actual owned Kubernetes v1.37.0 qualification passes over mTLS HTTP and pooled PPG1:
+initial allow, Binding deletion with durable revision/deny, recreated UID refusal,
+credential failure/recovery, conflicting writer refusal and restart fencing.
+Workspace 19 tests and strict clippy pass; observation and independent native mTLS
+regressions pass. Hangang console reads the source status and keeps matrices
+inspectable while disabling edits/publication for source-managed policies;
+four browser tests pass.
+
+This is conservative single-authority polling with unavailable intervals during
+collection, not scalable watches or cross-kind atomicity. Native subject links are
+still explicit administrator associations, not automatically verified Hopae
+relationships. Production source mode is not enabled. Automatic workload
+association, followers/watch recovery, CNI integration, full four-component
+Kubernetes deployment and full-chain throughput/release gates remain open.

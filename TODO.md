@@ -1367,3 +1367,20 @@ Guard evidence reuse stays inside one request, bound to authority, IP, revision 
 its issued deadline. It creates no cross-request decision cache and makes no claim
 of instantaneous remote revocation. The controlled loopback throughput result is
 not a production load or 100k whole-chain qualification. No release tag changed.
+
+## Sumunjang Kubernetes adapter implementation gates
+
+Sumunjang source `93d0df0` builds on radix-indexed ipBlock exceptions, numeric
+transport/port direction evaluation and bounded label/Namespace/Pod selector
+primitives. Its server offline adapter parses NetworkPolicy IP/port rules and
+refuses unresolved selector peers/named ports. Core has 28 passing tests; server
+adapter has five passing tests and strict all-target clippy. A maintained tool
+compares 12 syntax cases to actual owned Kubernetes v1.37 server dry-run and feeds
+eight API-defaulted policy responses to the real offline executable; all pass.
+No Kubernetes objects are persisted and no production policy or release changes.
+
+Remaining: resolve selector peers/named ports from authenticated, UID/freshness
+bound source snapshots; pooled API list/watch/relist; authenticated contextual
+request protocol and Hangang enforcement; source-aware admin/mutation ownership;
+CNI packet qualification; large-policy indexing/throughput and distributed rollout.
+Offline parsing and evaluation do not satisfy those runtime requirements.

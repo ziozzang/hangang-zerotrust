@@ -1492,3 +1492,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Publish Pumgye v0.1.0/d51a8e8 with five independently signed static Linux amd64 assets and download roundtrip validation; five actual signature/tamper/static-boundary tests pass. Private key remains outside repository.
 - [x] Internally migrate Pumgye with binary/config/SQLite backups and isolated DB-clone preflight; exact policy, management/native mTLS, missing-service denial, static ELF, actual restart and live Hangang console delegated read pass. Automatic updates and general metadata/fleet requirements remain open.
+
+- [x] Hopae c5e148d defaults to static release staging, preserves existing signing pin and independently verifies signatures with OpenSSL; six release boundary tests and documentation/publication checks pass. Five Linux amd64 assets signed; candidate matches the qualified image and read-only actual deployment preflight passes.
+- [ ] Qualify current Hopae DB-clone/provider/session lifecycle and operational replacement; refresh stale draft platforms only with current-source evidence before publication.

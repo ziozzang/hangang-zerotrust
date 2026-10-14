@@ -285,3 +285,21 @@ and a second restart, retained its durable policy, and has no ELF interpreter.
 Live Hangang console delegation reads the identical policy after migration.
 This selected rollout does not complete generic metadata adapters, fleet/update
 automation, all identities or the overall goal.
+
+## Hopae signed static release preparation
+
+Hopae c5e148d defaults release preparation to Linux amd64 musl and rejects an
+ELF interpreter before staging. Signing requires the existing repository pin,
+checks identity/output separation before writing, and independently verifies the
+actual Ed25519 signature with OpenSSL without a Python cryptography dependency.
+Six tests cover actual signature/payload binding, forged signatures, dynamic-loader
+refusal, wrong signing identity, private-seed/output separation and existing-output
+preservation. Boundary, EN/KO documentation and publication checks pass.
+
+The five current Linux amd64 assets are signed with the unchanged Hopae identity.
+The candidate is byte-identical to the previously qualified static Kubernetes
+image executable. Its read-only preflight against the actual internal configuration,
+environment and database exits zero with no production replacement. DB-clone
+lifecycle, provider/session continuity, operational rollout and refreshing the
+existing multi-platform draft remain open. Older draft platforms must not be
+reported as current-source qualified merely because their version string matches.

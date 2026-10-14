@@ -460,3 +460,25 @@ This is a short live functional/cancellation canary proof, not sustained load,
 credential-revocation fleet qualification or full-chain QPS measurement. The
 broader original watch/follower, provider lifecycle, Kubernetes packaging,
 performance and final release/completion gates remain active.
+
+
+## Single-decision native transport performance — 2026-10-14
+
+Pumgye `0409a7a` maintains parameterized native benchmarking and varying lookup
+cardinality. With batch one, 16 persistent mTLS connections and three ten-second
+closed-loop trials on an 8-core/16-thread Ryzen 7 8745HS, the small hot policy
+measures 138,790–142,300 verified decisions/s (p99 177–182 microseconds). Varying
+4096 users and /32 prefixes plus one base conformance entry measures
+129,080–134,344 decisions/s (p50 115–119, p99 183–195 microseconds). Every reply's
+allow, correlation and revision floor is checked. The same generator binary is
+used for both published workloads; hashes/raw counters/reproduction are committed.
+
+Batch-64 compatibility, native trust/token rejection, CAS, immediate revocation,
+audit/restart, 21 workspace tests and strict clippy pass. The fixture has one
+service/role/permission, two classes and synthetic assurance/Guard evidence.
+Server and generator are separate processes over loopback; no operational service
+receives this load. This proves Pumgye component headroom above 100k/s under these
+conditions, not the whole Hangang/Hopae/Sumunjang chain. Arrival-rate saturation,
+provider/network costs, denial mix, fleet distribution and full-chain tail/load
+acceptance remain open. Production deployments/policies and release tags are
+unchanged by this benchmark phase; the original completion goal stays active.

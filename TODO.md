@@ -1189,3 +1189,27 @@ activation was not enabled. Hangang renewal rollout remains a separate step.
 Public release tags and broader provider/lifecycle, watch/follower continuity,
 Kubernetes packaging and full-chain performance/completion gates remain unchanged
 and active under the original goal.
+
+
+## Internal Hangang evidence/renewal rollout — 2026-10-14
+
+Gateway image `hangang/gateway:0.3.2-renewal-d963b8d` is internally deployed from
+the qualified optimized binary. Previous image/compose/configuration/policy
+backups are retained. Existing console binary is preserved. The gateway swap
+first preserves the full configuration and Pumgye policy; actual API permissions,
+credential stripping, matrix/modules/native Guard and SSO/logout regressions pass.
+Resource-policy 17 tests, native TTL unit and Ingress Host regression pass before
+rollout.
+
+A separate revision-fenced publication enables `auth.renew_native_evidence` on
+exactly two existing protected native service-probe routes. The post-publication
+comparison proves every other configuration field and the Pumgye policy remain
+unchanged. Actual scoped API, guest/spoof/method denial, modules and SSO pass again.
+This is an internal limited canary, not blanket activation for every service or
+a sustained production stream-load qualification. The current upgraded Hopae
+exports explicit bounded TTL required by renewal.
+
+Kubernetes source/watch continuity, broad distributed deployment/membership,
+remaining identity-provider lifecycle, full-chain throughput and final public
+release/completion gates remain active. This phase does not create new release
+tags or enable GitHub Actions.

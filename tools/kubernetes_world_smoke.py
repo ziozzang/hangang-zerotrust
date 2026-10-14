@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Owned four-service Kubernetes request enforcement fixture, explicit kubeconfig wrapper."""
 import argparse
+import base64
 import hashlib
 import http.client
 import json
@@ -27,6 +28,7 @@ def main():
     parser.add_argument('--browser-probe',type=Path)
     parser.add_argument('--node-binary',type=Path)
     parser.add_argument('--resource-catalog',action='store_true')
+    parser.add_argument('--receipt-client',type=Path)
     args=parser.parse_args();wrapper=args.kubectl.resolve(strict=True)
     node=str(args.node_binary.resolve(strict=True)) if args.node_binary else shutil.which('node')
     if args.browser_probe and not node:parser.error('browser probe requires --node-binary when node is not in PATH')
@@ -67,6 +69,14 @@ def main():
             policy['services']['billing']=json.loads(json.dumps(policy['services']['orders']))
             policy['resources']={'db:orders':{'service':'orders','information_class':'internal','actions':{'select':'read','update':'write'},'minimum_aal':0}}
             route=gateway['http'][0]['resource_policy'];route.pop('pumgye');route['pumgye_resource']={'service_id':'orders','resource':'db:orders','actions':{'GET':'select','POST':'update'}}
+        if args.receipt_client:
+            openssl('genpkey','-algorithm','ED25519','-out',root/'receipt-issuer.pem')
+            seed=subprocess.check_output(['openssl','pkey','-in',str(root/'receipt-issuer.pem'),'-outform','DER'],stderr=subprocess.DEVNULL)
+            public_key=subprocess.check_output(['openssl','pkey','-in',str(root/'receipt-issuer.pem'),'-pubout','-outform','DER'],stderr=subprocess.DEVNULL)
+            assert len(seed)==48 and len(public_key)==44
+            tokens['receipt-seed']=base64.b64encode(seed[-32:]).decode()
+            receipt_pin=base64.b64encode(public_key[-32:]).decode()
+            hop['receipt_issuer']={'issuer_ref':'owned-world','key_epoch':1,'identity_authority_epoch':'world1','public_key':receipt_pin,'seed_env':'OWNED_RECEIPT_SEED','scopes':[{'service':'orders','audience':'orders-api'}]}
         items=[]
         def resource(kind,name,**fields):
             obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
@@ -104,6 +114,7 @@ def main():
             'sumunjang':['--management-tls','--listen','0.0.0.0:9080','--decision-listen','0.0.0.0:9081','--grpc-listen','0.0.0.0:9082','--database','/state/sumunjang.sqlite3','--bootstrap-policy','/config/sumunjang.json','--decision-tls-cert','/tls/tls.crt','--decision-tls-key','/tls/tls.key','--decision-client-ca','/tls/ca.crt','--threads','2'],
             'hangang':['--config','/config/hangang.json','--database','sqlite:/state/hangang.sqlite3','--docker-connection-state','/state/docker-connections.json','--admin-users-db','/state/admin/admin-users.sqlite3','--admin-plugins','/state/plugins.json','--listen','0.0.0.0:8443','--admin','127.0.0.1:9080','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--threads','2','--lua-workers','1','--drain-seconds','1','--guard-url','http://127.0.0.1:9','--guard-decision-tcp',f'sumunjang.{namespace}.svc:9082','--guard-decision-grpc','--guard-decision-server-name',f'sumunjang.{namespace}.svc','--guard-decision-ca','/tls/ca.crt','--guard-decision-cert','/tls/client.crt','--guard-decision-key','/tls/client.key','--guard-timeout-ms','1000']}
         environments={'hopae':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
+        if args.receipt_client:environments['hopae'].append(env('OWNED_RECEIPT_SEED','receipt-seed'))
         for name in commands:
             resource('PersistentVolumeClaim',name+'-state',spec={'accessModes':['ReadWriteOnce'],'resources':{'requests':{'storage':'1Gi'}}})
             container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
@@ -170,6 +181,16 @@ def main():
             echoed=json.loads(body);headers={k.lower():v for k,v in echoed['headers'].items()}
             assert headers['x-forwarded-user']==subject and headers['x-hopae-aal']=='0' and 'authorization' not in headers
             assert request('POST')[0]==403 and request(key=None)[0]==401
+            if args.receipt_client:
+                receipt_port=forward('hopae',8703)
+                receipt_config={'settings':{'transport':'grpc','address':f'localhost:{receipt_port}','tls':{'server_name':f'hopae.{namespace}.svc','ca':str(root/'ca.pem'),'certificate':str(root/'client.pem'),'key':str(root/'client.key')}},'issuer_ref':'owned-world','key_epoch':1,'public_key':receipt_pin,'service':'orders','audience':'orders-api','method':'GET','target':'/secure','body':'','headers':[['x-hopae-contract','1'],['x-forwarded-host','app.example.test'],['x-forwarded-proto','https'],['x-forwarded-port','8443'],['x-forwarded-for','127.0.0.1'],['x-original-method','GET'],['x-original-url','https://app.example.test:8443/secure']]}
+                receipt_path=root/'receipt-client.json';receipt_path.write_text(json.dumps(receipt_config))
+                receipt_environment=dict(os.environ,OWNED_RECEIPT_CALLER=tokens['caller'],OWNED_RECEIPT_CREDENTIAL=tokens['api'])
+                with (root/'receipt-client.log').open('w') as log:
+                    result=subprocess.run([str(args.receipt_client.resolve()),str(receipt_path)],input='allow\n',env=receipt_environment,text=True,stdout=subprocess.PIPE,stderr=log,timeout=10)
+                assert result.returncode==0 and json.loads(result.stdout)['allowed'] is True,'Kubernetes native receipt refused'
+                print('PASS: actual Hopae Pod native issuer and Hangang client verify a request-bound service receipt over mTLS Service DNS')
+
             status,plugins,_=api(admin,'/v1/plugins');assert status==200 and any(p['id']==plugin_id for p in plugins['plugins'])
             c=http.client.HTTPConnection('127.0.0.1',admin,timeout=3)
             c.request('GET',f'/ui/plugins/{plugin_id}/'+manifest['entry'],headers={'Authorization':'Bearer '+tokens['gateway-admin']});asset_response=c.getresponse();asset_bytes=asset_response.read();c.close()

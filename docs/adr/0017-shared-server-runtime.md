@@ -463,3 +463,19 @@ console both passed rollback backups, production preflight, configuration/creden
 preservation and actual management/UI checks. The console serves the current
 catalog assets. This closes the selected release/console adoption gate, not full
 provider/projection, fleet replication, automatic updates or throughput scope.
+
+## Hopae 0.0.6: native service receipts
+
+[Hopae v0.0.6](https://github.com/ziozzang/hopae/releases/tag/v0.0.6), source
+896ece5, is published with five independently verified static signed assets.
+Release profiles now refuse test-hooks. The actual executable fixture proves
+request-bound service receipt issuance, signed profile CAS, same-channel
+revocation/restoration and caller/issuer/service/audience/server-name/key/epoch
+refusal. The remote four-service Kubernetes/browser fixture additionally activates
+an ephemeral issuer in the Hopae Pod and verifies a receipt using the real Hangang
+client over mTLS Service DNS; existing application/admin lifecycle checks pass.
+Kubernetes receipt-specific revocation/restart continuity is not established by
+that single issuance check. Operating data/environment preservation, HTTP/native
+refusal and restart passed after clone qualification and private rollback backup.
+The operating issuer remains unconfigured. Full identity/permission/projection,
+fleet and automatic-update scope remains open.

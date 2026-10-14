@@ -1486,3 +1486,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] User-directed Linux static default: Sumunjang 0c565c7 selects musl and refuses ELF interpreters before signing; seven tests and real byte-identical signed asset preparation pass. GNU compatibility artifacts are not uploaded.
 - [ ] Replace the earlier GNU publication gate with verified one-time static migration for existing GNU installations, then qualify musl update discovery and operational rollback before publication/rollout.
+
+- [x] Publish Sumunjang v0.3.4 at 352e707 with seven signature-verified Linux amd64 static assets, independently verified payloads/checksums and download roundtrip. Enable musl supervisor activation only after actual signed upgrade/rollback/tamper/cancellation qualification.
+- [x] Internally migrate the live network authority to verified static musl with private binary/SQL/config backups and real configuration preflight; unchanged policy, native mTLS, HUP and running static ELF checks pass. Published-release update check reports up_to_date. Other component rollout/release and the overall goal remain incomplete.

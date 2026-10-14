@@ -244,3 +244,23 @@ update discovery uses the actual compiled musl target. Never relabel a binary or
 rewrite a signed target to evade target validation. Operational migration and
 release publication remain open. This direction applies to Linux; other operating
 system builds retain their separate platform qualification requirements.
+
+## Sumunjang static publication and internal adoption
+
+[Sumunjang v0.3.4](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.4)
+is published at 352e707 with seven Linux amd64 musl assets. This revision enables
+the previously excluded musl supervisor target only after the actual static
+signed-update fixture passes upgrade, policy retention, readiness rollback, tamper
+refusal, cancellation and HUP. ARM64 musl remains excluded from activation.
+Workspace/server regressions and strict Clippy pass. Both final signed artifacts
+were independently verified against the existing key and all uploaded assets
+match after download. The tag points to the exact qualified source revision.
+
+The internal network authority migrated from its GNU binary to the verified
+static artifact with private executable/SQL/configuration rollback backups and
+live read-only configuration preflight. Policy snapshots remained unchanged;
+actual native mTLS and supervised HUP passed, and the running ELF has no
+interpreter. After publication the real administrator update-check request reports
+`up_to_date`; domain requests remain healthy. This proves the selected internal
+Sumunjang rollout, not all-component release completion, every source/provider
+flow, fleet update adoption or whole-stack throughput.

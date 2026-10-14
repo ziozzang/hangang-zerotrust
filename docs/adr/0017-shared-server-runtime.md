@@ -174,3 +174,24 @@ The selected four-process chain and Kubernetes console paths have passed separat
 qualification; native lifecycle extraction, all provider flows and production
 adoption remain open. See the current
 [Kubernetes qualification record](../KUBERNETES_WORLD_QUALIFICATION.md) for scope.
+
+## Shared connection ownership
+
+Runtime 819177c (0.1.2) extracts `serve_connections`: nonzero bounded TCP
+admission, actual peer addresses, TCP_NODELAY and owned connection tasks. Shutdown
+drains for the caller-selected duration, then aborts and joins remaining tasks;
+cancelling the owner aborts its JoinSet rather than detaching handlers. A socket
+setup error rejects that socket without terminating the listener. Management HTTPS
+uses this primitive with its existing 2,048 capacity and 5-second drain. Domain
+handlers keep TLS/ALPN, credentials, framing and connection lifetimes.
+
+Actual socket tests qualify capacity held until disconnect, capacity reuse, deadline
+shutdown and owning-task cancellation; runtime tests and strict Clippy pass. Hopae 6eb07d3
+adopts the same primitive for HOP1 with its existing 256 capacity and zero drain.
+Hopae qualification: five actual management TLS/lifecycle tests; 917 all-features
+tests passed, 42 existing cases ignored, including real HOP1/gRPC mTLS, session
+revocation and certificate refusal; strict all-target/all-feature Clippy passed.
+Both actual four-process request chains (mTLS HOP1/PPG1/HGD1 and gRPC) also pass,
+including durable profile/permission revocation, actual owner restart and refused
+backend non-dispatch. This new extraction has not yet been packaged or deployed in Kubernetes/production.
+Pumgye/Sumunjang native adoption and inherited-listener gates remain open.

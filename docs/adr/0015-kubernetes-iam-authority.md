@@ -7,8 +7,11 @@ Ingress controller and offline import. Hopae verifies Pod-bound credentials with
 TokenReview and live ServiceAccount/Pod UID checks. Pumgye implements an opt-in
 Kubernetes-authoritative RBAC source with explicit application mappings and
 bounded in-memory snapshots. These paths have an owned real-cluster qualification.
-Sumunjang NetworkPolicy/selector sourcing, continuous watch recovery, source-aware
-Kubernetes writes and complete four-component Kubernetes deployment remain open.
+Sumunjang has qualified read-only NetworkPolicy collection and diagnostic numeric
+IP/port compilation against a real remote cluster. Namespace/Pod fact parsing is
+implemented; coherent selector publication and gateway enforcement remain open.
+Continuous watch recovery, source-aware Kubernetes writes and complete
+four-component Kubernetes deployment remain open.
 Internal production Pumgye currently uses its native database authority.
 
 ## Ownership and data flow
@@ -45,6 +48,72 @@ an API group/version and schemas in implementation before publishing manifests.
 Provider configuration uses Secret references; no token/seed in CRD status, policy,
 console output or logs. Kubernetes lacks native human User objects: authentication
 comes from a verified provider, not RoleBinding subject creation.
+
+## Integrated Hangang World package acceptance
+
+The deployment unit is one Hangang World package containing Hangang, Hopae,
+Pumgye and Sumunjang. Each retains its independent server and domain owner; the
+Hangang console provides integrated administration. Four unrelated installations
+or successful adapter checks do not qualify the package.
+
+Hangang World owns the domain contracts, identity-to-permission mappings, network
+controls and protected routing relationships. Kubernetes stores authoritative
+resources in the selected Kubernetes mode and supplies verified platform facts;
+this does not transfer domain ownership to an unrelated policy system. Every
+import or projection must declare its source owner and conversion rules. A native
+DB and Kubernetes must never compete to write the same policy.
+
+Before cluster-changing qualification, capture a cold node/volume and application
+state backup, check archive integrity and verify services after restarting. Keep
+recovery commands and backup metadata private. Archive validation and successful
+restart are not a full disaster-restore rehearsal.
+
+Functional acceptance on an existing real cluster must include:
+
+- All four servers deployed together, authenticated service discovery and pooled
+  decision transport, readiness and graceful shutdown.
+- One Hangang console with all three domain menus, provenance and source-aware
+  administration; no independent console required for ordinary management.
+- A protected request passing Hopae identity, Sumunjang network checks and Pumgye
+  authorization before Hangang forwards it; anonymous, guest, spoofed evidence
+  and mismatched service permissions are refused.
+- Source edits, deletion and same-name UID recreation withdraw old permissions;
+  stale replicas, unavailable sources and restarted followers fail closed.
+- Bound workload credentials and service mappings tested with actual Kubernetes
+  resources, while gateway enforcement and CNI enforcement are reported separately.
+- Existing workloads, DNS, routing and host services remain healthy; owned test
+  resources are cleaned up and rollback is documented.
+
+These are pending package acceptance gates, not claims of completed deployment.
+Performance qualification is separate and is not required to begin these functional
+checks. Component diagnostics provide intermediate evidence only.
+
+## Kubernetes deployment settings and administration
+
+The package must ship validated deployment settings and integrated console support,
+not require operators to assemble undocumented per-component flags. This is pending
+implementation and qualification. Settings cover cluster identity, namespace and
+source mode per domain; immutable image versions; native decision endpoints and TLS
+Secret references; provider and reviewer credential references; permission mappings;
+storage/backbone selection; service discovery; readiness, shutdown and resource limits.
+Reject incompatible or incomplete settings before exposing protected routes.
+
+The Hangang console must show each component's connectivity and effective source,
+collection/reconcile phase, freshness deadline, desired and applied revision, rejected
+candidates and bounded errors. Show Kubernetes RBAC capabilities and unsupported
+fields without exposing Secret contents. A connected component is not necessarily a
+fresh or successfully applied authority.
+
+Administration must provide validated configuration editing, a preview of affected
+routes and permissions, optimistic concurrency and auditable application results.
+Kubernetes-authoritative edits go to the domain-owned API resource; observe mode is
+read-only. GitOps ownership must be respected. No button may convert an unavailable
+source to a database fallback or activate an unqualified diagnostic snapshot.
+
+Functional qualification includes console status during source outage and recovery,
+insufficient Kubernetes RBAC, invalid CA/credential references, rejected configuration,
+conflicting edits and pod replacement. Test the actual UI and resulting authority,
+not only successful HTTP responses from an administration endpoint.
 
 ## Source-of-truth modes
 

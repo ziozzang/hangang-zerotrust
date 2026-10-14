@@ -398,3 +398,24 @@ network evidence and operator permission-policy qualification remain open; the
 upgrade does not silently widen admission or renew expired credentials. The
 current gateway deployment and publication do not complete all auxiliary console
 process upgrades, generic metadata/fleet work, all identity flows or performance.
+
+## Subsequent operational and Kubernetes qualification
+
+Pumgye v0.1.1 (da45832) adds SIGTERM/SIGINT admission stop, five-second
+HTTP/native task draining and a six-second overall bound including gRPC graceful
+shutdown. Its actual process SIGTERM and in-flight HTTP response tests pass.
+Hopae v0.0.5 (8ce0b8a) adds administrator-only service connector circuit/capacity
+observations, with no credential or destination metadata; 919 all-feature tests
+pass, with 42 existing ignored. Both releases use independently verified signed
+static Linux amd64 artifacts and are adopted internally with private rollback
+backups, exact durable state preservation, authenticated reads/refusals and restart.
+
+The maintained remote Kubernetes world fixture passed again with Hangang
+519a1e5, Hopae 8ce0b8a, Sumunjang 352e707 and Pumgye da45832. Actual Chromium
+operator login, delegated management, immediate/durable authentication and
+permission revocation, stale operator CAS refusal, Pod replacement, backend
+non-dispatch on refusal and network authority outage passed. The owned namespace
+was removed; Retain storage and previous node backup/off-host copy are preserved.
+These are functional gates, not throughput qualification, full provider
+interoperability, in-flight gRPC shutdown, projection RPC activation, inbound
+Kubernetes authorization webhook or fleet snapshot replication completion.

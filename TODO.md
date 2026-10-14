@@ -965,3 +965,31 @@ this fixture does not qualify the full gateway request/stream pipeline. Existing
 production configuration, component images and release tags are unchanged. Watch
 reconciliation, full-chain qualification, followers, remaining identity providers,
 Kubernetes deployment and public-release gates remain part of the active goal.
+
+
+## Four native runtime Kubernetes request chain — 2026-10-14
+
+Pumgye `c52e9e1` adds maintained four-process qualification to the owned real
+Kubernetes workload/RBAC fixture. Actual Hangang/Hopae/Pumgye/Sumunjang processes
+use fresh isolated state/keys, public HTTPS and native mTLS HOP1/PPG1/HGD1.
+The application port matches the actual TLS listener; older gateway binaries
+without native TLS capability are refused. No protocol impersonator replaces a
+component in this mode.
+
+The actual signed Pod credential reaches the backend only after native Hopae
+verification, enforced Sumunjang evidence and the UID-mapped Pumgye permission.
+The backend sees the canonical subject, Workload kind, matching service and AAL
+zero; forged client identity/AAL headers do not survive, and Authorization is
+consumed. Another valid Pod, absent authentication, observe evidence, explicit IP
+block and deleted Binding all prevent backend dispatch; block removal recovers.
+Source credential failure causes gateway 503, and Pod deletion causes 401. The
+actual delegated status exposes Kubernetes ownership and delegated publication
+with both correct revision fences still rejects source-policy overwrite.
+
+The fixture passes against the owned v1.37.0 API, including existing native
+association, source recovery/recreation and restart checks, and removes its
+unique RBAC/namespace and processes. Production configuration/images are
+unchanged. This is real request-chain qualification, not Kubernetes Pod packaging,
+Ingress ownership, streaming credential revocation, CNI-wide enforcement,
+distributed watches/followers or full-chain throughput. Conservative polling
+availability intervals and all remaining original goal gates remain open.

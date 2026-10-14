@@ -1449,3 +1449,5 @@ These gates extend the original full goal; they are not implemented by Pod tests
 - [ ] Qualify Hangang gRPC application proxy separately: full RPC method mapping,
   TE/metadata/status trailers, error translation, deadlines/cancellation and all
   stream modes with revocation. Existing HTTP/2 is foundation, not completion.
+
+- [ ] Adopt the [shared server runtime](docs/adr/0017-shared-server-runtime.md) across all four components; qualify transport parity, listener handover, shutdown and Kubernetes deployment.

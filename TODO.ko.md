@@ -836,3 +836,5 @@ ADR 0016과 영문·한국어 README 다이어그램에 반영했습니다. 기�
 - [ ] 한강 애플리케이션 gRPC 프록시는 별도 검증: 전체 RPC method 권한 매핑,
   TE/metadata/status trailer·오류 변환·deadline/취소·각 stream 모드와 회수.
   기존 HTTP/2 지원만으로 완료하지 않습니다.
+
+- [ ] [공용 서버 런타임](docs/ko/0017-shared-server-runtime.md)을 4종에 적용하고 전송 의미·리스너 인계·종료·K8s 배포를 검증한다.

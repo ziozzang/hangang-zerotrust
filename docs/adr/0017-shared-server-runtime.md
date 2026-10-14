@@ -264,3 +264,24 @@ interpreter. After publication the real administrator update-check request repor
 `up_to_date`; domain requests remain healthy. This proves the selected internal
 Sumunjang rollout, not all-component release completion, every source/provider
 flow, fleet update adoption or whole-stack throughput.
+
+## Pumgye static release and internal adoption
+
+[Pumgye v0.1.0](https://github.com/ziozzang/pumgye/releases/tag/v0.1.0) is
+published at d51a8e8 with five Linux amd64 musl assets and its independent pinned
+Ed25519 identity. Private signing material remains outside the repository and
+assets. Release preparation checks static ELF, version and signing identity,
+independently verifies the actual signature with OpenSSL, and binds the payload
+to the artifact; five tests cover real signature acceptance, artifact/signature
+tampering, checksum path escape and dynamic-loader refusal. All five uploaded
+assets match after download and their signature/checksums verify against the
+repository pin. This provides verified installation, not an automatic updater.
+
+The internal Pumgye authority migrated from GNU to the verified static executable
+after private binary/configuration/SQLite online backups. A separately owned
+DB-clone process first proved exact policy equality and actual management/native
+mTLS with unknown-service denial. The live service then passed the same checks
+and a second restart, retained its durable policy, and has no ELF interpreter.
+Live Hangang console delegation reads the identical policy after migration.
+This selected rollout does not complete generic metadata adapters, fleet/update
+automation, all identities or the overall goal.

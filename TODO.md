@@ -1489,3 +1489,6 @@ These gates extend the original full goal; they are not implemented by Pod tests
 
 - [x] Publish Sumunjang v0.3.4 at 352e707 with seven signature-verified Linux amd64 static assets, independently verified payloads/checksums and download roundtrip. Enable musl supervisor activation only after actual signed upgrade/rollback/tamper/cancellation qualification.
 - [x] Internally migrate the live network authority to verified static musl with private binary/SQL/config backups and real configuration preflight; unchanged policy, native mTLS, HUP and running static ELF checks pass. Published-release update check reports up_to_date. Other component rollout/release and the overall goal remain incomplete.
+
+- [x] Publish Pumgye v0.1.0/d51a8e8 with five independently signed static Linux amd64 assets and download roundtrip validation; five actual signature/tamper/static-boundary tests pass. Private key remains outside repository.
+- [x] Internally migrate Pumgye with binary/config/SQLite backups and isolated DB-clone preflight; exact policy, management/native mTLS, missing-service denial, static ELF, actual restart and live Hangang console delegated read pass. Automatic updates and general metadata/fleet requirements remain open.

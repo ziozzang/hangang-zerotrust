@@ -482,3 +482,30 @@ conditions, not the whole Hangang/Hopae/Sumunjang chain. Arrival-rate saturation
 provider/network costs, denial mix, fleet distribution and full-chain tail/load
 acceptance remain open. Production deployments/policies and release tags are
 unchanged by this benchmark phase; the original completion goal stays active.
+
+
+## Actual four-component request-chain load — 2026-10-14
+
+Pumgye `60a69b0` maintains an owned real Hangang/Hopae/Pumgye/Sumunjang benchmark:
+public HTTPS, native API-key authentication, enforce-mode network authority,
+identity/IP/permission intersection and internal pooled mTLS HOP1/PPG1/HGD1. A Go
+origin verifies canonical service/kind/AAL and absence of Authorization; every
+successful load reply is 200 with exact body. No authentication protocol peer is
+mocked and no operational service receives the load.
+
+Three ten-second closed-loop trials with 16 workers measure 11,081–11,657 verified
+responses/s, p50 1,339–1,422 us, p99 2,041–2,091 us, zero failed replies. At 32
+workers, 10,365–10,914/s and p99 4,238–5,642 us show no benefit from more concurrency.
+A preliminary Python-origin fixture gives 7,791–8,214/s; the fast validated origin
+removes some fixture cost. This qualifies a controlled lower 10k/s chain target,
+not 100k/s. Pumgye's component throughput is not substituted for chain capacity.
+Raw counters/hash/provenance, reproduction, workload and limitations are committed.
+
+The fixture checks guest/invalid credentials, observe evidence and explicit IP
+block denial before load. Go build/vet, Python validation and the modified
+fixture's actual Kubernetes/four-process/real renewal withdrawal regression pass.
+There is one warm service/key/role and tiny body over loopback with no external
+issuer/TokenReview load. Open-loop arrival overload, denied mix, long renewal
+load, physical/fleet topology and 100k/s optimization remain required, alongside
+watch/follower, provider lifecycle, Kubernetes packaging and final release gates.
+Production images/policies/configuration are unchanged by this benchmark phase.

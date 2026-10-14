@@ -4,8 +4,8 @@
 
 Status: accepted boundary; initial shared gRPC transport implemented in
 [hangang-runtime](https://github.com/ziozzang/hangang-runtime), revision
-81352ef. Pumgye and Sumunjang integration is being qualified; Hopae and Hangang
-adoption remain open. This does not complete the integrated package.
+81352ef. Pumgye (878bd2a) and Sumunjang (65856ab) have adopted this transport
+and passed local process qualification. Hopae and Hangang adoption remain open. This does not complete the integrated package.
 
 Share server infrastructure rather than independently reproducing transport and
 lifecycle behavior in every module. Keep provider/session ownership in Hopae,
@@ -29,3 +29,14 @@ Use pinned revisions across repositories, qualify each consumer independently an
 keep independently scalable server processes. Transport parity, supervisor listener
 handover and actual Kubernetes tests are adoption gates, not consequences of code
 reuse. No shared multi-writer business schema is introduced.
+
+## Local qualification evidence
+
+Pumgye: 17 server tests, strict workspace Clippy, actual gRPC/native mTLS requests,
+credential isolation, bounded decoding and immediate policy revocation.
+Sumunjang: 35 distinct server tests (also run through its compatibility binary),
+strict workspace Clippy, actual gRPC/native mTLS parity, malformed and oversized
+input rejection, revision fence, same-channel policy changes and supervised HUP
+listener handover. Signed updater regression also passed upgrade, policy retention,
+readiness rollback, tamper rejection and cancellation. These are local owned fixtures;
+they do not prove actual Kubernetes gRPC deployment or production rollout.

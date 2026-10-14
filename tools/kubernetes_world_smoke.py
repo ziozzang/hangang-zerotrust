@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import shutil
 import socket
 import ssl
 import struct
@@ -22,7 +23,11 @@ def main():
     for name in ['hangang','hopae','sumunjang','pumgye']:parser.add_argument('--'+name+'-image',required=True)
     parser.add_argument('--echo-image',required=True)
     parser.add_argument('--sumunjang-plugin',required=True,type=Path)
+    parser.add_argument('--browser-probe',type=Path)
+    parser.add_argument('--node-binary',type=Path)
     args=parser.parse_args();wrapper=args.kubectl.resolve(strict=True)
+    node=str(args.node_binary.resolve(strict=True)) if args.node_binary else shutil.which('node')
+    if args.browser_probe and not node:parser.error('browser probe requires --node-binary when node is not in PATH')
     namespace='owned-world-'+secrets.token_hex(6);created=False;forwards=[]
     os.umask(0o077)
     def kube(*argv,body=None,timeout=120):
@@ -93,7 +98,7 @@ def main():
         resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
         try:
             kube('create','namespace',namespace);created=True
-            kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode())
+            kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode(),timeout=300)
             for name in [*commands,'echo']:
                 kube('-n',namespace,'rollout','status','deployment/'+name,'--timeout=120s',timeout=135)
                 print('Ready: '+name,flush=True)
@@ -132,6 +137,10 @@ def main():
             c.request('GET',f'/ui/plugins/{plugin_id}/'+manifest['entry'],headers={'Authorization':'Bearer '+tokens['gateway-admin']});asset_response=c.getresponse();asset_bytes=asset_response.read();c.close()
             assert asset_response.status==200 and hashlib.sha256(asset_bytes).hexdigest()==manifest['assets'][manifest['entry']]
             assert api(admin,f'/v1/plugins/{plugin_id}/policy')[0]==200
+            if args.browser_probe:
+                browser_config=root/'browser.json'
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id}))
+                subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=90)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
             document['policy']['services']['orders']['users']={}
             status,updated,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']});assert status==200 and request()[0]==403

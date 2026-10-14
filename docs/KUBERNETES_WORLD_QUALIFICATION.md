@@ -40,3 +40,20 @@ metadata source modes, generic resource adapters, the full browser administrator
 console/provider suite, runtime signal submission, HA, full channel/credential
 lifecycle, production rollout or performance. Those remain gates of the full goal.
 Do not treat this owned test generator as a production deployment bundle.
+
+## Actual browser qualification
+
+Optionally supply `--browser-probe` pointing to Hangang's
+`web/tools/world_admin_browser.mjs` and `--node-binary` if Node is outside PATH.
+Install the repository's Playwright dependency and Chromium before running it.
+The probe reads a private temporary configuration file; credentials are not command
+arguments, and failures redact them. It connects to the actual port-forwarded console
+without intercepted API responses or a fixture UI server. It creates the first local
+administrator, signs in with ID/password, publishes a guest assignment to the owning
+Pumgye policy, loads the real Sumunjang menu, blocks/unblocks the owned peer, and
+checks logout data clearing. The surrounding fixture then runs actual request
+revocation, Pod replacement and outage acceptance before removing its namespace.
+
+This proves the selected local administrator/Pumgye/Sumunjang browser flow. It does
+not cover Hopae browser management, federated console SSO, all providers or production
+administrator rollout. Browser artifacts and credentials are not published.

@@ -33,3 +33,5 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 ([한국어](../ko/0014-credential-projection.md)).
 
 [ADR 0015: Kubernetes and IAM authoritative sources](0015-kubernetes-iam-authority.md) ([한국어](../ko/0015-kubernetes-iam-authority.md)).
+
+[ADR 0016: decision cores and metadata adapters](0016-decision-core-metadata-adapters.md) ([한국어](../ko/0016-decision-core-metadata-adapters.md)).

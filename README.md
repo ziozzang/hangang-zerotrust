@@ -30,8 +30,16 @@ flowchart TB
     H <-->|authenticated native calls| I[Hopae authentication gateway / sessions]
     I <-->|OIDC / Google / LDAP / API / local: mixed-auth design| P[Authentication sources]
     H <-->|authenticated native calls| G[Sumunjang: Guard network controls]
-    H --> D[Pumgye authorization server: distributed integration pending]
+    H --> D[Pumgye authorization core]
     D --> CL[Compiled classification / catalog]
+    K8[Kubernetes decision client: proposed] -.-> AD[Typed adapters / plugins: proposed]
+    DB[DBMS decision client: proposed] -.-> AD
+    AD -.-> I
+    AD -.-> G
+    AD -.-> D
+    MT[Domain-owned DBMS metadata] -->|compiled memory snapshots| I
+    MT -->|compiled memory snapshots| G
+    MT -->|compiled memory snapshots| D
     V[Device / workload evidence: proposed] -.-> D
     H --> B[Application / resource]
   end
@@ -170,3 +178,5 @@ flowchart LR
   S --> H
   H --> P
 ```
+
+[Domain decision cores and metadata adapters](docs/adr/0016-decision-core-metadata-adapters.md) — database-backed memory snapshots, inbound Kubernetes decisions and proposed PostgreSQL integration. Sillok is optional; these new adapters are not shipped.

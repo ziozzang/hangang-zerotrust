@@ -22,3 +22,5 @@
 [스냅샷 백본과 스케일아웃 멤버십](0013-snapshot-membership-scaleout.md) — 도메인 스냅샷·lease·합류/드레인/제거·Hangang 구독.
 
 [Kubernetes·IAM 원천 설계](0015-kubernetes-iam-authority.md) — 네 모듈 원천 연동·RBAC·워크로드 신원.
+
+[판정 코어·메타데이터 어댑터](0016-decision-core-metadata-adapters.md) — 타입 자원·DB 백본·선택적 플러그인.

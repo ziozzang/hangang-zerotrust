@@ -1425,3 +1425,21 @@ Kubernetes configuration editing/provenance, coherent Sumunjang source enforceme
 and all-four Pod deployment qualification against the provided remote cluster.
 Backup/archive validation and restart checks are complete; full disaster-restore
 rehearsal remains unqualified. Functional testing precedes separate load testing.
+
+## Domain decision core and metadata adapter scope
+
+- [ ] Generalize the service-only Pumgye runtime to typed resources/actions and
+  domain-owned auth metadata tables, including database table bindings and source
+  incarnations. Existing HTTP-only draft schemas require a versioned extension.
+- [ ] Implement DB commit/outbox to validated in-memory snapshot refresh and
+  recovery, with no request-time SQL/ontology call. Sillok is optional.
+- [ ] Implement inbound Kubernetes TokenReview/SubjectAccessReview adapters;
+  qualify authorizer ordering, explicit failure denial and missing network evidence.
+- [ ] Implement a PostgreSQL adapter: authentication, object/action decisions,
+  qualified RLS/filter obligations, pooling and long-transaction revocation.
+- [ ] Add bounded gRPC services over the same cores/snapshots; qualify native
+  parity, mTLS, deadlines/cancellation and transport overhead. Envoy ext_authz is
+  a separate compatibility gate.
+
+ADR 0016 records the accepted direction, with EN/KO README diagrams updated.
+These gates extend the original full goal; they are not implemented by Pod tests.

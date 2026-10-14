@@ -36,8 +36,16 @@ flowchart TB
     H <-->|인증된 네이티브 호출| I[Hopae 인증 게이트웨이 / 세션]
     I <-->|OIDC / Google / LDAP / API / 자체: 혼합 인증 설계| P[인증 소스]
     H <-->|인증된 네이티브 호출| G[수문장: Guard 네트워크 제어]
-    H --> D[품계 권한 서버: 분산 통합 진행 중]
+    H --> D[품계 권한 판정 코어]
     D --> CL[컴파일된 분류 / 카탈로그]
+    K8[Kubernetes 판정 클라이언트: 제안] -.-> AD[타입 어댑터 / 플러그인: 제안]
+    DB[DBMS 판정 클라이언트: 제안] -.-> AD
+    AD -.-> I
+    AD -.-> G
+    AD -.-> D
+    MT[도메인 소유 DBMS 메타데이터] -->|컴파일된 메모리 스냅샷| I
+    MT -->|컴파일된 메모리 스냅샷| G
+    MT -->|컴파일된 메모리 스냅샷| D
     V[단말 / 워크로드 근거: 설계 예정] -.-> D
     H --> B[애플리케이션 / 리소스]
   end
@@ -140,3 +148,5 @@ flowchart LR
   S --> H
   H --> P
 ```
+
+[도메인 판정 코어와 메타데이터 어댑터](docs/ko/0016-decision-core-metadata-adapters.md) — DB 원천 메모리 스냅샷, Kubernetes 역방향 판정과 PostgreSQL 연동 제안. 실록은 선택 사항이며 새 어댑터는 미구현입니다.

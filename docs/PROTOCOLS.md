@@ -81,3 +81,11 @@ choices above. HOP1 has a 16-byte magic/u64-ID/u32-length header and bounded raw
 header/result payloads. Caller authentication is per connection and rechecked by
 the existing router per request. Real-session parity, cancellation and replay
 tests qualify semantics; they do not certify production identity throughput.
+
+## Additional gRPC adapter direction
+
+[ADR 0016](adr/0016-decision-core-metadata-adapters.md) adds gRPC as a proposed
+versioned typed transport over existing decision cores. Reused channels, bounded
+messages/deadlines, mTLS and native/gRPC semantic parity are required. Kubernetes
+API-server webhooks need HTTP/JSON translation; Envoy ext_authz requires a separate
+qualified adapter. No gRPC server or plugin is shipped by this design update.

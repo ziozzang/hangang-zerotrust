@@ -26,3 +26,5 @@ Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 [Snapshot backbone and scale-out membership](adr/0013-snapshot-membership-scaleout.md) — domain snapshots, leased join/drain/remove and Hangang subscriptions.
 
 [Kubernetes and IAM authority](adr/0015-kubernetes-iam-authority.md) — all four components, source-of-truth modes, RBAC and workload identity.
+
+[Decision cores and metadata adapters](adr/0016-decision-core-metadata-adapters.md) — typed resources, DB backbones and optional plugins.

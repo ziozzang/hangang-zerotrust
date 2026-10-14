@@ -611,3 +611,5 @@ API/matrix/modules/SSO checks and an owned renewing stream over 3.2 seconds pass
 Configuration and policy are preserved, and the previous image is retained for
 rollback. This rollout does not enable Kubernetes authority in production, shared
 Guard caching, instantaneous revocation or sustained fleet throughput.
+
+Decision-core ownership and inbound Kubernetes queries are clarified by [ADR 0016](0016-decision-core-metadata-adapters.md). Kubernetes-source collection is not an inbound authentication/authorization implementation.

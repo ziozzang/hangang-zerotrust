@@ -23,3 +23,11 @@ Hangang 연결 풀/네이티브 로그인·로그아웃 → 회수/장애/파서
 [Hangang 계약](https://github.com/ziozzang/hangang/blob/main/docs/CONSOLE_PLUGINS.md)에 정의합니다.
 16바이트 magic/u64-ID/u32-length 프레임과 제한된 헤더/응답을 사용하며 앞선 임시 프레임 설계를 대체합니다.
 연결 인증 뒤 매 요청에서도 기존 라우터가 caller·세션을 확인합니다. 전체 identity 처리량은 별도 검증입니다.
+
+## 추가 gRPC 어댑터 방향
+
+[ADR 0016](0016-decision-core-metadata-adapters.md)은 같은 판정 코어를 사용하는
+버전별 타입 전송으로 gRPC를 추가 제안합니다. 채널 재사용·제한된 메시지와
+deadline·mTLS·네이티브/gRPC 의미 일치가 필수입니다. Kubernetes API 서버
+webhook은 HTTP/JSON 변환을, Envoy ext_authz는 별도 호환 검증을 요구합니다.
+이 설계 수정만으로 gRPC 서버나 플러그인을 제공하지는 않습니다.

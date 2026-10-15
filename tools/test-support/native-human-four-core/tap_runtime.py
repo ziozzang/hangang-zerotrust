@@ -9,7 +9,7 @@ import socket
 import threading
 from supervisor import private, require
 
-TAP_SHA='760488520fbb52f14baba6031b604987a433633eec49f34d5ce3411c6a34f69f'
+TAP_SHA='0acfea8313d83fa2e0abc46c77f3ff9f727ee2da60ea9a4c70dedb7a5df606ed'
 HOOK_SHA='a08187491d647b159b2741ea8204017a488687d6abedd9d69d5b8fb9f7d6bbd3'
 METHODS=('/hangang.hopae.v1.Authentication/Verify','/hangang.hopae.v1.HumanAuthenticationReceipts/IssueObserved','/hangang.hopae.v1.HumanAuthenticationReceipts/ObserveTime','/hangang.hopae.v1.HumanObservedCredentialProjection/Project')
 
@@ -58,6 +58,14 @@ class NativeTap:
         with self.lock:
             return self._snapshot()
 
+    def prepare_replay_transport(self):
+        with self.lock:
+            value=self._command(b'{"op":"prepare_replay_transport"}\n')
+            valid=value.get('ok') is True and set(value)=={'ok','op','prepared','elapsed_boottime_ns'} and value.get('prepared') is True and type(value.get('elapsed_boottime_ns')) is int and 0<=value['elapsed_boottime_ns']<=10_000_000_000
+            refused=value.get('ok') is False and set(value)=={'ok','op','stage'} and value.get('stage') in {'not_configured','armed','already_attempted','transport'}
+            require(value.get('op')=='prepare_replay_transport' and (valid or refused),'tap_prepare_shape')
+            return value
+
     def arm(self):
         with self.lock:
             value=self._command(b'{"op":"arm"}\n')
@@ -82,7 +90,8 @@ class NativeTap:
             require(set(stage)=={'received','forwarded','ok','refused'} and all(type(n) is int and 0<=n<=100000 for n in stage.values()),'tap_stage_shape')
         if self.qualification is not None:
             q=value['qualification']
-            require(set(q)=={'mode','armed','counts','last_replay','progress','requires_runner_query_budget_check'} and q['mode']==self.qualification['mode'] and type(q['armed']) is bool and q['requires_runner_query_budget_check']==(q['mode']=='exact_pair_replay'),'tap_qualification_shape')
+            require(set(q)=={'mode','armed','counts','last_replay','progress','replay_transport','requires_runner_query_budget_check'} and q['mode']==self.qualification['mode'] and type(q['armed']) is bool and q['requires_runner_query_budget_check']==(q['mode']=='exact_pair_replay'),'tap_qualification_shape')
+            t=q['replay_transport'];require(set(t)=={'prepared','elapsed_boottime_ns'} and type(t['prepared']) is bool and ((t['prepared'] and type(t['elapsed_boottime_ns']) is int and t['elapsed_boottime_ns']>=0) or (not t['prepared'] and t['elapsed_boottime_ns'] is None)),'tap_transport_shape')
             require(set(q['counts'])=={'cookie_substitutions','replay_attempts','replay_refused','pum_before','pum_after','control_sequence_complete','failed'} and all(type(n) is int and 0<=n<=100000 for n in q['counts'].values()),'tap_qualification_counts')
             progress=q['progress']
             if progress is not None:

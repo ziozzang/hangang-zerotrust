@@ -91,6 +91,44 @@ class Qualification(unittest.IsolatedAsyncioTestCase):
             (self.root/'ca.pem').read_bytes(),(self.root/'peer.key').read_bytes(),(self.root/'peer.pem').read_bytes()),
             options=(('grpc.ssl_target_name_override','localhost'),('grpc.enable_retries',0)))
 
+    async def test_prepare_actual_tls_has_no_rpc_and_is_one_shot(self):
+        await self.configure('exact_pair_replay',False)
+        result=await self.tap.prepare_replay_transport()
+        self.assertTrue(result['ok']);self.assertTrue(result['prepared'])
+        self.assertGreaterEqual(result['elapsed_boottime_ns'],0)
+        self.assertEqual(self.peer.calls,[])
+        self.assertEqual(self.tap.snapshot()['stages'][hooks.OBSERVE],{'received':0,'forwarded':0,'ok':0,'refused':0})
+        self.assertTrue(self.tap.snapshot()['qualification']['replay_transport']['prepared'])
+        self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'already_attempted')
+        self.tap.arm()
+        self.assertEqual(self.peer.calls,[])
+        self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'armed')
+
+    async def test_prepare_wrong_mode_and_transport_failure_never_succeed(self):
+        from unittest.mock import patch
+        await self.configure('issue_cookie_b',False)
+        self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'not_configured')
+        await self.configure('exact_pair_replay',False)
+        class Unready:
+            async def channel_ready(self):raise TimeoutError()
+        self.tap.route_channels[hooks.OBSERVE]=Unready()
+        self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'transport')
+        self.assertFalse(self.tap.snapshot()['qualification']['replay_transport']['prepared'])
+        self.assertEqual(self.peer.calls,[])
+        self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'already_attempted')
+
+    async def test_prepare_clock_reversal_never_reports_success(self):
+        from unittest.mock import patch
+        await self.configure('exact_pair_replay',False)
+        with patch.object(base.m.time,'clock_gettime_ns',side_effect=[10,9]):
+            self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'transport')
+        self.assertEqual(self.peer.calls,[])
+        self.assertFalse(self.tap.snapshot()['qualification']['replay_transport']['prepared'])
+        await self.configure('exact_pair_replay',False)
+        with patch.object(base.m.time,'clock_gettime_ns',side_effect=OSError('controlled clock failure')):
+            self.assertEqual((await self.tap.prepare_replay_transport())['stage'],'transport')
+        self.assertFalse(self.tap.snapshot()['qualification']['replay_transport']['prepared'])
+
     async def test_unarmed_actual_tls_controls_then_oneway_arm(self):
         await self.configure('issue_cookie_b',False)
         raw=self.issue().SerializeToString()

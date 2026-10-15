@@ -60,3 +60,7 @@ NativeTap wrapper는 고정 qualification과 arm/snapshot을 제공하며 replay
 snapshot의 progress는 시작 전 null이며 이후 고정 stage(first_project/pum_before/replay/pum_after/complete), 로컬 BOOTTIME 경과·원래 RPC deadline 남은 ms·첫 Project 경과·검증된 첫 output/PumBefore 남은 시간·replay까지 경과, cancelled, 고정 gRPC enum 이름, clock_failed만 담는다. 읽을 수 없는 수치는 null일 수 있다. payload·사용자/receipt ID·토큰·키·본문·외국 절대 시각은 없다.
 
 각 await 전에 stage/time을 기록하고 Pum-after 전에 replay 경과를 보존한다. CancelledError는 진단만 갱신하고 그대로 다시 던진다. 응답 대체·재시도·예산 갱신·완료 승격은 없다. last_replay는 기존 전체 제어 순서 성공 뒤에만 생기며 부분 정보는 replay 통과가 아니다. 최근 한 controlled Project의 정보이므로 runner는 검증 요청을 직렬화하고 실패 증거를 보존해야 한다. 실제 transport 취소 테스트는 Pum-after 정보 유지·성공 응답 없음·sequence 미완료를 검증한다. 채널 warmup은 추가하지 않았고 cold TLS 원인을 counter만으로 추정하지 않는다.
+
+## 명시적 replay 전송 준비
+
+비공개 stdin prepare_replay_transport는 exact-pair replay가 설정되고 아직 arm되지 않았을 때 프로세스당 한 번만 허용합니다(실패도 재시도 금지). 기존 Pum Observe 채널의 TLS 준비를 최대 1초 기다리며 RPC/인증 메타데이터/증명/갱신을 보내지 않습니다. 요청 기한·채널 식별·재시도·권한은 바뀌지 않습니다. 성공 여부와 로컬 BOOTTIME 경과만 기록하며 실제 요청 예산은 별개입니다.

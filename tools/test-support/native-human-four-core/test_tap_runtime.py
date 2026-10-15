@@ -89,7 +89,12 @@ class ActualTapProcess(unittest.TestCase):
             tap=NativeTap(supervisor,tls['tap'],hop,'i'*36,os.environ['OWNED_GRPC_PYTHON'],pum=pum,qualification=qualification)
             state=tap.snapshot();self.assertEqual(len(state['stages']),8)
             self.assertIn('/hangang.pumgye.v1.HumanObservedProjectionPermits/Observe',state['stages'])
-            self.assertFalse(state['qualification']['armed']);self.assertTrue(tap.arm()['ok'])
+            self.assertFalse(state['qualification']['armed'])
+            self.assertEqual(tap.prepare_replay_transport(),{'ok':False,'op':'prepare_replay_transport','stage':'transport'})
+            after=tap.snapshot();self.assertFalse(after['qualification']['replay_transport']['prepared'])
+            self.assertTrue(all(v=={'received':0,'forwarded':0,'ok':0,'refused':0} for v in after['stages'].values()))
+            self.assertEqual(tap.prepare_replay_transport()['stage'],'already_attempted')
+            self.assertTrue(tap.arm()['ok'])
         finally:supervisor.close()
 
 if __name__=='__main__':unittest.main()

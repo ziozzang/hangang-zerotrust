@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Qualification-only authenticated raw unary transport; grants no authority."""
 import argparse
+import time
 import asyncio
 import contextlib
 import hmac
@@ -91,6 +92,9 @@ class Tap(grpc.GenericRpcHandler):
             root_certificates=read_private(tls['ca'], 131072), require_client_auth=True)
         self.routes = {}
         self.channels = []
+        self.route_channels = {}
+        self.replay_transport = {'prepared':False,'elapsed_boottime_ns':None}
+        self.replay_transport_attempted = False
         self.inflight = 0
         self.capacity = config['maximum_inflight']
         self.counts = {name: {'received': 0, 'forwarded': 0, 'ok': 0, 'refused': 0} for name in config['upstreams']}
@@ -119,6 +123,7 @@ class Tap(grpc.GenericRpcHandler):
                 ('grpc.ssl_target_name_override', 'localhost'), ('grpc.enable_retries', 0),
                 ('grpc.max_receive_message_length', MAX_REPLY), ('grpc.max_send_message_length', METHODS[name])))
             self.channels.append(channel)
+            self.route_channels[name] = channel
             self.routes[name] = (channel.unary_unary(name), outbound)
         self.server = None
 
@@ -222,6 +227,27 @@ class Tap(grpc.GenericRpcHandler):
             return {'ok':True,'op':'shutdown'}
         raise ValueError('invalid control command')
 
+    async def prepare_replay_transport(self):
+        op='prepare_replay_transport'
+        if self.hooks is None or self.hooks.mode!='exact_pair_replay':
+            return {'ok':False,'op':op,'stage':'not_configured'}
+        if self.hooks.armed:
+            return {'ok':False,'op':op,'stage':'armed'}
+        if self.replay_transport_attempted:
+            return {'ok':False,'op':op,'stage':'already_attempted'}
+        self.replay_transport_attempted=True
+        try:
+            started=time.clock_gettime_ns(time.CLOCK_BOOTTIME)
+            await asyncio.wait_for(self.route_channels['/hangang.pumgye.v1.HumanObservedProjectionPermits/Observe'].channel_ready(),timeout=1.0)
+            elapsed=time.clock_gettime_ns(time.CLOCK_BOOTTIME)-started
+            if elapsed<0:raise ValueError('clock')
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            return {'ok':False,'op':op,'stage':'transport'}
+        self.replay_transport={'prepared':True,'elapsed_boottime_ns':elapsed}
+        return {'ok':True,'op':op,**self.replay_transport}
+
     def arm(self):
         if self.hooks is None:
             return {'ok':False,'op':'arm','stage':'not_configured'}
@@ -234,6 +260,7 @@ class Tap(grpc.GenericRpcHandler):
                   'stages': {k: dict(v) for k, v in self.counts.items()}}
         if self.hooks is not None:
             result['qualification'] = self.hooks.snapshot()
+            result['qualification']['replay_transport'] = dict(self.replay_transport)
         return result
 
 
@@ -264,7 +291,8 @@ async def main(args):
             if not line:
                 break
             command = json.loads(line)
-            print(json.dumps(tap.control(command)), flush=True)
+            reply=await tap.prepare_replay_transport() if command=={'op':'prepare_replay_transport'} else tap.control(command)
+            print(json.dumps(reply), flush=True)
             if command == {'op':'shutdown'}:
                 break
     finally:

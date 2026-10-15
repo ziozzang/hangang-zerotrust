@@ -15,3 +15,13 @@ A refusal status alone is not sufficient evidence of ledger rejection. The runne
 Output contains only safe statuses, exact counter deltas, hashes, scope/AAL metadata, elapsed durations and cleanup facts. Cookies/proofs/secret header values remain private and absent from result JSON. These gates do not establish in-flight withdrawal, alternate provider coverage, operating activation or throughput. Actual execution results are recorded separately from pure oracle/control tests.
 
 [한국어](PAIR_GATES.ko.md)
+
+Explicit `--prepare-replay-transport` is valid only with `--pair-gate replay`.
+After the unarmed positive control and before arming, it prepares only the
+already configured Pum Observe TLS channel under a fixed one-second startup
+wait. It sends no RPC, caller metadata, or proof; all Observe counters must
+remain zero. A refused preparation or mismatched snapshot stops before arm.
+The fresh request retains its original 400 ms configuration and 399 ms native
+admission bound. This opt-in is a transport experiment, not a replay pass.
+Run12 without preparation failed during PumAfter at the original transport
+deadline; its completed replay interval alone cannot qualify missing controls.

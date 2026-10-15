@@ -7,6 +7,7 @@ VERIFY='/hangang.hopae.v1.Authentication/Verify'
 ISSUE='/hangang.hopae.v1.HumanAuthenticationReceipts/IssueObserved'
 PROJECT='/hangang.hopae.v1.HumanObservedCredentialProjection/Project'
 PERMIT='/hangang.pumgye.v1.HumanObservedProjectionPermits/Issue'
+OBSERVE='/hangang.pumgye.v1.HumanObservedProjectionPermits/Observe'
 DECIDE='/hangang.pumgye.v1.HumanResourceAuthorization/Decide'
 
 class PairFailure(RuntimeError):
@@ -82,12 +83,23 @@ def query_budget_gate(config_path,expected_startup_sha256,elapsed_ns):
     limit_ms=min(budget,1000)-1
     return {'startup_config_sha256':expected_startup_sha256,'configured_verify_budget_ms':budget,'original_admission_limit_ms':limit_ms,'source_ppm':source,'receiver_ppm':receiver,'through_replay_boottime_ns':elapsed_ns,'conservative_elapsed_upper_ms':upper_ms,'quantization_charge_ms':2,'query_expiry_excluded':upper_ms<limit_ms}
 
-def run_replay(tap,root,backend,cookie,hop_config,expected_startup_sha256):
+def run_replay(tap,root,backend,cookie,hop_config,expected_startup_sha256,prepare_transport=False):
     facts={'contract':'actual-native-human-pair-replay-v1','passed':False}
     try:
         require(tap.snapshot()['qualification']['armed'] is False,'replay_control_unarmed')
         entry=effect(root,backend,cookie,'unarmed');facts['control']=entry;positive(entry)
         before=tap.snapshot();require(before['qualification']['counts']['replay_attempts']==0,'no_control_replay')
+        if prepare_transport:
+            require(before['qualification']['armed'] is False,'prepare_before_arm')
+            require(all(type(v) is int and v==0 for v in before['stages'][OBSERVE].values()),'prepare_observe_rpc_zero_before')
+            ack=tap.prepare_replay_transport();facts['transport_preparation']=ack
+            require(ack.get('ok') is True and ack.get('prepared') is True and type(ack.get('elapsed_boottime_ns')) is int,'prepare_transport_success')
+            prepared=tap.snapshot();facts['transport_preparation_snapshot']=prepared
+            require(prepared['qualification']['replay_transport']=={'prepared':True,'elapsed_boottime_ns':ack['elapsed_boottime_ns']},'prepare_snapshot_matches_ack')
+            require(prepared['qualification']['armed'] is False,'prepare_keeps_unarmed')
+            require(all(type(v) is int and v==0 for v in prepared['stages'][OBSERVE].values()),'prepare_observe_rpc_zero_after')
+            require(prepared['qualification']['counts']['replay_attempts']==0,'prepare_no_replay')
+            before=prepared
         tap.arm()
         entry=effect(root,backend,cookie,'armed');facts['armed']=entry
         after=tap.snapshot();facts['tap_before']=before;facts['tap_after']=after

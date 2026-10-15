@@ -11,3 +11,12 @@ replay도 unarmed 양성 후 arm한다. 실제 Root 요청의 새 auth/permit pa
 거부 상태만으로 ledger 원인을 단정하지 않는다. 실제 Hop 시작 파일은 기본과 같은 verify_budget_ms400을 명시한다. native Human admission은399ms이며 spawn 직전 설정 SHA와 검사 시 읽은 바이트가 같아야 한다. 첫 Project 호출 전부터 replay 완료까지의 BOOTTIME 경과에 실제 rates500/500을 적용해 `ceil(ns*(1000000+500)/((1000000-500)*1000000))+2` ms를 보수적으로 계산하고399보다 엄격히 작아야 한다. 추가2ms는 native tick 양자화와 remaining-at의 추가 차감을 보수적으로 반영한다. 경계·변경된 설정·다른 예산은 실패/불명확이며 TTL이나 caller 숫자로 대체하지 않는다. 네이티브 ledger/rollback 테스트도 함께 근거로 사용하고 분산 원자성이나 모든 실패 원인 배제를 주장하지 않는다.
 
 결과에는 상태·counter 차이·해시·scope/AAL·경과 시간·정리 정보만 남긴다. cookie·proof·secret 값은 공개하지 않는다. 실제 실행과 순수 제어 테스트를 구분하며 진행 중 철회·다른 provider·운영 반영·처리량은 별도이다.
+
+명시적 `--prepare-replay-transport`는 `--pair-gate replay`에서만 허용합니다.
+비무장 양성 대조 뒤, 무장 전에 이미 설정된 Pum Observe TLS 채널만 고정
+1초 시작 대기로 준비합니다. RPC·호출자 메타데이터·증명을 보내지 않으며
+Observe 카운터는 모두 0이어야 합니다. 준비 거부나 스냅샷 불일치는 무장
+전에 실패합니다. 새 요청의 설정 400ms와 원래 네이티브 예산 399ms는
+유지합니다. 이는 전송 실험이며 replay 통과 증거가 아닙니다. 준비 없는
+run12는 원래 전송 마감에 PumAfter에서 취소됐으므로, replay 구간 시간만으로
+누락된 대조를 통과 처리하지 않습니다.

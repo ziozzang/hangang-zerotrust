@@ -48,6 +48,32 @@ class Tests(unittest.TestCase):
         broken=copy.deepcopy(after);broken['stages'][s.ISSUE]['ok']=0
         with self.assertRaises(s.PairFailure):run(broken)
 
+    def test_transport_prepare_has_zero_observe_rpcs_and_precedes_arm(self):
+        for contaminated in (False,True):
+            before=snapshot('exact_pair_replay')
+            before['stages'][s.OBSERVE]={'received':0,'forwarded':0,'ok':0,'refused':0}
+            prepared=copy.deepcopy(before)
+            prepared['qualification']['replay_transport']={'prepared':True,'elapsed_boottime_ns':10}
+            if contaminated:prepared['stages'][s.OBSERVE]['received']=1
+            tap=mock.Mock();tap.snapshot.side_effect=[before,before,prepared,prepared]
+            tap.prepare_replay_transport.return_value={'ok':True,'op':'prepare_replay_transport','prepared':True,'elapsed_boottime_ns':10}
+            with mock.patch.object(s,'effect',side_effect=[entry(),entry(503)]):
+                with self.assertRaises(s.PairFailure) as failed:
+                    s.run_replay(tap,None,None,'cookie','unused','unused',prepare_transport=True)
+            tap.prepare_replay_transport.assert_called_once_with()
+            self.assertEqual(tap.arm.call_count,0 if contaminated else 1)
+            self.assertFalse(failed.exception.facts['passed'])
+            self.assertEqual(failed.exception.facts['transport_preparation']['prepared'],True)
+
+    def test_transport_prepare_refusal_never_arms(self):
+        before=snapshot('exact_pair_replay')
+        before['stages'][s.OBSERVE]={'received':0,'forwarded':0,'ok':0,'refused':0}
+        tap=mock.Mock();tap.snapshot.side_effect=[before,before]
+        tap.prepare_replay_transport.return_value={'ok':False,'op':'prepare_replay_transport','stage':'transport'}
+        with mock.patch.object(s,'effect',return_value=entry()):
+            with self.assertRaises(s.PairFailure):s.run_replay(tap,None,None,'cookie','unused','unused',prepare_transport=True)
+        tap.arm.assert_not_called()
+
     def test_replay_fails_inconclusive_if_original_query_may_expire(self):
         with tempfile.TemporaryDirectory() as tmp:
             p,digest=self.config(Path(tmp));before=snapshot('exact_pair_replay');after=copy.deepcopy(before)

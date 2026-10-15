@@ -41,6 +41,7 @@ def observe(binary, expected, ready, cookie, directory, account):
 
 
 def run(args):
+    require(not args.prepare_replay_transport or args.pair_gate=='replay','transport_preparation_replay_only')
     entries=json.loads(Path(args.manifest).read_text())
     require(hashlib.sha256(Path(args.observer).read_bytes()).hexdigest()==args.observer_sha256,'observer_hash')
     supervisor=Supervisor(args.directory,entries)
@@ -100,7 +101,7 @@ def run(args):
             phase='actual_pair_'+args.pair_gate
             from pair_scenarios import run_lineage,run_replay,PairFailure
             try:
-                facts['pair_gate']=run_lineage(tap,root,backend,cookies,observations) if args.pair_gate=='lineage' else run_replay(tap,root,backend,cookies['a'],hop.root/'config.json',hop.config_sha256)
+                facts['pair_gate']=run_lineage(tap,root,backend,cookies,observations) if args.pair_gate=='lineage' else run_replay(tap,root,backend,cookies['a'],hop.root/'config.json',hop.config_sha256,prepare_transport=args.prepare_replay_transport)
             except PairFailure as failure:
                 facts['pair_gate']=failure.facts
                 raise
@@ -140,6 +141,7 @@ def main():
     gates=parser.add_mutually_exclusive_group()
     gates.add_argument('--fresh-gates',action='store_true',help='actual fresh HTTP MFA/policy/network gates; no in-flight claim')
     gates.add_argument('--pair-gate',choices=['lineage','replay'],help='actual native A/B or exact pair replay, armed after controls')
+    parser.add_argument('--prepare-replay-transport',action='store_true',help='prepare existing replay Observe TLS channel before arm, without RPC')
     parser.add_argument('--gateway-proto');parser.add_argument('--decision-proto')
     parser.add_argument('--observer',required=True);parser.add_argument('--observer-sha256',required=True)
     args=parser.parse_args()

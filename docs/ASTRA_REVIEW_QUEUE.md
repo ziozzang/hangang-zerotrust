@@ -151,3 +151,10 @@ per-RPC correlation and per-client retirement. A read-only Sol follow-up maps it
 remaining native consumer gaps; no further Astra review has been requested.
 
 Current next boundary: [native consumer adoption](reviews/2026-10-15-native-observed-adoption.md), a Sol review of the implemented exact SDK and actual production query shapes.
+
+Stable trust/digest preparation is implemented in Hopae `c7ddcf2`; Pumgye
+`97bf852` adds a separate observed authentication adapter (78 feature-workspace
+tests, strict Clippy and default locked check). The adapter remains inactive at
+native endpoints/signing pending distinct permit/replay/output contracts. See the
+[provider completion audit](reviews/2026-10-15-provider-completion.md) for original
+mixed-identity requirements that time-client work does not complete.

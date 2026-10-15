@@ -4,7 +4,19 @@ Status: Sol 6.1 source review and implementation handoff; not implemented consum
 behavior. Current source: Hopae `2a96303`, Pumgye `34d74b6`, Hangang `b41b492`.
 [한국어](../ko/2026-10-15-native-observed-adoption.md)
 
-## Next code boundary
+## Implementation update
+
+The stable-policy/digest SDK is now implemented in Hopae `c7ddcf2` and the separate
+Pumgye observed authentication adapter in `97bf852`. The adapter uses borrowed
+ArcSwap generation checks, retires before publication, runs external callbacks
+outside native guards and checks BOOTTIME after callbacks. Its 78-test feature
+workspace, strict Clippy and default locked check pass. This is evidence-library
+integration; no observed authorization endpoint or permit signing is activated.
+The original next-boundary analysis below records why those interfaces exist.
+Continue the ordered sequence from separate Pumgye prerequisite/permit clocks,
+paired replay and output, followed by actual final enforcement qualification.
+
+## Original next code boundary
 
 The exact-pin SDK is a tested foundation, but neither production consumer can
 use it directly. Pumgye receives an authenticated final-request digest, not HTTP

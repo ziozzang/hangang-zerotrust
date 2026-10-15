@@ -140,3 +140,26 @@ Consumer adoption must also handle authenticated digest-only requests, dynamical
 verified identities and process-domain bootstrap without creating a channel per
 request or trusting incoming owner pins.
 Draft releases and the cross-host Kubernetes gate remain open.
+
+
+## Stable native trust and adapter evidence
+
+Hopae `c7ddcf2` adds stable server-compiled trust and digest-oriented preparations
+without constructing a transport from incoming context. Signed dynamic identity
+and source domain must match the fixed current owner. Pumgye `97bf852` compiles
+its immutable trust into a separate observed authentication adapter, with borrowed
+ArcSwap generation checks, serialized retire-before-publish and final time checks
+after external callbacks. It does not activate an observed endpoint or signing.
+
+Hopae `d828830` tests the SDK against actual receipt/profile/application/key owners
+over mTLS, including independent observation/refresh and key withdrawal while
+local evidence remains unexpired. Only its permission peer is mocked. The complete
+workspace passes 995 tests with 42 existing exclusions, strict Clippy and SDK musl
+compilation; Pumgye's feature workspace passes 78, strict Clippy and default locked
+check. The SQLite async-deadline test race was fixed separately in `2e22240`, with
+bounded worker observation, real interruption/rollback/restoration and 10 stress
+repetitions; request budgets and production scheduling were not changed.
+
+Next is distinct Pumgye prerequisite/permit source time, observed envelopes, paired
+replay/output and final dispatch. No release artifact, four-owner Kubernetes path
+or operating route is qualified by the adapter/library evidence above.

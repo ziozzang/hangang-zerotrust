@@ -139,3 +139,8 @@ K3s 검증이 아니다. 소비자 시계 전환과 공용 ingress 제한은 남
 작업으로 남은 네이티브 소비자 간극을 정리하며 Astra 재검토는 요청하지 않았다.
 
 현재 다음 경계는 [네이티브 소비자 적용](2026-10-15-native-observed-adoption.md)이며 구현된 정확 SDK와 실제 운영 질의 형식을 대조한 Sol 검토다.
+
+안정 신뢰·digest 준비는 호패 `c7ddcf2`, 별도 관측 인증 어댑터는 품계 `97bf852`에
+구현했다(기능 workspace 78개·엄격한 Clippy·기본 locked 검사). 별도 permit·replay·
+출력 계약 전까지 네이티브 endpoint·서명에는 활성화하지 않는다. 시간 클라이언트로
+완료되지 않는 원래 혼합 신원 요구는 [공급자 완성 감사](2026-10-15-provider-completion.md)에 기록했다.

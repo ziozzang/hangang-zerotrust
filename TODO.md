@@ -1636,3 +1636,27 @@ copy is also preserved.
 
 Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 [implementation queue](docs/ASTRA_REVIEW_QUEUE.md).
+
+
+## Stable native observed authentication — 2026-10-15
+
+- [x] Hopae `c7ddcf2`: stable native trust, digest-only issue/observation preparation,
+  dynamic verified identities and current source-domain matching on one persistent
+  mTLS client; exact-pin/strict compatibility remains tested.
+- [x] Pumgye `97bf852`: separate optional observed authentication adapter, borrowed
+  ArcSwap generation checks, retire-before-publish, per-scope indexed floors and
+  callback/time fences. 78 feature-workspace tests, strict Clippy/default locked
+  check pass. No observed endpoint or permit issuance is activated.
+- [x] Qualify SDK issue/independent observation/refresh/current key withdrawal
+  against actual Hopae owners; complete workspace995/42 existing exclusions,
+  strict Clippy and native SDK musl check pass. Permission peer remains mocked.
+- [x] Correct the asynchronous SQLite interruption test observation race without
+  changing HTTP budgets or production scheduling; deterministic real interruption,
+  rollback/restoration regression and ten actual scenario repetitions pass.
+- [ ] Complete separate Pumgye prerequisite budgets/permit source clock and observed
+  envelopes, then paired durable replay/output and final Hangang dispatch.
+- [ ] Complete original mixed-identity/provider/lifecycle requirements tracked in
+  the [source audit](docs/reviews/2026-10-15-provider-completion.md); time evidence
+  and service-only projection are not full provider completion.
+- [ ] Rebuild exact signed candidates and pass actual independent-host/Kubernetes/
+  browser/withdrawal/restart/failure gates before release and operating adoption.

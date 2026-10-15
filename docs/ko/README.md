@@ -2,6 +2,8 @@
 
 [English](../README.md) · [프로젝트](../../README.ko.md)
 
+[구현 인수인계 — 2026-10-16](HANDOFF_2026-10-16.md) — 일시 중단 상태·검증 결과·남은 조건·재개 순서.
+
 - [전체 구조](ARCHITECTURE.md)
 - [카탈로그·정보등급](CATALOG.md)
 - [분류 엔진](CLASSIFICATION.md)

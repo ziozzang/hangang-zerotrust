@@ -2,6 +2,8 @@
 
 [한국어](ko/README.md) · [Project](../README.md)
 
+[Paused implementation handoff — 2026-10-16](HANDOFF_2026-10-16.md) — verified state, remaining gates and resume order.
+
 | Document | Scope |
 | --- | --- |
 | [Architecture](ARCHITECTURE.md) | Ownership, control/data planes and trust boundaries |

@@ -2,6 +2,9 @@
 
 [한국어](README.ko.md) · [Design index](docs/README.md) · [Roadmap](docs/ROADMAP.md)
 
+[Implementation handoff — paused 2026-10-16](docs/HANDOFF_2026-10-16.md)
+records verified results, open gates and the resume order.
+
 The architecture and contract repository for a zero-trust backbone built around
 [Hangang](https://github.com/ziozzang/hangang),
 [Hopae](https://github.com/ziozzang/hopae), and

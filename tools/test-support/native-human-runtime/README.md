@@ -8,7 +8,7 @@ This is a local qualification tool, not a deployment template or a complete Huma
 
 Use Linux, Python3 with `cryptography`, OpenSSL and a qualified production Hop executable. Human Source/RPC/scope support is present in Hop source `b08e105666de99f2ae957cff16ca9f3c75d3f7c5`; an executable's displayed0.0.10 version alone does not establish that capability. The consumer must retain/verify its exact source and binary SHA. Build without test hooks. No operating configuration, DB, token or directory should be supplied.
 
-For LDAP, Docker must already contain the owned image `hopae/owned-openldap:bookworm`; the helper never pulls it. Build that local fixture image from the matching Hop checkout with `docker build -t hopae/owned-openldap:bookworm tests/fixtures/ldap`. See [Hop's LDAP fixture source](https://github.com/ziozzang/hopae-hangang-integration/tree/b08e105666de99f2ae957cff16ca9f3c75d3f7c5/tests/fixtures/ldap). Random owned container names and loopback ports use the existing fixture's host-network arrangement; this is not a production container isolation recommendation.
+For LDAP, Docker must already contain the owned image `hopae/owned-openldap:bookworm`; the helper never pulls it. Build that local fixture image from the matching Hop checkout with `docker build -t hopae/owned-openldap:bookworm tests/fixtures/ldap`. See [Hop's LDAP fixture source](https://github.com/ziozzang/hopae/tree/b08e105666de99f2ae957cff16ca9f3c75d3f7c5/tests/fixtures/ldap). Random owned container names and loopback ports use the existing fixture's host-network arrangement; this is not a production container isolation recommendation.
 
 ## Run and private IPC
 

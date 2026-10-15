@@ -131,3 +131,13 @@ This is Service composition at AAL0. It does not qualify Human MFA or Workload
 composition, local-account recovery, streaming or arbitrary deployment topologies.
 The default mode keeps its four production owners and does not create relay
 credentials, the relay Pod or composition configuration.
+
+The composition circuit gate runs before disruptive source withdrawal/UID repinning.
+A dedicated diagnostic probe requires the exact native IssueServiceObserved
+provider-unavailable status, with one observed controlled relay call for each of
+three denials. A fourth native call must refuse without a relay call; the complete
+gateway path must also refuse without backend dispatch. TLS-name, invalid clock-rate
+configuration and caller failures must fail the probe and never count as provider
+denials. Peer recovery alone cannot bypass the open circuit. This denial diagnostic
+grants no receipt or time capability; the ordinary successful probe still uses the
+actual SDK issue/observe/refresh/check sequence.

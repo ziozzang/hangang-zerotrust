@@ -297,7 +297,7 @@ def main():
                         if attempt==2 or time.monotonic()>=deadline:raise
                         print('Read-only backend counter transport retry',flush=True)
                     finally:c.close()
-            qualification_phase='protected-request'
+            qualification_phase='protected-request';qualification_facts={}
             def request(method='GET',key=default_key):
                 c=Gateway('app.example.test',8443,timeout=3);headers={'Host':'app.example.test','x-forwarded-user':'forged','x-hopae-aal':'3'}
                 if key:headers['Authorization']=('Hopae-Compose ' if args.composition else 'Bearer ')+key
@@ -402,6 +402,60 @@ def main():
             policy_route=next((route['path'] for route in manifest['routes'] if route['method']=='GET' and route['path'] in ['policy/document','policy']),None)
             assert policy_route is not None,'owned plugin has no declared policy read route'
             assert api(admin,f'/v1/plugins/{plugin_id}/{policy_route}')[0]==200
+            if args.composition:
+                qualification_phase='composition-circuit'
+                relay_port=forward('relay',9443)
+                def relay_state(unavailable=None):
+                    class Relay(http.client.HTTPSConnection):
+                        def connect(self):self.sock=ctx.wrap_socket(socket.create_connection(('127.0.0.1',relay_port),timeout=3),server_hostname='relay.'+namespace+'.svc')
+                    connection=Relay('relay.'+namespace+'.svc',9443,timeout=3)
+                    connection.request('GET' if unavailable is None else 'POST','/__state',body=None if unavailable is None else json.dumps({'unavailable':unavailable}),headers={'Authorization':'Bearer '+tokens['relay-control'],'Content-Type':'application/json'})
+                    response=connection.getresponse();value=json.loads(response.read());connection.close();assert response.status==200;return value
+                # Fresh source-only channel isolates authentication circuit admission
+                # from unrelated network-owner refusal. Every denial must
+                # demonstrably reach the controlled relay before counting it.
+                receipt_config['settings']['address']=f'localhost:{forward("hopae",8703)}'
+                receipt_path.write_text(json.dumps(receipt_config))
+                def source_denial():
+                    result=subprocess.run([str(args.receipt_client.resolve()),str(receipt_path)],input='provider_unavailable\n',env=receipt_environment,text=True,capture_output=True,timeout=10)
+                    assert all(value not in result.stdout+result.stderr for value in [*tokens.values(),composition_key]),'source probe disclosed credentials'
+                    report=json.loads(result.stdout)
+                    qualification_facts['native_probe']={'exit':result.returncode,'contract':report.get('contract'),'allowed':report.get('allowed'),'provider_unavailable':report.get('provider_unavailable'),'phase':report.get('phase'),'rpc_status':report.get('rpc_status')}
+                    assert result.returncode==0 and report.get('contract')=='hopae-observed-sdk-v1' and report.get('allowed') is False and report.get('provider_unavailable') is True and report.get('phase')=='issue_service_observed' and report.get('rpc_status')=='unavailable','actual native provider-unavailable RPC status required'
+                for negative in ['wrong-tls-name','invalid-clock-rates','wrong-caller']:
+                    qualification_phase='composition-circuit-negative:'+negative
+                    candidate=json.loads(json.dumps(receipt_config));environment=dict(receipt_environment)
+                    if negative=='wrong-tls-name':candidate['settings']['tls']['server_name']='untrusted.example.test'
+                    elif negative=='invalid-clock-rates':candidate['source_ppm']=1000000
+                    else:environment['OWNED_RECEIPT_CALLER']='not-the-owned-caller-at-least-thirty-two-bytes'
+                    candidate_path=root/('probe-'+negative+'.json');candidate_path.write_text(json.dumps(candidate))
+                    before=relay_state()['calls']
+                    result=subprocess.run([str(args.receipt_client.resolve()),str(candidate_path)],input='provider_unavailable\n',env=environment,text=True,capture_output=True,timeout=10)
+                    report=json.loads(result.stdout)
+                    assert result.returncode!=0 and report.get('allowed') is False and report.get('provider_unavailable') is not True,'transport/clock/caller failure misclassified as provider denial'
+                    assert relay_state()['calls']==before,'negative probe delivered credentials to provider'
+                    assert all(value not in result.stdout+result.stderr for value in [*tokens.values(),composition_key]),'negative source probe disclosed credentials'
+                qualification_facts['negative_probe_checks']=['wrong-tls-name','invalid-clock-rates','wrong-caller']
+                relay_state(True)
+                for index in range(3):
+                    qualification_phase='composition-circuit-source-denial:'+str(index+1)
+                    before=relay_state()['calls'];source_denial();after=relay_state()['calls']
+                    qualification_facts.update(relay_calls_before=before,relay_calls_after=after)
+                    assert after==before+1,'source circuit denial did not reach controlled unavailable relay'
+                qualification_phase='composition-circuit-open'
+                count=relay_state()['calls'];source_denial()
+                assert relay_state()['calls']==count,'open source circuit contacted unavailable relay'
+                assert request()[0]==503 and relay_state()['calls']==count,'full chain did not preserve source circuit refusal'
+                relay_state(False);source_denial()
+                assert relay_state()['calls']==count,'peer recovery silently bypassed source circuit'
+                assert request()[0]==503 and relay_state()['calls']==count,'full chain bypassed open source circuit after peer recovery'
+                qualification_phase='composition-circuit-source-replacement'
+                # Explicit owned Pod replacement gives a new source/runtime owner;
+                # durable profile/replay history stays on its original PVC.
+                kube('-n',namespace,'rollout','restart','deployment/hopae')
+                kube('-n',namespace,'rollout','status','deployment/hopae','--timeout=120s',timeout=135)
+                eventually(lambda:request()[0]==200)
+                print('PASS: actual HTTPS relay outage opens circuit, suppresses calls after peer recovery, explicit Hopae Pod replacement preserves durable configuration and recovers fresh observed composition')
             if args.browser_probe:
                 browser_config=root/'browser.json'
                 browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':default_key},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
@@ -495,33 +549,14 @@ def main():
                 assert api(admin,f'/v1/plugins/{plugin_id}/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned K8s fixture'},tokens['gateway-admin'])[0]==200
                 assert request()[0]==403
                 assert api(admin,f'/v1/plugins/{plugin_id}/blocks','DELETE',{'network':'127.0.0.1/32'},tokens['gateway-admin'])[0]==200 and request()[0]==200
-            if args.composition:
-                relay_port=forward('relay',9443)
-                def relay_state(unavailable=None):
-                    class Relay(http.client.HTTPSConnection):
-                        def connect(self):self.sock=ctx.wrap_socket(socket.create_connection(('127.0.0.1',relay_port),timeout=3),server_hostname='relay.'+namespace+'.svc')
-                    connection=Relay('relay.'+namespace+'.svc',9443,timeout=3)
-                    connection.request('GET' if unavailable is None else 'POST','/__state',body=None if unavailable is None else json.dumps({'unavailable':unavailable}),headers={'Authorization':'Bearer '+tokens['relay-control'],'Content-Type':'application/json'})
-                    response=connection.getresponse();value=json.loads(response.read());connection.close();assert response.status==200;return value
-                relay_state(True)
-                for _ in range(3):assert request()[0]==503
-                count=relay_state()['calls']
-                assert request()[0]==503 and relay_state()['calls']==count,'open circuit contacted unavailable relay'
-                relay_state(False)
-                assert request()[0]==503 and relay_state()['calls']==count,'provider recovery silently bypassed open circuit'
-                # Explicit owned Pod replacement gives a new source/runtime owner;
-                # durable profile/replay history stays on its original PVC.
-                kube('-n',namespace,'rollout','restart','deployment/hopae')
-                kube('-n',namespace,'rollout','status','deployment/hopae','--timeout=120s',timeout=135)
-                eventually(lambda:request()[0]==200)
-                print('PASS: actual HTTPS relay outage opens circuit, suppresses calls after peer recovery, explicit Hopae Pod replacement preserves durable configuration and recovers fresh observed composition')
+            qualification_phase='network-authority-outage'
             kube('-n',namespace,'scale','deployment/sumunjang','--replicas=0')
             kube('-n',namespace,'wait','--for=delete','pod','-l','app=sumunjang','--timeout=60s')
             assert request()[0]==503
             print(('PASS: native Kubernetes Sum source and scratch HTTPGet readiness; ' if args.sumunjang_native_source else '')+'PASS: actual four independent K8s Pods, nonroot static artifacts, mTLS Service DNS, protected request identity, method/guest denial, real pinned console discovery/assets, mTLS plugin management reads/mutations, delegated policy CAS, immediate revocation, PVC/authority/gateway Pod replacement, private administrator state, refused backend non-dispatch and network authority outage')
         except Exception as failure:
             print('Owned qualification failed: '+type(failure).__name__,flush=True)
-            facts={'at_unix_ms':round(time.time()*1000),'phase':locals().get('qualification_phase','startup'),'last_request':getattr(locals().get('request'),'last',None)}
+            facts={'at_unix_ms':round(time.time()*1000),'phase':locals().get('qualification_phase','startup'),'last_request':getattr(locals().get('request'),'last',None),'details':locals().get('qualification_facts',{})}
             if args.sumunjang_native_source and 'source_report' in locals():
                 try:
                     report=source_report()

@@ -111,3 +111,12 @@ native caller 키는 없어야 합니다.
 AAL0의 Service 혼합 구성 범위입니다. Human MFA, Workload 혼합, 로컬 계정 복구,
 streaming 또는 임의 배포 구조를 검증했다는 뜻은 아닙니다. 기본 모드는 기존 네
 production owner를 유지하며 relay 키/Pod/혼합 설정을 만들지 않습니다.
+
+혼합 구성 circuit 검사는 원천 철회/UID 재고정 전에 실행합니다. 별도 진단 probe가
+실제 native IssueServiceObserved의 정확한 provider-unavailable 거부를 확인하며
+세 번의 거부 각각 제어된 relay 호출 하나를 확인합니다. 네 번째 native 호출은
+relay 호출 없이 거부되고 전체 gateway 경로도 backend 전달 없이 거부돼야 합니다.
+TLS 이름/잘못된 clock-rate 설정/caller 오류는 probe 실패이며 provider 거부로 세지
+않습니다. Peer 복구만으로 열린 circuit을 우회할 수 없습니다. 거부 진단은 receipt/
+시간 capability를 부여하지 않고 성공 경로는 실제 SDK issue/observe/refresh/check를
+그대로 사용합니다.

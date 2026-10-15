@@ -1726,3 +1726,7 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [x] Hangang classic positive-TTL BOOTTIME/cache/source-owner fix `171fc4d`: full
   workspace 1,312 passed/58 ignored and strict Clippy. Release candidate 0.3.7
   static/local chain passes; exact Kubernetes gate and publication remain pending.
+
+- [ ] Typed Workload projection: [implementation proposal](docs/reviews/2026-10-15-workload-projection-plan.md); same-compiler workload policy started, additive native chain and real TokenReview gates pending.
+
+- [x] Hangang 0.3.7: exact-artifact K3s run2 exit0 and owned cleanup; five signed assets/public round-trip, internal gateway and console adopted. Preserve initial 503 failure and unconfirmed cause; restoration test is bounded availability, not increased proof lifetime.

@@ -996,3 +996,7 @@ permit/투영·분산 복구/다중 노드 검증은 남아 있습니다.
 - [x] 한강 positive-TTL BOOTTIME/cache/source-owner 보강 `171fc4d`: 전체 1,312
   통과·58개 제외와 strict Clippy. 0.3.7 static·로컬 체인은 통과했으며 정확한 K8s
   게이트·공개는 진행 중이다.
+
+- [ ] Workload 신원 전달 [구현 제안](docs/ko/2026-10-15-workload-projection-plan.md): 같은 컴파일러의 typed 정책 구현 시작, 추가 native 연결·실제 TokenReview 검증 대기.
+
+- [x] 한강 0.3.7: 동일 산출물 K3s 두 번째 실행 exit0·소유 자원 정리, 서명 파일 5개 공개 재검증·내부 게이트웨이/콘솔 반영 완료. 첫 503 실패·원인 미확정 보존, 복원 검사만 제한된 회복 허용하며 증명 수명 유지.

@@ -196,10 +196,9 @@ The global CRD test assumes no concurrent source operator.
 
 A separate default-DB run of that new candidate found a console input-lock
 regression when initial unknown authority becomes disabled. The canonical dashboard
-and generated plugin are being fixed. Because the dashboard is embedded, this
-requires a new exact static binary and both source/default qualification again.
-The previous staged 0.3.6 candidate is explicitly not for publication. Existing
-published/operating Sumunjang 0.3.5 remains unchanged.
+and generated plugin were subsequently fixed. Because the dashboard is embedded,
+a new exact static binary and both source/default qualifications were required.
+The previous staged 0.3.6 candidate is explicitly not for publication. The published/operating Sumunjang 0.3.5 was preserved during that failed candidate.
 
 ## Final Sumunjang 0.3.6 publication and adoption
 
@@ -226,3 +225,35 @@ HUP and all module management reads passed. A copied-file permission rejection
 restored the previous console configuration; corrected private package permissions
 and configuration preflight then passed before successful adoption. The source
 mode remains opt-in; ordinary DB management remains editable.
+
+## Subsequent Hangang 0.3.7 publication and adoption
+
+[Hangang 0.3.7](https://github.com/ziozzang/hangang/releases/tag/v0.3.7) is published
+at `15dadfa`; runtime build inputs are `58a7f64`, followed only by a browser-test
+change. Its raw static SHA-256 is
+`03473e142fbcf4fb24663f58d07c6babebb944eb86f180bf3b88ef026abc46cb`.
+All five assets matched the signed frozen stage after draft and anonymous public
+downloads; independent verification covered the pinned signature and all eight
+archive executables. Internal gateway and console replacement passed private
+rollback backups, configuration preflight, preserved configuration/credentials,
+exact running hashes, management/refusal routing, module discovery and owning
+Pumgye policy reads.
+
+The classic network cache now charges positive TTL from its original Linux
+BOOTTIME query capture and binds cached evidence to the source owner and generation.
+Cache hits do not renew that capture. A valid zero-TTL point-in-time decision remains
+usable once without cache or reusable proof; this is not a universal legacy final
+socket fence. Existing observed final transport enforcement remains required.
+
+Workspace qualification passed 1,312 tests with 58 ignored and strict Clippy.
+An initial unrelated Lua timing failure and unchanged serial/full rechecks are
+retained. The first actual K3s run also failed: a post-profile-restoration request
+returned 503; a guard transport-query warning was observed but root cause remains
+unconfirmed. The browser helper now checks backend effects before status assertions
+and gives restoration a bounded 200/503 availability window; each request and proof
+retains its original budget. The second exact-artifact run exited zero, including
+native-source authority, independent SDK, browser/CAS, replacement/withdrawal,
+readiness and non-dispatch gates. Its restore attempt returned 200 directly; it
+does not reproduce or establish the cause of the earlier 503. Both owned namespaces
+and the exact created CRD were removed, both nodes were Ready, and synthetic Retain
+PVs were preserved under cluster policy. This single-host cluster establishes no HA.

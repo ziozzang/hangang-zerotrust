@@ -201,3 +201,6 @@ flowchart LR
 records the exact signed Hangang 0.3.6 / Hopae 0.0.8 / Pumgye 0.1.7 candidates,
 retained Sumunjang 0.3.5, subsequent native Sumunjang 0.3.6, actual independent-host/
 Kubernetes/browser gates and internal adoption.
+
+
+[Hangang 0.3.7 follow-up qualification and adoption](docs/reviews/2026-10-15-native-observed-adoption.md#subsequent-hangang-037-publication-and-adoption) records the subsequent network-cache lifetime fix, preserved failures and actual publication/internal rollout.

@@ -1591,3 +1591,15 @@ copy is also preserved.
 - [ ] Wire live native route/projection owners and durable replay consumption
   into a permit RPC and Hangang final dispatch. The fixture's route/plan state is
   synthetic and local; new library source is not a newly deployed permit service.
+
+## Native route observation transport — 2026-10-15
+
+- [x] Hangang 4c7d700: retain native route/client-IP context, independent gRPC
+  contract and bounded mandatory-mTLS read-only server library; actual sockets,
+  cancellation/role/binding refusal and 1,294-test workspace qualification pass.
+- [ ] Integrate server startup and supervised listener ownership, remote client
+  pools/configured owner addressing and actual reference delivery to Pumgye.
+- [ ] Qualify the resulting permit/projection/replay path through actual gateway
+  effects, signed static packages, Kubernetes and operating adoption. Current
+  operating releases remain unchanged; full provider/fleet/adapter/throughput
+  requirements are still open.

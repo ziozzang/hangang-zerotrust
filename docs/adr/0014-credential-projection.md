@@ -171,3 +171,38 @@ ownership. These references neither authorize projection nor consume receipt
 nonces. Permit RPC, actual projection-owner checks, durable paired replay
 consumption, final dispatch integration and distributed membership/restore
 fences remain required.
+
+## Native route observation gRPC library — 2026-10-15
+
+Hangang `4c7d700` adds the independent generated `hangang-route-grpc` 0.1.0
+contract and a read-only server library over shared `hangang-runtime` 819177c.
+Native capture now retains the actual route runtime and trusted ingress client
+IP. The server derives service/audience/resource/action/IP from retained owners,
+not caller fields. Queries carry only a native reference and exact request/final
+absolute URI hashes. Destination hashing streams URI formatting into SHA-256
+without a temporary URI string or entity rehash.
+
+Mandatory mTLS, dedicated bounded credential references, duplicate credential
+refusal, global admission and 512/1,024-byte decode/encode limits apply. Native
+lookup refuses changed bindings, expired/cancelled references and replaced
+snapshots. Cancelling the server future retires even retained authenticated
+service connections. Configuration revision remains diagnostic; successful
+observation is not permission, projection or a distributed lease.
+
+Actual socket tests verify owner-derived scope/IP, missing client certificates,
+wrong server identity, missing/wrong/duplicate role credentials, malformed and
+oversized requests, changed reference/digests, cancellation, replacement and
+shutdown. Final workspace/all-target qualification passes 1,294 tests with 58
+existing explicit ignores, strict Clippy and 928 documentation links. A rebuilt
+gateway passes the actual four-process native resource/durable-restart fixture.
+That fixture still uses the existing Pumgye request flow: it does not exercise
+remote route lookup through Pumgye. An earlier overlapping verification/rebuild
+lost a test executable and failed before execution; its log is retained privately
+and is not counted. The final serial verification passes without weakened gates.
+
+Source is on main, not a new released/deployed route service. Startup/CLI and
+supervisor listener ownership, configured remote owner clients, reference delivery
+to Pumgye, permit/projection owner checks, paired replay and distributed/Kubernetes
+adoption remain required. No GitHub Actions were enabled. Inactive compiler
+incremental caches were subsequently removed under the build-directory lock,
+recovering 31.6 GiB while retaining binaries, source, databases and backups.

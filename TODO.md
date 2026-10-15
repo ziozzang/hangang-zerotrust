@@ -1557,3 +1557,9 @@ passes isolated/full recheck. This is source/local qualification.
   native resource route on backed-up Kubernetes before operating adoption.
 - [ ] Complete signed permission/projection/replay, full identity/provider and
   fleet requirements and measured throughput; observations are not permits.
+
+- [x] Qualify exact Hangang 0.3.5/Pumgye 0.1.6 static native-dispatch candidates
+  on the backed-up actual Kubernetes/browser fixture, with complete final target/
+  entity assertions, native owners, durable revocation/Pod replacement and refused
+  backend non-dispatch. [Evidence](docs/PACKAGING.md). New off-host copy remains
+  pending; public release and operating migration are still open.

@@ -87,3 +87,28 @@ Receipt-specific withdrawal/outage was qualified in the local static three-
 authority fixture, not repeated through this Kubernetes endpoint step. Hangang
 production dispatch integration, signed permit/projection and fleet/restore
 fences remain open. Existing remote operating services were preserved.
+
+## Native final dispatch: static candidate Kubernetes qualification
+
+Hangang df5ce039a21582928fc0845f88ed2d90bc8740ed (0.3.5) and Pumgye
+609e552604d693fc3ac5410a4ef593463200b25b (0.1.6) signed static candidates
+passed the actual backed-up Kubernetes package with published Hopae 0.0.7 and
+Sumunjang 0.3.5. New image archive transfer hashes matched and both nodes imported
+them. `--native-resource` activates actual final gateway dispatch over Service
+DNS/mTLS, with a composed backend base path and nonempty entity assertion.
+The real browser verifies unified operator login/module administration, signed
+delegation, policy/catalog CAS and profile revocation. Native receipt/combined
+endpoint, guest/method/permission/class/assurance/service refusal, immediate and
+durable revocation, PVC/authority/gateway Pod replacement and network outage pass;
+refusals do not reach the backend. Owned namespaces are removed, Retain data and
+existing nodes/DNS/Ingress are preserved.
+
+Initial runs exposed a counting-origin fixture that discarded bodies, then a
+previously built qualification client refusal. The origin now collects the
+complete entity; the client was rebuilt from current Pumgye source. The complete
+run exits zero. The old client's exact internal refusal is not established, and
+the initial logs remain private. A fresh cold backup passed archive/hash and
+restart checks. Its new off-host copy is still transferring and is not verified
+complete; the prior verified off-host backup remains available. This is candidate
+functional qualification, not new public release or operating migration, full
+streaming/projection/fleet completion or throughput proof.

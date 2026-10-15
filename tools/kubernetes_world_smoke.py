@@ -31,7 +31,10 @@ def main():
     parser.add_argument('--resource-catalog',action='store_true')
     parser.add_argument('--receipt-client',type=Path)
     parser.add_argument('--authenticated-client',type=Path)
+    parser.add_argument('--native-resource',action='store_true')
     args=parser.parse_args()
+    if args.native_resource and not args.authenticated_client:
+        parser.error('native resource requires authenticated client qualification')
     if args.authenticated_client and not (args.receipt_client and args.resource_catalog):
         parser.error('authenticated client requires receipt client and resource catalog')
     for component in ['hangang','hopae','sumunjang','pumgye','echo']:
@@ -86,6 +89,9 @@ def main():
             tokens['receipt-seed']=base64.b64encode(seed[-32:]).decode()
             receipt_pin=base64.b64encode(public_key[-32:]).decode()
             hop['receipt_issuer']={'issuer_ref':'owned-world','key_epoch':1,'identity_authority_epoch':'world1','public_key':receipt_pin,'seed_env':'OWNED_RECEIPT_SEED','scopes':[{'service':'orders','audience':'orders-api'}]}
+        if args.native_resource:
+            gateway['http'][0]['auth']['native_resource']={'issuer_ref':'owned-world','key_epoch':1,'public_key':receipt_pin,'audience':'orders-api'}
+            gateway['http'][0]['backends'][0]+='/api'
         items=[]
         def resource(kind,name,**fields):
             obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
@@ -147,7 +153,7 @@ def main():
                     init['command'][2]+='; mkdir -p /state/hopae-plugin; chmod 0700 /state/hopae-plugin; cp /config/hopae.manifest.json /state/hopae-plugin/manifest.json; '+ '; '.join(hop_copies)+'; chmod 0600 /state/hopae-plugin/*'
             ports={'hangang':[8443],'hopae':([8702,8703] if args.hopae_plugin else [8703]),'pumgye':[9084,9087],'sumunjang':[9080,9082]}[name]
             resource('Service',name,spec={'selector':{'app':name},'ports':[{'name':'p'+str(p),'port':p,'targetPort':p} for p in ports]})
-        echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;q.resume();r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url}));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
+        echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;let chunks=[];q.on('data',c=>chunks.push(c));q.on('end',()=>r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url,body:Buffer.concat(chunks).toString('utf8')})));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
         resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
         try:
             kube('create','namespace',namespace);created=True
@@ -185,8 +191,9 @@ def main():
             def request(method='GET',key=tokens['api']):
                 c=Gateway('app.example.test',8443,timeout=3);headers={'Host':'app.example.test','x-forwarded-user':'forged','x-hopae-aal':'3'}
                 if key:headers['Authorization']='Bearer '+key
+                if args.native_resource:headers['Content-Type']='text/plain'
                 before=backend_count()
-                c.request(method,'/secure',headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
+                c.request(method,'/secure',body=b'owned final entity' if args.native_resource else None,headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
                 assert backend_count()==before+(1 if status==200 else 0),'refused Kubernetes request reached application backend'
                 return status,data
             def api(local,path,method='GET',body=None,token=None,extra=None):
@@ -195,6 +202,7 @@ def main():
                 c.request(method,path,body=None if body is None else json.dumps(body),headers=headers);r=c.getresponse();data=r.read();status=r.status;metadata=dict(r.getheaders());c.close();return status,json.loads(data),metadata
             status,body=request();assert status==200,'initial protected request status '+str(status)
             echoed=json.loads(body);headers={k.lower():v for k,v in echoed['headers'].items()}
+            if args.native_resource:assert echoed['path']=='/api/secure' and echoed['body']=='owned final entity','native final target/entity was not preserved'
             assert headers['x-forwarded-user']==subject and headers['x-hopae-aal']=='0' and 'authorization' not in headers
             assert request('POST')[0]==403 and request(key=None)[0]==401
             if args.receipt_client:
@@ -214,7 +222,11 @@ def main():
                     authenticated_environment=dict(receipt_environment,PUMGYE_DECISION_TOKEN=tokens['pum-decision'])
                     with (root/'authenticated-client.log').open('w') as log:
                         result=subprocess.run([str(args.authenticated_client.resolve()),str(authenticated_path)],input='allow\n',env=authenticated_environment,text=True,stdout=subprocess.PIPE,stderr=log,timeout=10)
-                    assert result.returncode==0 and json.loads(result.stdout)['allowed'] is True,'Kubernetes authenticated resource endpoint refused'
+                    if result.returncode!=0:
+                        diagnostic=(root/'authenticated-client.log').read_text(errors='replace')
+                        for secret in tokens.values():diagnostic=diagnostic.replace(secret,'[redacted]')
+                        raise AssertionError('Kubernetes authenticated resource client failed: '+diagnostic[-500:])
+                    assert json.loads(result.stdout)['allowed'] is True,'Kubernetes authenticated resource endpoint refused'
                     print('PASS: actual Pumgye Pod authenticated resource endpoint combines Hopae live receipt and Sumunjang Enforce over mTLS Service DNS')
 
 

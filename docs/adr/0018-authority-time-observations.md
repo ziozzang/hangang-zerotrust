@@ -2,7 +2,8 @@
 
 [한국어](../ko/0018-authority-time-observations.md)
 
-Status: draft; not implemented. Publication gate for native cross-host receipts.
+Status: draft; shared numeric core implemented, wire/native integration not
+implemented. Publication gate for native cross-host receipts.
 
 ## Evidence and problem
 
@@ -25,7 +26,10 @@ and owner clock-rollback protection, but model transport evidence explicitly.
 
 An authenticated fixed-owner response reports its own current time and bounded
 remaining lifetime, correlated to the exact request and receipt digest, authority
-purpose/key/identity epoch and captured current native owner generation. The owner
+purpose/key/identity epoch, exact issuing clock-domain identity and captured
+current native owner generation. A logical issuer alias shared by replicas is not
+a clock domain. Native routing must reach the issuing domain or use an explicitly
+authenticated conversion; follower-local wall time must not silently replace it. The owner
 must validate its own receipt, live state and final guards before reporting it.
 Remaining lifetime is positive, at most 1,000 ms and never exceeds any prerequisite
 observation or signed lifetime. It is no cache lease or renewal.
@@ -39,11 +43,18 @@ clock-reversal rejection before exposing the observation.
 
 If the owner reports remaining lifetime R, convert it into a local interval:
 
-- Earliest expiry: local RPC start + R. Final admission uses this lower bound,
+- Earliest expiry: local RPC start + R - one millisecond of sampling uncertainty. Final admission uses this lower bound,
   intersected with every previously accepted bound and original lifetime budget.
-- Latest expiry: local RPC finish + R. Replay rows remain until at least this
+- Latest expiry: local RPC finish + the full signed receipt remaining lifetime
+  in the owner clock domain + one millisecond. Replay rows remain until at least this
   upper bound, using monotonic and durable rollback protection. Expiring replay
   state at the admission lower bound could admit the same still-live nonce again.
+  A shorter prerequisite observation must not shorten original nonce retention:
+  a later live query could still accept the same signed proof.
+
+Independent fractional clock phases require outward rounding: subtract one tick
+from admission and add one to retention. This is no acceptance grace. Reject an
+observation that leaves no positive admission interval.
 
 Account for elapsed time without a new per-request SQL read or an unbounded queue.
 Do not refresh the interval while reusing an earlier proof. Re-query the native
@@ -76,3 +87,20 @@ credential path, browser/module delegation, withdrawal/restart/failure tests and
 existing-mode compatibility. Rebuild and verify exact signed artifacts before
 publishing or deployment. Fleet restore and 10k/100k throughput remain separate
 unfulfilled gates.
+
+## Numeric core implementation evidence
+
+The source `hopae-grpc::receipt_time` helper checks exact verified receipt hashes,
+issuer-domain lifetime, bounded local samples, overflow/expiry and clock
+discontinuities. It intersects admission and retains the later replay ceiling.
+SDK 21 tests pass, including 2,601 asymmetric-latency and 405 fractional-phase/
+offset samples. Crucially retention uses the full signed remaining lifetime,
+not the shorter prerequisite report. The arithmetic has no per-call allocation,
+SQL or network work. The corrected complete workspace passes 958 tests with
+42 existing exclusions. Strict all-target Clippy passes. The source foundation
+is Hopae `7cd9c65`; it is not part of the frozen draft release assets.
+
+This helper is numeric evidence only, not an authenticated observation or a
+permission. Native RPC fields/owner guards, independent-client adoption, paired
+ledger retention and final-output integration remain unimplemented for this
+contract. Draft releases and the cross-host Kubernetes gate remain open.

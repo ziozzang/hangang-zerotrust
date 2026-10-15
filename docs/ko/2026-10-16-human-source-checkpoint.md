@@ -48,3 +48,44 @@ schema10은 기존 임의 형식 UserId를 유지하며 primary/factor 증명을
 52개를 통과했고 마지막 안내 문구 변경 후 관련 11개도 통과했다. 이는 메타데이터 관리다.
 비어 있지 않은 `human_users`를 게시하기 전에 소유 품계 서버와 엄격한 리더를 갱신해야
 한다. 운영 바이너리·DB 스키마를 바꾸거나 observed Human 라우트를 활성화하지 않았다.
+
+
+## 네이티브 Human 권한·관리자 후속 검증
+
+공개 품계 `f6fb7d9a7e92b615d3c2525999b55a66e7a491ac`는 선택적으로
+Human observed permit Issue/Observe와 메타데이터 전용 TTL 0 resource 판정을
+제공한다. 공개 호패 SDK `b08e105`를 고정하고 observation의 정확한 scope
+fingerprint를 검사한다. Human 전용 할당·AAL1/2·네트워크 제한·현재 정책
+publication·설정 route/plan을 함께 요구하며 기존 user 할당이나 API context
+템플릿으로 대체하지 않는다. 전체 feature workspace 150개 통과·외부 fixture
+명시적 제외 1개이며 엄격한 Clippy/fmt도 통과했다.
+
+실제 호패 production 바이너리·공개 opaque SDK·SQLite를 쓰는 실제 품계
+바이너리로 OIDC, 소유한 LDAPS, 필수 StartTLS를 각각 실행해 통과했다.
+primary 로그인/handoff·TOTP AAL2·독립 observation·소비형 refresh·권한
+발급·충족할 수 없는 AAL3·정책 회수/복구·원래 증명 예산이 남아 있는 상태의
+logout 거부를 확인했다. 네트워크·route·plan peer는 인증된 프로토콜 fixture다.
+이는 인증→권한 구간의 검증이며 paired credential projection·한강 backend
+전달·실제 4종 서버 전체·K8s·스냅샷 복제·처리량 검증이 아니다. 실제 호패
+바이너리 소스는 `b08e105`이며 버전 문자열만으로 이 소스를 식별할 수 없다.
+
+공개 호패 `769ae4b4fecb996f38cbae17f96d8453cfd205b7`의 인증된 관리자
+사용자 응답과 읽기 전용 콘솔 패키지에 실제 증명과 같은 canonical Human
+정책 식별자를 제공한다. 최대 200개 계정을 한 번의 제한된 쿼리로 조회하고,
+지원하지 않는 기존 ID는 좌표 없이 계속 표시한다. issuer·Store realm은
+설정과 실제 데이터에서 가져오며 관리자 query로 받지 않는다. 이 메타데이터는
+인증 증명이나 권한 부여가 아니다. 최종 전체 workspace 1,193개 통과·명시적
+제외 45개이며 엄격한 Clippy/fmt와 브라우저 검증도 통과했다. 콘솔 패키지
+소스는 0.1.7이며 운영 설치는 아직 하지 않았다.
+
+재현 가능한 [소유 런타임 fixture](../../tools/test-support/native-human-runtime/README.ko.md)를
+공개했다. 증명 행이나 capability를 조작하지 않고 실제 네이티브 인증을
+수행한다. 비공개 IPC의 원자적 publication 테스트 3개와 저장소 validator의
+schema 예제 7개·공격/개인정보 사례 42개가 통과했다. 생성한 키·쿠키·준비
+파일·비공개 런타임 증거는 공개 소스에 포함하지 않았다.
+
+이전에 관측한 Workload 최초 Issue 거부의 역사적 원인은 여전히 미확정이다.
+별도 결정적 실험에서 소유 Kubernetes verifier의 준비 파일 생성→쓰기
+사이 경합과 원자적 publication 보강 효과를 입증했지만, 당시 포트 바이트를
+수집하지 않았으므로 그 장애의 확정 원인으로 표현하지 않는다. 이 후속
+소스 검증은 운영 릴리즈나 DB 마이그레이션을 의미하지 않는다.

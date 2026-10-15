@@ -17,7 +17,7 @@ The first focused run failed while initializing an intentionally altered-GLOB fi
 
 The pure core accepts metadata and numeric assurance only after the caller's actual authentication boundary; parsing human1 is no capability. Per-user role floors combine with network/resource floors. RequiredAAL3 stays unsatisfiable by the initial Human AAL1/2 path. Old immutable compiled Views do not retire themselves: existing native server View/source fences remain required. Empty Human maps preserve existing policy serialization; nonempty maps require updated strict consumers before publication.
 
-Operating releases remain Hangang0.3.11/console0.3.11, Pumgye0.1.9, Hopae0.0.10 and Sumunjang0.3.6. These source changes have not been released/adopted as new Human runtime behavior. H0 current checks are still SQL-backed; source memory snapshots/followers, complete lifecycle/recovery/mixed-provider support, Human browser administration and measured extreme throughput remain in the full objective.
+Operating releases remain Hangang0.3.11/console0.3.11, Pumgye0.1.9, Hopae0.0.10 and Sumunjang0.3.6. These source changes have not been released/adopted as new Human runtime behavior. H0 current checks are still SQL-backed; source memory snapshots/followers, complete lifecycle/recovery/mixed-provider support, complete operating Human administration and measured extreme throughput remain in the full objective.
 
 
 ## Actual Human Source/RPC/SDK follow-up
@@ -54,3 +54,51 @@ Chromium cases; the final explanatory-copy follow-up passed 11 scoped cases.
 This manages metadata only. Upgrade strict readers and the owning Pumgye server
 before publishing nonempty `human_users`. This source update has not activated
 an observed Human route or changed the operating binaries/database schema.
+
+
+## Native Human permission and administrator follow-up
+
+Public Pumgye `f6fb7d9a7e92b615d3c2525999b55a66e7a491ac` adds opt-in
+Human observed permit Issue/Observe and a metadata-only, zero-TTL Human resource
+decision service. It pins the public Hopae SDK `b08e105` and requires the
+observation's exact scope fingerprint. Independent Human assignments, AAL1/2,
+network restrictions, current policy publication and configured route/plan all
+intersect; neither legacy user assignments nor API-context templates substitute
+for a Human assignment. The all-feature workspace passed 150 tests with one
+explicit external-fixture test ignored; strict workspace Clippy/fmt passed.
+
+The separately executed external-fixture gate passed with an actual native
+Hopae production binary, the public opaque SDK and an actual Pumgye binary
+backed by SQLite for each of OIDC, owned LDAPS and mandatory StartTLS. Each
+exercised primary login/handoff, TOTP AAL2, independent observation, consuming
+refresh, permission issuance, unsatisfied AAL3, policy withdrawal/restore and
+logout refusal while the original proof budget was still live. The network,
+route and plan peers in these tests are authenticated protocol fixtures. This
+qualifies the Human authentication-to-permission segment, **not** paired
+credential projection, Hangang backend dispatch, all four real servers, K8s,
+snapshot replication or throughput. The production binary came from Hopae
+`b08e105`; its version string alone does not identify the qualified source.
+
+Public Hopae `769ae4b4fecb996f38cbae17f96d8453cfd205b7` exposes the same
+canonical Human policy subject in authenticated administrator user responses
+and the read-only console package. List metadata uses one bounded query for at
+most 200 accounts; unsupported legacy identifiers remain listable without a
+coordinate. The issuer and Store realm are authoritative configuration/data,
+not administrator query parameters. This metadata is not an authentication
+proof or permission grant. The complete final workspace passed 1,193 tests,
+with 45 explicit ignored cases, plus strict Clippy/fmt and browser checks. The
+console package source is version 0.1.7; it has not been installed in operation.
+
+The reproducible [owned runtime fixture](../../tools/test-support/native-human-runtime/README.md)
+is now public. It drives real native authentication instead of creating proof
+rows or fabricating capabilities. Its atomic private IPC publication has three
+focused tests; the repository contract validator still passes seven schema
+examples and 42 adversarial/privacy cases. Fixture source contains no generated
+keys, cookies, readiness files or private runtime evidence.
+
+A previously observed Workload initial-Issue refusal remains historically
+unexplained. A separate deterministic experiment proved a readiness-file
+create-before-write race in the owned Kubernetes verifier and demonstrated an
+atomic-publication correction. The original failure's port bytes were not
+captured, so that mechanism must not be reported as its established cause.
+No operating release or database migration is implied by this follow-up.

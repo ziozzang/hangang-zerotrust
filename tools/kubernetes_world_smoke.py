@@ -29,6 +29,8 @@ def main():
     parser.add_argument('--browser-probe',type=Path)
     parser.add_argument('--node-binary',type=Path)
     parser.add_argument('--resource-catalog',action='store_true')
+    parser.add_argument('--sumunjang-native-source',action='store_true')
+    parser.add_argument('--sumunjang-crd-manifest',type=Path)
     parser.add_argument('--receipt-client',type=Path)
     parser.add_argument('--receipt-clock-diagnostic',type=Path)
     parser.add_argument('--authenticated-client',type=Path)
@@ -36,6 +38,8 @@ def main():
     parser.add_argument('--credential-projection',action='store_true')
     parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
     args=parser.parse_args()
+    if args.sumunjang_native_source != bool(args.sumunjang_crd_manifest):
+        parser.error('--sumunjang-native-source and --sumunjang-crd-manifest must be used together')
     if args.observed and not args.credential_projection:
         parser.error('--observed requires --credential-projection and an observed SDK receipt client')
     if args.credential_projection and not args.native_resource:
@@ -53,7 +57,8 @@ def main():
     wrapper=args.kubectl.resolve(strict=True)
     node=str(args.node_binary.resolve(strict=True)) if args.node_binary else shutil.which('node')
     if args.browser_probe and not node:parser.error('browser probe requires --node-binary when node is not in PATH')
-    namespace='owned-world-'+secrets.token_hex(6);created=False;forwards=[]
+    namespace='owned-world-'+secrets.token_hex(6);created=False;forwards=[];owned_crd_uid=None;native_policy_uid=None
+    crd_name='sumunjangpolicies.policy.hangang.dev'
     os.umask(0o077)
     def kube(*argv,body=None,timeout=120):
         result=subprocess.run([str(wrapper),*argv],input=body,capture_output=True,timeout=timeout)
@@ -172,6 +177,9 @@ def main():
             'pumgye':['--listen','0.0.0.0:9084','--decision-listen','0.0.0.0:9085','--grpc-listen','0.0.0.0:9087','--readiness-listen','0.0.0.0:9086','--database','/state/pumgye.sqlite3','--policy','/config/pumgye.json','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--client-ca','/tls/ca.crt'],
             'sumunjang':['--management-tls','--listen','0.0.0.0:9080','--decision-listen','0.0.0.0:9081','--grpc-listen','0.0.0.0:9082','--database','/state/sumunjang.sqlite3','--bootstrap-policy','/config/sumunjang.json','--decision-tls-cert','/tls/tls.crt','--decision-tls-key','/tls/tls.key','--decision-client-ca','/tls/ca.crt','--threads','2'],
             'hangang':['--config','/config/hangang.json','--database','sqlite:/state/hangang.sqlite3','--docker-connection-state','/state/docker-connections.json','--admin-users-db','/state/admin/admin-users.sqlite3','--admin-plugins','/state/plugins.json','--listen','0.0.0.0:8443','--admin','127.0.0.1:9080','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--threads','2','--lua-workers','1','--drain-seconds','1','--guard-url','http://127.0.0.1:9','--guard-decision-tcp',f'sumunjang.{namespace}.svc:9082','--guard-decision-grpc','--guard-decision-server-name',f'sumunjang.{namespace}.svc','--guard-decision-ca','/tls/ca.crt','--guard-decision-cert','/tls/client.crt','--guard-decision-key','/tls/client.key','--guard-timeout-ms','1000']}
+        if args.sumunjang_native_source:
+            source_args=commands['sumunjang'];position=source_args.index('--bootstrap-policy');del source_args[position:position+2]
+            source_args+=['--kubernetes-authority','/config/sumunjang-source.json','--readiness-listen','0.0.0.0:9083']
         environments={'hopae':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
         if args.receipt_client:environments['hopae'].append(env('OWNED_RECEIPT_SEED','receipt-seed'))
         if args.authenticated_client or args.credential_projection:
@@ -190,8 +198,11 @@ def main():
             container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
             probe={'hopae':8700,'pumgye':9086,'sumunjang':9082,'hangang':8443}[name]
             container['readinessProbe']={'tcpSocket':{'port':probe},'periodSeconds':2}
+            if name=='sumunjang' and args.sumunjang_native_source:container['readinessProbe']={'httpGet':{'port':9083,'path':'/readyz'},'periodSeconds':1,'failureThreshold':1}
             if name=='pumgye':container['readinessProbe']={'httpGet':{'port':9086,'path':'/-/ready'},'periodSeconds':2}
             deployment=resource('Deployment',name,spec={'replicas':1,'strategy':{'type':'Recreate'},'selector':{'matchLabels':{'app':name}},'template':{'metadata':{'labels':{'app':name}},'spec':{'automountServiceAccountToken':False,'securityContext':{'runAsNonRoot':True,'runAsUser':65532,'runAsGroup':65532,'fsGroup':65532,'seccompProfile':{'type':'RuntimeDefault'}},'containers':[container],'volumes':[{'name':'config','configMap':{'name':'world-config'}},{'name':'tls','secret':{'secretName':'world-tls','defaultMode':416}},{'name':'state','persistentVolumeClaim':{'claimName':name+'-state'}}]}}});deployment['apiVersion']='apps/v1'
+            if name=='sumunjang' and args.sumunjang_native_source:
+                deployment['spec']['template']['spec'].update(serviceAccountName='native-source',automountServiceAccountToken=True)
             if name=='hangang':
                 deployment['spec']['template']['spec']['initContainers']=[{'name':'private-admin-state','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['/bin/sh','-ec','umask 077; mkdir -p /state/admin /state/plugins; chmod 0700 /state/admin /state/plugins; cp /config/plugins.json /state/plugins.json; cp /config/plugin.manifest.json /state/plugins/manifest.json;  for db in admin-users.sqlite3 plugin-audit.sqlite3; do for suffix in "" -wal -shm; do f="/state/admin/$db$suffix"; if [ -e "$f" ]; then chmod 0600 "$f"; fi; done; done'],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'volumeMounts':[{'name':'state','mountPath':'/state'}]}]
                 init=deployment['spec']['template']['spec']['initContainers'][0]
@@ -201,11 +212,33 @@ def main():
                     init['command'][2]+='; mkdir -p /state/hopae-plugin; chmod 0700 /state/hopae-plugin; cp /config/hopae.manifest.json /state/hopae-plugin/manifest.json; '+ '; '.join(hop_copies)+'; chmod 0600 /state/hopae-plugin/*'
             ports={'hangang':[8443],'hopae':([8702,8703] if args.hopae_plugin else [8703]),'pumgye':[9084,9087],'sumunjang':[9080,9082]}[name]
             if name=='hangang' and args.credential_projection:ports.append(8444)
+            if name=='sumunjang' and args.sumunjang_native_source:ports.append(9083)
             resource('Service',name,spec={'selector':{'app':name},'ports':[{'name':'p'+str(p),'port':p,'targetPort':p} for p in ports]})
         echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;let chunks=[];q.on('data',c=>chunks.push(c));q.on('end',()=>r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url,body:Buffer.concat(chunks).toString('utf8')})));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
         resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
+        native_spec={'policy':{'mode':'enforce','auto_block':False,'allow':[]},'rules':{'version':1,'rules':[]},'blocks':[]}
+        source_role={'apiVersion':'rbac.authorization.k8s.io/v1','kind':'Role','metadata':{'name':'native-source','namespace':namespace},'rules':[{'apiGroups':['policy.hangang.dev'],'resources':['sumunjangpolicies'],'resourceNames':['native'],'verbs':['get']}]}
+        source_config=None
         try:
+            if args.sumunjang_native_source:
+                import yaml
+                assert not kube('get','crd',crd_name,'--ignore-not-found','-o','name').strip(),'preexisting global CRD must not be modified'
+                crd=next(item for item in yaml.safe_load_all(args.sumunjang_crd_manifest.read_text()) if item and item.get('kind')=='CustomResourceDefinition')
+                assert crd['metadata']['name']==crd_name and crd['spec']['group']=='policy.hangang.dev'
+                crd['metadata']['labels']={'hangang.dev/qualification':namespace}
+                # CREATE is intentional: an intervening creator must cause refusal.
+                kube('create','-f','-',body=json.dumps(crd).encode())
+                owned_crd_uid=json.loads(kube('get','crd',crd_name,'-o','json'))['metadata']['uid']
+                kube('wait','--for=condition=Established','crd/'+crd_name,'--timeout=60s')
             kube('create','namespace',namespace);created=True
+            if args.sumunjang_native_source:
+                native_policy={'apiVersion':'policy.hangang.dev/v1alpha1','kind':'SumunjangPolicy','metadata':{'name':'native','namespace':namespace},'spec':native_spec}
+                source_items=[{'apiVersion':'v1','kind':'ServiceAccount','metadata':{'name':'native-source','namespace':namespace}},source_role,{'apiVersion':'rbac.authorization.k8s.io/v1','kind':'RoleBinding','metadata':{'name':'native-source','namespace':namespace},'subjects':[{'kind':'ServiceAccount','name':'native-source','namespace':namespace}],'roleRef':{'apiGroup':'rbac.authorization.k8s.io','kind':'Role','name':'native-source'}},native_policy]
+                kube('create','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':source_items}).encode())
+                native_policy_uid=json.loads(kube('-n',namespace,'get','sumunjangpolicy','native','-o','json'))['metadata']['uid']
+                source_config={'api':'https://kubernetes.default.svc','namespace':namespace,'name':'native','uid':native_policy_uid,'ca':'/var/run/secrets/kubernetes.io/serviceaccount/ca.crt','token_file':'/var/run/secrets/kubernetes.io/serviceaccount/token'}
+                config_map['data']['sumunjang-source.json']=json.dumps(source_config)
+                print('Owned native Sum source: '+namespace+' UID '+native_policy_uid,flush=True)
             kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode(),timeout=300)
             for name in [*commands,'echo']:
                 kube('-n',namespace,'rollout','status','deployment/'+name,'--timeout=120s',timeout=135)
@@ -255,6 +288,28 @@ def main():
                 c=http.client.HTTPConnection('127.0.0.1',local,timeout=3);headers={'Authorization':'Bearer '+(token or tokens['gateway-admin']),'Content-Type':'application/json'}
                 if extra:headers.update(extra)
                 c.request(method,path,body=None if body is None else json.dumps(body),headers=headers);r=c.getresponse();data=r.read();status=r.status;metadata=dict(r.getheaders());c.close();return status,json.loads(data),metadata
+            def eventually(work,seconds=30):
+                deadline=time.monotonic()+seconds
+                while time.monotonic()<deadline:
+                    try:
+                        value=work()
+                        if value:return value
+                    except (OSError,http.client.HTTPException):pass
+                    time.sleep(.1)
+                raise AssertionError('owned native source convergence deadline')
+            def native_patch(spec):
+                assert json.loads(kube('-n',namespace,'get','sumunjangpolicy','native','-o','json'))['metadata']['uid']==native_policy_uid,'source object changed before operator mutation'
+                kube('-n',namespace,'patch','sumunjangpolicy','native','--type=merge','-p',json.dumps({'spec':spec}))
+            if args.sumunjang_native_source:
+                native_management=forward('sumunjang',9080);native_readiness=forward('sumunjang',9083)
+                source_ctx=ssl.create_default_context(cafile=str(root/'ca.pem'));source_ctx.load_cert_chain(str(root/'client.pem'),str(root/'client.key'))
+                def source_report():
+                    class Source(http.client.HTTPSConnection):
+                        def connect(self):self.sock=source_ctx.wrap_socket(socket.create_connection(('127.0.0.1',native_management),timeout=3),server_hostname='sumunjang.'+namespace+'.svc')
+                    c=Source('sumunjang.'+namespace+'.svc',9080,timeout=3);c.request('GET','/v1/kubernetes/authority',headers={'Authorization':'Bearer '+tokens['guard-admin']});r=c.getresponse();value=json.loads(r.read());c.close();assert r.status==200;return value
+                def source_ready():
+                    c=http.client.HTTPConnection('127.0.0.1',native_readiness,timeout=3);c.request('GET','/readyz');r=c.getresponse();r.read();c.close();return r.status
+                eventually(lambda:source_report().get('available') and source_ready()==200)
             status,body=request();assert status==200,'initial protected request status '+str(status)
             echoed=json.loads(body);headers={k.lower():v for k,v in echoed['headers'].items()}
             if args.native_resource:assert echoed['path']=='/api/secure' and echoed['body']=='owned final entity','native final target/entity was not preserved'
@@ -310,7 +365,7 @@ def main():
             assert api(admin,f'/v1/plugins/{plugin_id}/{policy_route}')[0]==200
             if args.browser_probe:
                 browser_config=root/'browser.json'
-                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace}}))
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
                 subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=240)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
             if args.resource_catalog:
@@ -352,13 +407,50 @@ def main():
                 print('Gateway restart dependency reconnect remains fail-closed',flush=True)
                 time.sleep(.1)
             else:raise AssertionError('gateway did not recover after owned Pod replacement')
-            assert api(admin,f'/v1/plugins/{plugin_id}/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned K8s fixture'},tokens['gateway-admin'])[0]==200
-            assert request()[0]==403
-            assert api(admin,f'/v1/plugins/{plugin_id}/blocks','DELETE',{'network':'127.0.0.1/32'},tokens['gateway-admin'])[0]==200 and request()[0]==200
+            if args.sumunjang_native_source:
+                assert api(admin,f'/v1/plugins/{plugin_id}/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'must be refused'})[0]==409
+                assert api(admin,f'/v1/plugins/{plugin_id}/blocks','DELETE',{'network':'127.0.0.1/32'})[0]==409
+                native_patch({'blocks':[{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned CRD fixture'}]})
+                eventually(lambda:request()[0]==403)
+                native_patch({'blocks':[]});eventually(lambda:request()[0]==200)
+                print('PASS: operator CRD block403/unblock200, source-owned manual409 and actual backend non-dispatch',flush=True)
+                kube('-n',namespace,'patch','role','native-source','--type=merge','-p',json.dumps({'rules':[]}))
+                eventually(lambda:not source_report().get('available') and source_ready()==503)
+                for _ in range(3):assert request()[0]==503
+                previous=json.loads(kube('-n',namespace,'get','pods','-l','app=sumunjang','-o','json'))['items'][0]['metadata']['uid']
+                kube('-n',namespace,'rollout','restart','deployment/sumunjang')
+                def replacement():
+                    return next((p for p in json.loads(kube('-n',namespace,'get','pods','-l','app=sumunjang','-o','json'))['items'] if p['metadata']['uid']!=previous and p['status'].get('phase')=='Running'),None)
+                eventually(replacement,120)
+                native_management=forward('sumunjang',9080);native_readiness=forward('sumunjang',9083)
+                assert not source_report().get('available') and source_ready()==503
+                for _ in range(3):assert request()[0]==503
+                kube('-n',namespace,'patch','role','native-source','--type=merge','-p',json.dumps({'rules':source_role['rules']}))
+                eventually(lambda:source_report().get('available') and source_ready()==200)
+                kube('-n',namespace,'rollout','status','deployment/sumunjang','--timeout=120s')
+                eventually(lambda:request()[0]==200)
+                print('PASS: live source RBAC withdrawal/readiness503 and persistent checkpoint Pod replacement never dispatch, fresh authenticated recovery',flush=True)
+                kube('-n',namespace,'delete','sumunjangpolicy','native','--wait=true')
+                eventually(lambda:not source_report().get('available') and source_ready()==503)
+                kube('create','-f','-',body=json.dumps(native_policy).encode())
+                new_uid=json.loads(kube('-n',namespace,'get','sumunjangpolicy','native','-o','json'))['metadata']['uid'];assert new_uid!=native_policy_uid
+                for _ in range(3):assert request()[0]==503
+                source_config['uid']=new_uid;config_map['data']['sumunjang-source.json']=json.dumps(source_config)
+                kube('-n',namespace,'patch','configmap','world-config','--type=merge','-p',json.dumps({'data':{'sumunjang-source.json':json.dumps(source_config)}}))
+                time.sleep(.2);assert not source_report().get('available') and request()[0]==503
+                kube('-n',namespace,'rollout','restart','deployment/sumunjang');kube('-n',namespace,'rollout','status','deployment/sumunjang','--timeout=120s',timeout=135)
+                native_management=forward('sumunjang',9080);native_readiness=forward('sumunjang',9083)
+                eventually(lambda:source_report().get('available') and source_ready()==200 and request()[0]==200)
+                native_policy_uid=new_uid
+                print('PASS: actual source deletion/UID replacement/config-only edit fail closed; explicit repin+new generation recovers full observed chain',flush=True)
+            else:
+                assert api(admin,f'/v1/plugins/{plugin_id}/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned K8s fixture'},tokens['gateway-admin'])[0]==200
+                assert request()[0]==403
+                assert api(admin,f'/v1/plugins/{plugin_id}/blocks','DELETE',{'network':'127.0.0.1/32'},tokens['gateway-admin'])[0]==200 and request()[0]==200
             kube('-n',namespace,'scale','deployment/sumunjang','--replicas=0')
             kube('-n',namespace,'wait','--for=delete','pod','-l','app=sumunjang','--timeout=60s')
             assert request()[0]==503
-            print('PASS: actual four independent K8s Pods, nonroot static artifacts, mTLS Service DNS, protected request identity, method/guest denial, real pinned console discovery/assets, mTLS plugin management reads/mutations, delegated policy CAS, immediate revocation, PVC/authority/gateway Pod replacement, private administrator state, refused backend non-dispatch and network authority outage')
+            print(('PASS: native Kubernetes Sum source and scratch HTTPGet readiness; ' if args.sumunjang_native_source else '')+'PASS: actual four independent K8s Pods, nonroot static artifacts, mTLS Service DNS, protected request identity, method/guest denial, real pinned console discovery/assets, mTLS plugin management reads/mutations, delegated policy CAS, immediate revocation, PVC/authority/gateway Pod replacement, private administrator state, refused backend non-dispatch and network authority outage')
         except Exception as failure:
             print('Owned qualification failed: '+type(failure).__name__,flush=True)
             if created:
@@ -378,6 +470,17 @@ def main():
             if created:
                 kube('delete','namespace',namespace,'--wait=true','--timeout=120s',timeout=135)
                 print('Owned namespace removed; retained synthetic PVs remain under the cluster Retain policy.')
+            if owned_crd_uid:
+                current=json.loads(kube('get','crd',crd_name,'-o','json'))
+                assert current['metadata']['uid']==owned_crd_uid,'owned CRD replaced; refusing cleanup'
+                assert not json.loads(kube('get','sumunjangpolicies','-A','-o','json'))['items'],'other CRD instances exist; refusing cleanup'
+                # Qualification requires no concurrent operator creating other
+                # native policy instances. UID+RV preconditions prevent deleting
+                # a replaced global object between this read and DELETE.
+                options={'apiVersion':'v1','kind':'DeleteOptions','preconditions':{'uid':owned_crd_uid,'resourceVersion':current['metadata']['resourceVersion']}}
+                kube('delete','--raw','/apis/apiextensions.k8s.io/v1/customresourcedefinitions/'+crd_name,'-f','-',body=json.dumps(options).encode())
+                kube('wait','--for=delete','crd/'+crd_name,'--timeout=60s')
+                print('Exact created CRD UID cleaned after instance absence check',flush=True)
 
 
 if __name__=='__main__':main()

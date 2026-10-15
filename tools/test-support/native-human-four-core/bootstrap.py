@@ -4,6 +4,7 @@ Reuses the qualified real OIDC/portal/TOTP browser; never writes session rows.
 import base64
 import copy
 import http.client
+import hashlib
 import pathlib
 import secrets
 import sys
@@ -26,7 +27,7 @@ def hop_config(root, addresses, tls, issuer_url, scopes, pum_endpoint, permit_pu
       'state_dir':str(root/'state'),
       'listen':{'portal':addresses['portal'],'gateway':addresses['gateway'],'grpc_gateway':addresses['grpc'],'native_gateway_tls':{'certificate':tls['certificate'],'key':tls['key'],'client_ca':tls['ca']}},
       'portal':{'public_url':'https://auth.example.test'},
-      'gateway':{'kind':'hangang','caller_key_env':'FOUR_HOP_CALLER'},
+      'gateway':{'kind':'hangang','caller_key_env':'FOUR_HOP_CALLER','verify_budget_ms':400},
       'human_material_key_env':'FOUR_MATERIAL',
       'totp_keyring':{'active_key':'owned','keys':[{'id':'owned','key_env':'FOUR_TOTP'}]},
       'providers':[{'provider_id':'native','kind':'oidc','client_id':'native-owned-client','issuer':issuer_url,'allow_private_endpoints':True,'client_secret_env':'FOUR_PROVIDER_SECRET'}],
@@ -58,6 +59,8 @@ class NativeHop(two.Fixture):
         cfg['receipt_issuer']['public_key']=public_key(seed)
         private(self.root/'config.json',cfg)
         env={'FOUR_HOP_CALLER':caller,'FOUR_PUM_CALLER':pum_caller,'FOUR_ORIGIN_SECRET':origin_secret,'FOUR_MATERIAL':two.b64(secrets.token_bytes(32)),'FOUR_TOTP':two.b64(secrets.token_bytes(32)),'FOUR_SIGNING':base64.b64encode(seed).decode(),'FOUR_PROVIDER_SECRET':secrets.token_urlsafe(32)}
+        self.config_sha256=hashlib.sha256((self.root/'config.json').read_bytes()).hexdigest()
+        private(self.root/'startup-config-facts.json',{'path':str(self.root/'config.json'),'sha256':self.config_sha256,'verify_budget_ms':400})
         self.process=supervisor.start('hopae',[supervisor.entries['hopae']['binary'],'--config',str(self.root/'config.json'),'run'],env)
         deadline=time.monotonic()+20
         while time.monotonic()<deadline:
@@ -70,7 +73,7 @@ class NativeHop(two.Fixture):
             time.sleep(.05)
         else:raise RuntimeError('hop_readiness')
         private(self.root/'caller',caller.encode())
-        self.metadata=dict(tls,caller_file=str(self.root/'caller'),scope=two.sdk_scope(scopes[0]),minimum_source_revision=7,minimum_application_generation=1,minimum_key_registry_revision=1,identity_authority='owned-human',key_epoch=1,**{'endpoint':'https://'+addresses['grpc'],'public_key':cfg['receipt_issuer']['public_key'],'issuer_ref':'native-human','source_revision':7,'scopes':[two.sdk_scope(s) for s in scopes]})
+        self.metadata=dict(tls,startup_config_sha256=self.config_sha256,caller_file=str(self.root/'caller'),scope=two.sdk_scope(scopes[0]),minimum_source_revision=7,minimum_application_generation=1,minimum_key_registry_revision=1,identity_authority='owned-human',key_epoch=1,**{'endpoint':'https://'+addresses['grpc'],'public_key':cfg['receipt_issuer']['public_key'],'issuer_ref':'native-human','source_revision':7,'scopes':[two.sdk_scope(s) for s in scopes]})
 
     def close(self):
         # Supervisor owns the exact process; this object owns only the issuer.

@@ -56,12 +56,23 @@ def run(args):
         phase='hop_startup'
         hop=NativeHop(supervisor,tls['hopae'],scopes,pum.endpoint,pum.public_key,hop_caller,pum_caller,origin_secret)
         private(supervisor.root/'hop-ready.json',hop.metadata)
+        cookies=None;observations=None
+        if args.pair_gate:
+            phase='native_login_before_tap'
+            cookies={a:hop.login_account(a,1) for a in ('a','b')}
+            phase='actual_sdk_observe_before_tap'
+            observations={a:observe(args.observer,args.observer_sha256,supervisor.root/'hop-ready.json',cookies[a],supervisor.root,a) for a in ('a','b')}
         phase='tap_startup'
         from tap_runtime import NativeTap
         tap_caller=secrets.token_urlsafe(36)
         private(supervisor.root/'pum-caller',pum_caller.encode())
         pum_transport=dict(tls['pumgye'],endpoint=pum.endpoint,caller_file=str(supervisor.root/'pum-caller'))
-        tap=NativeTap(supervisor,tls['tap'],hop.metadata,tap_caller,args.tap_python,pum=pum_transport)
+        qualification=None
+        if args.pair_gate:
+            require(args.gateway_proto and args.decision_proto,'actual_pinned_schema_paths')
+            qualification={'mode':'issue_cookie_b' if args.pair_gate=='lineage' else 'exact_pair_replay','schemas':{'gateway_proto':args.gateway_proto,'decision_proto':args.decision_proto},'initially_armed':False}
+            if args.pair_gate=='lineage':qualification['cookie_b_file']=cookies['b']
+        tap=NativeTap(supervisor,tls['tap'],hop.metadata,tap_caller,args.tap_python,pum=pum_transport,qualification=qualification)
         phase='root_startup'
         root=NativeRoot(supervisor,tls['hangang'],backend.origin,tap.metadata,pum,network.ready,tap_caller,tap_caller,route_caller,decision_endpoint=tap.pum_metadata['endpoint'])
         phase='pum_startup'
@@ -69,9 +80,9 @@ def run(args):
         phase='root_startup'
         root.start()
         phase='native_login'
-        cookies={a:hop.login_account(a,1) for a in ('a','b')}
+        if cookies is None:cookies={a:hop.login_account(a,1) for a in ('a','b')}
         phase='actual_sdk_observe'
-        observations={a:observe(args.observer,args.observer_sha256,supervisor.root/'hop-ready.json',cookies[a],supervisor.root,a) for a in ('a','b')}
+        if observations is None:observations={a:observe(args.observer,args.observer_sha256,supervisor.root/'hop-ready.json',cookies[a],supervisor.root,a) for a in ('a','b')}
         require(observations['a']['subject']!=observations['b']['subject'],'native_account_separation')
         facts['seed_observations']=observations
         phase='native_policy_grant'
@@ -85,6 +96,14 @@ def run(args):
         require(facts['backend']['request_delta']==1 and facts['backend']['effect_delta']==1,'first_http_exact_effect')
         require(after['last_effect']['body_sha256']==hashlib.sha256(b'actual-human-effect').hexdigest(),'final_actual_body')
         require(not {'cookie','x-hopae-human-policy-subject','x-hopae-human-policy-issuer','x-forwarded-user','x-hopae-gateway-key'} & set(after['last_effect']['header_names']),'origin_identity_strip')
+        if args.pair_gate:
+            phase='actual_pair_'+args.pair_gate
+            from pair_scenarios import run_lineage,run_replay,PairFailure
+            try:
+                facts['pair_gate']=run_lineage(tap,root,backend,cookies,observations) if args.pair_gate=='lineage' else run_replay(tap,root,backend,cookies['a'],hop.root/'config.json',hop.config_sha256)
+            except PairFailure as failure:
+                facts['pair_gate']=failure.facts
+                raise
         if args.fresh_gates:
             phase='fresh_request_gates'
             from scenarios import run_fresh_gates, ScenarioFailure
@@ -118,7 +137,10 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--manifest',required=True);parser.add_argument('--directory',required=True)
     parser.add_argument('--tap-python',required=True)
-    parser.add_argument('--fresh-gates',action='store_true',help='actual fresh HTTP MFA/policy/network gates; no in-flight claim')
+    gates=parser.add_mutually_exclusive_group()
+    gates.add_argument('--fresh-gates',action='store_true',help='actual fresh HTTP MFA/policy/network gates; no in-flight claim')
+    gates.add_argument('--pair-gate',choices=['lineage','replay'],help='actual native A/B or exact pair replay, armed after controls')
+    parser.add_argument('--gateway-proto');parser.add_argument('--decision-proto')
     parser.add_argument('--observer',required=True);parser.add_argument('--observer-sha256',required=True)
     args=parser.parse_args()
     os.umask(0o077)

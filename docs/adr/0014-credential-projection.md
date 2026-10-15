@@ -269,3 +269,32 @@ adoption, all identity/provider/adapter or throughput gates. The route client
 currently targets one configured authority; multi-owner discovery, membership
 and connection-pool routing remain required for general scale-out. Existing
 operating policies, identities and release assets are unchanged.
+
+## Native projection-plan owner source qualification
+
+Hopae fd06053 exposes `ProjectionPlans/Observe` on its mandatory-mTLS gateway
+listener with an accepted caller credential, shared bounded admission and
+512/1024-byte request/reply limits. It returns only native compiled scope,
+minimum AAL and revision, never a secret reference or credential. The request
+path reads ArcSwap memory. Publication closes observations before SQL mutation;
+exact rollback can reopen the old snapshot, replacement retires it, and failed
+commit remains fenced until durable reload. Five owner tests, an authenticated
+handler test and a real retained mTLS socket verify these boundaries. Library
+522 tests (one existing ignore), workspace tests and strict Clippy pass.
+
+Pumgye 253e67c adds a fixed, persistent lazy mTLS owner client and optional
+`--projection-live` configuration. Native authenticated resource evaluation
+observes before and after policy evaluation, matching scope, minimum AAL,
+revision floor, correlation and zero cache TTL. Private observations bind the
+configured client and a conservative one-second exchange budget, accounting for
+elapsed time and clock reversal; this is neither a permission cache nor a remote
+lease. Existing policy/identity/network/route/caller checks remain. Workspace
+71 tests and strict Clippy pass, including hostile owner replies and capacity.
+
+Hopae fixture 9d0d702 passes actual four-server gRPC final dispatch with both
+route and plan owners, wrong Hopae server name/caller refusal without origin
+effects, restoration, durable permission/profile withdrawal and authority
+outages. The existing route-only mode passes separately. This closes local
+source plan-owner observation and resource-decision integration. Signed permit
+issuance, paired replay/projection/final secret delivery, multi-owner epochs and
+discovery, static/Kubernetes/operating adoption and throughput remain required.

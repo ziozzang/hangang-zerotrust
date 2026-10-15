@@ -49,6 +49,19 @@ class RuntimePreparation(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'hash'): runtime.preflight(args)
                 run.assert_not_called()
 
+    def test_old_tap_source_or_hash_is_not_adopted_by_new_runner(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            args, _ = self.args(Path(temporary))
+            digest=hashlib.sha256(args.receipt_client.read_bytes()).hexdigest()
+            original=json.loads(args.workload_capabilities.read_text())
+            with patch.object(runtime,'PROBE_SHA256',digest),patch.object(runtime,'HELD_SHA256',digest),patch('subprocess.run') as run:
+                for field, old in [('source','eae0d97534da69f0ea931ca54b1ed7d586d7ba61'),('binary_sha256','71f9a8b33c8648f3be8f0376c835ace3b1e110dfadc3d692a955a966607706ae')]:
+                    bad=copy.deepcopy(original)
+                    bad['qualification_tools']['workload_tap'][field]=old
+                    args.workload_capabilities.write_text(json.dumps(bad))
+                    with self.assertRaisesRegex(ValueError,'qualification tap'):runtime.preflight(args)
+                run.assert_not_called()
+
     def test_missing_hopae_plugin_refuses_before_external_calls(self):
         with tempfile.TemporaryDirectory() as temporary:
             args, _ = self.args(Path(temporary))

@@ -7,3 +7,5 @@ The qualification tap retains the same pooled channels, admission, caller checks
 The diagnostic tests cover secret-bearing errors/replies, unknown status, admission rejection and aborted pending futures. No real cluster recovery or fullchain qualification follows from unit tests. Existing failed run1/run2 remain preserved. Direct newly opened SDK connection success does not qualify existing Root/tap channel recovery; no restoration assertion has been changed.
 
 Diagnostic writes are fallible and errors are ignored, including during Drop. Each record is bounded below4096 bytes. Synchronous qualification-only logging adds I/O cost; these tests are not throughput qualification.
+
+Frozen diagnostic tap: source640a3dd487d81d908e8caedfeeb830e15357df9d, rawSHA256775a14a97c3842a9161911e4f2168195d6e19d2dc62faaaf419d513da6740806. Runner-only pin updated; held public SDK probe source/hash remain unchanged. This pin is not proof of actual cluster qualification; old artifacts remain preserved.

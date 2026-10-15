@@ -7,3 +7,5 @@
 비밀 포함 오류/응답·미지 status·admission 거부·대기 future 취소를 단위 검증합니다. 실제 클러스터 복원/전체 경로 통과를 뜻하지 않습니다. 기존 run1/run2 실패는 유지하며 새 SDK 연결의 성공으로 기존 Root/tap 연결 복원을 주장하거나 복원 assertion을 변경하지 않습니다.
 
 Drop에서도 진단 쓰기 오류를 무시하며 record는4096byte 미만으로 제한합니다. 검증 전용 동기 로그에는 I/O 비용이 있으며 처리량 검증을 주장하지 않습니다.
+
+진단 tap 동결 source640a3dd487d81d908e8caedfeeb830e15357df9d, rawSHA256775a14a97c3842a9161911e4f2168195d6e19d2dc62faaaf419d513da6740806로 runner 전용 pin을 갱신합니다. 기존 held public SDK probe source/hash는 그대로이며 실제 클러스터 통과를 뜻하지 않습니다. 이전 자산은 보존합니다.

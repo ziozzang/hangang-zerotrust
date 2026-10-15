@@ -18,9 +18,9 @@ import subprocess
 import time
 from kubernetes_workload_plan import bootstrap, configuration_patches, token_request
 
-TAP_SHA256 = '71f9a8b33c8648f3be8f0376c835ace3b1e110dfadc3d692a955a966607706ae'
+TAP_SHA256 = '775a14a97c3842a9161911e4f2168195d6e19d2dc62faaaf419d513da6740806'
 HELD_SHA256 = 'c6e34ba9429a0ecc9f24803640d69b5f7159734da3557d3924de353d634d33c2'
-TAP_SOURCE = 'eae0d97534da69f0ea931ca54b1ed7d586d7ba61'
+TAP_SOURCE = '640a3dd487d81d908e8caedfeeb830e15357df9d'
 PROBE_SHA256 = 'faa10e924f47db73a2ab4c35da372b64f8bcec97e476dcdb6bc65e9d7d95c65a'
 REQUIRED = {'hopae': ['workload_observed_authentication', 'workload_observed_projection_contract3'],
             'pumgye': ['workload_observed_permits', 'typed_workload_users', 'workload_resource_metadata_decision'],

@@ -3,6 +3,14 @@
 상태: 검증한 소스 기반이며 **Human 런타임 릴리스·전체 경로 활성화는 아니다**.
 [English](../reviews/2026-10-16-human-source-checkpoint.md).
 
+## 최신 공개: 네이티브 Human 쌍 projection
+
+[호패 e1dd9728e184eb4975fbe1ce8dae0505571f4ff1](https://github.com/ziozzang/hopae/tree/e1dd9728e184eb4975fbe1ce8dae0505571f4ff1)에 contract4 Human 쌍 projection을 공개했다. 실제 네이티브 Source·receiver clock을 공유하고 품계 permit을 독립 조회하며 두 증명을 클래스 공통 canonical ledger에서 소비한다. RPC·네이티브 SQL·출력 준비 이후에도 디코딩 전 원래 요청 예산을 유지하고 commit 직전 callback 없는 current·취소 검사를 수행한다. 선택 Human 메타데이터를 만들 수 없는 기존 신원은 일반 Verify를 유지하되 Human 발급은 거부한다. Store 오류는 계속 거부한다.
+
+정확한 최종 소스에서 native71개 통과·5개 제외, 실제 SDK/품계 쌍 재사용 검사1개 통과, strict workspace Clippy·fmt·diff 검사를 통과했다. 앞선 전체1208개·SDK69개 결과는 이후 호환성·테스트 수정 전 후보의 결과다. 실제 쌍 검사는 네이티브 OIDC/TOTP·실제 호패 RPC/SDK·실제 품계 프로세스를 사용하지만 네트워크·route는 인증된 픽스처다. 실제 네 컴포넌트 HTTP/backend 흐름까지 입증한 것은 아니다.
+
+다음 단계는 품계 SDK 고정 갱신과 한강 최종 Human 전송 연결이다. 새 런타임 릴리즈·운영 schema 마이그레이션·Human 활성화는 아직 하지 않았다. 아래 내용은 이전 기반 체크포인트를 보존한다.
+
 | 요구 | 현재 근거 | 남은 작업 |
 | --- | --- | --- |
 | 실제 인증 원천 | 호패87d19a0 H0 및 후속b317120398d95c2f87f08069ced1c5b6a395ba5a | 실제 품계 권한·쌍 projection·Root 최종 집행 |

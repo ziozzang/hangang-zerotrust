@@ -3,6 +3,14 @@
 Status: qualified source foundations, **not a Human runtime release or full-chain activation**.
 [한국어](../ko/2026-10-16-human-source-checkpoint.md).
 
+## Latest publication: native paired Human projection
+
+[Hopae e1dd9728e184eb4975fbe1ce8dae0505571f4ff1](https://github.com/ziozzang/hopae/tree/e1dd9728e184eb4975fbe1ce8dae0505571f4ff1) now publishes contract4 paired Human projection. It shares the actual native Source and receiver clock, independently observes the Pum permit, and consumes both proofs in the canonical cross-class ledger. The original predecode request budget remains effective after RPC, native SQL and output preparation. A final callback-free current/cancellation fence runs before commit. Existing legacy verification omits unavailable optional Human metadata; strict Human issuance still refuses unsupported identities and Store errors still refuse.
+
+On this exact final source, native tests passed71 with5 ignored; the explicit actual SDK/Pum paired replay gate passed1; strict workspace Clippy, formatting and diff checks passed. Earlier workspace1208 and SDK69 results belong to the pre-final candidate, before the subsequent compatibility and test corrections. The actual paired gate uses native OIDC/TOTP, real Hop RPC/SDK and a real Pum process, with authenticated network/route fixtures. It does **not** prove an actual four-component HTTP/backend flow.
+
+Pum SDK repinning and Hangang final Human dispatch integration are next. No new runtime release, operating schema migration or Human activation is claimed. The sections below preserve the earlier foundation checkpoints.
+
 | Requirement | Current evidence | Remaining |
 | --- | --- | --- |
 | Actual native authentication owners | Hopae87d19a0 H0, followed by b317120398d95c2f87f08069ced1c5b6a395ba5a | Actual Pum permission, paired projection and Root final enforcement |

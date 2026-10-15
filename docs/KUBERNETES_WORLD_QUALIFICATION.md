@@ -105,3 +105,40 @@ replacement, Pumgye durable revocation/Pod replacement, Hangang state persistenc
 and network authority outage. Existing ingress regression and operator services
 remain healthy. This qualifies these package revisions on the test cluster; it is
 not production adoption, all native protocol deployment modes or full-stack performance.
+
+## Service-only composition qualification
+
+`--composition --observed --credential-projection` adds an independent owned HTTPS
+authentication relay Pod: four decision-service Pods, one relay and one counted
+test-backend Pod (six Pods total).
+`--composition-mode all` is the default; `any` is explicit. The fixed Hopae profile
+declares local API-key and HTTPS-relay slots and exact Service identity relationships.
+A namespace-owned CA is mounted as `api_relay.ca_file`; the relay uses its exact
+Service DNS certificate. TLS/hostname verification stays enabled. Its Secret
+environment contains only the two remote credentials and fixture control token;
+Hopae receives only its local credentials, not the remote provider credential.
+
+Requests use `Hopae-Compose` with bounded envelope payloads. The supplied independent
+receipt probe must support the fixed `credential_scheme=hopae_compose` config and
+read the payload from the credential environment, preserving Bearer as the default
+for existing modes. Actual issue, independent observation, consuming refresh and
+final checks remain mandatory. The fixture checks missing factors, presented invalid
+factors, conflicting successful identities, relay circuit opening and explicit
+source Pod replacement recovery. Every refusal preserves the backend count;
+successful backend responses contain only the separate origin credential, never
+either provider credential, the composite envelope or native caller key.
+
+This is Service composition at AAL0. It does not qualify Human MFA or Workload
+composition, local-account recovery, streaming or arbitrary deployment topologies.
+The default mode keeps its four production owners and does not create relay
+credentials, the relay Pod or composition configuration.
+
+The composition circuit gate runs before disruptive source withdrawal/UID repinning.
+A dedicated diagnostic probe requires the exact native IssueServiceObserved
+provider-unavailable status, with one observed controlled relay call for each of
+three denials. A fourth native call must refuse without a relay call; the complete
+gateway path must also refuse without backend dispatch. TLS-name, invalid clock-rate
+configuration and caller failures must fail the probe and never count as provider
+denials. Peer recovery alone cannot bypass the open circuit. This denial diagnostic
+grants no receipt or time capability; the ordinary successful probe still uses the
+actual SDK issue/observe/refresh/check sequence.

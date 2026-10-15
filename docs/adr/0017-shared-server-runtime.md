@@ -479,3 +479,30 @@ that single issuance check. Operating data/environment preservation, HTTP/native
 refusal and restart passed after clone qualification and private rollback backup.
 The operating issuer remains unconfigured. Full identity/permission/projection,
 fleet and automatic-update scope remains open.
+
+
+## Bounded unary ingress source adoption
+
+Runtime `0cdbd166` adds a shared unary ingress adapter with immediate semaphore
+admission, cumulative DATA limits, exactly one uncompressed message and permit
+ownership through decoding/handler completion or cancellation. It preserves
+Prost decoding and metadata, with no domain policy in runtime. All 32 runtime
+tests, strict Clippy and musl library compilation pass, including real Tonic/Prost
+integration and decoded-handler cancellation.
+
+Component metadata authentication wraps the adapter; configured generated
+services remain inside it. Source adoption is Hangang `b41b492` (64 slots, 512-byte
+route payload), Pumgye `34d74b6` (64 shared slots, method caps preserved), Sumunjang
+`1f73a18` (up to 256 slots, 2,048-byte payload), and Hopae `2a96303` (16 shared
+slots across four services, existing method caps). Handler quotas remain separate.
+Hangang/Pumgye/Sumunjang workspaces pass 1,304/77/138 tests respectively; Hangang
+has 58 existing exclusions. Sumunjang also passes the actual executable mTLS
+functional fixture. Hopae's workspace passed 994 with 42 existing exclusions before
+the final initial-observe API addition; its final optional-client suite passes
+42 and compatibility suite 41, with final workspace Clippy and native-client musl
+compilation. All listed source checks are distinct from rebuilt release assets,
+actual four-module Kubernetes qualification and operating adoption.
+
+Limits are admitted DATA and simultaneous futures, not decoded-object memory,
+HTTP/2 buffers, response draining or CPU preemption. Representation estimates in
+component docs are not measured memory ceilings or 10k/100k throughput results.

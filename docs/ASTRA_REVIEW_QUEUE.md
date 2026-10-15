@@ -113,14 +113,16 @@ underway. Findings and prototypes are not deployed UI fixes.
 
 Ready subsequent work, in order:
 
-1. Adopt suspend-inclusive original proof budgeting and source-clock progression;
-   preserve unsupported-platform legacy behavior and observed fail-closed mode.
-2. Review and qualify the bounded unary-ingress prototype on real generated
-   services; early auth alone does not bound an authenticated decoder.
-3. Implement native fixed-owner time clients and the full permit/output/paired
-   ledger migration described by ADR 0018, then qualify independent-host/K3s gates.
-4. Implement ADM-01/02/03 data and write safety, followed by deterministic menu,
-   layout, routing, localization and accessibility batches using the retained plans.
+1. Adopt the implemented observed-client evidence into native authorization,
+   permit/output and paired-ledger paths (ADR 0018). Resolve digest-only callers,
+   verified dynamic identities and process-domain bootstrap without per-request
+   channels, incoming owner pins, fake UTC or mode fallback.
+2. Qualify actual owners and independent management-host/four-Pod Kubernetes paths,
+   withdrawal/restart/failure, browser delegation and exact signed rebuilds.
+3. Continue remaining ADM criteria for deterministic menu, layout, routing,
+   localization and accessibility using the retained plans.
+4. Qualify resource budgets and requested throughput separately; unary ingress
+   source adoption is not a measured performance result.
 
 For each queued implementation, recheck actual source, retain its acceptance
 criteria and record commit/test evidence. Reuse completed reviews rather than
@@ -139,3 +141,11 @@ unrestricted suite hit an existing storage-budget timing assertion; the isolated
 case and complete rerun with four test threads passed. No time-limit assertion
 was weakened. These source commits are not rebuilt release artifacts or deployed
 K3s qualification. Consumer time migration and shared ingress limits remain open.
+
+
+Subsequent implementation: shared unary ingress is committed and tested in runtime
+`0cdbd166` and all four components (Hangang `b41b492`, Pumgye `34d74b6`, Sumunjang
+`1f73a18`, Hopae `2a96303`). See ADR 0017 for exact evidence and limits. Hopae's
+optional native client supports independent initial proof observation, fresh
+per-RPC correlation and per-client retirement. A read-only Sol follow-up maps its
+remaining native consumer gaps; no further Astra review has been requested.

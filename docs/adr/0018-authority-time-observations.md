@@ -128,6 +128,15 @@ This helper is numeric evidence only, not an authenticated observation or a
 permission. Subsequent Hopae source adds explicit owner RPCs and native guards,
 signature-only evidence and independent clock-rate arithmetic (`cde8416`). Runtime
 `ed2eee4` adds BOOTTIME instance-bound deadlines/retention and elapsed stamps.
-Source suspend-budget adoption is in progress. Independent native clients,
-permits, paired ledger retention and final output have not adopted the contract.
+Hopae `ce4d27f` adopts suspend-inclusive source/proof budgeting, including age
+before provider authentication. Hopae `2a96303` adds optional fixed-owner native client evidence: issue, initial
+observation of externally issued proofs and consuming refresh. It authenticates
+mTLS and caller metadata, pins exact source context, uses fresh correlations and
+BOOTTIME bounds, and retires in-flight admission without deleting retention.
+Generated mTLS fixture tests pass, including independent receivers and hostile
+responses; it is not the deployed Hopae owner. Native authorization/permit
+consumers, paired ledger retention and final output have not adopted the contract.
+Consumer adoption must also handle authenticated digest-only requests, dynamically
+verified identities and process-domain bootstrap without creating a channel per
+request or trusting incoming owner pins.
 Draft releases and the cross-host Kubernetes gate remain open.

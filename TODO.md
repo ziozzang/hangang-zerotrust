@@ -1730,3 +1730,5 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [ ] Typed Workload projection: [implementation proposal](docs/reviews/2026-10-15-workload-projection-plan.md); same-compiler workload policy started, additive native chain and real TokenReview gates pending.
 
 - [x] Hangang 0.3.7: exact-artifact K3s run2 exit0 and owned cleanup; five signed assets/public round-trip, internal gateway and console adopted. Preserve initial 503 failure and unconfirmed cause; restoration test is bounded availability, not increased proof lifetime.
+
+- [x] Pumgye native Workload policy stage C `a45b37b` merged: same compiler, typed-only map, v1 byte compatibility, explicit v2 metadata and source-owner withdrawal tests; workspace 90/95 and strict Clippy. RPC/full-chain activation remains pending.

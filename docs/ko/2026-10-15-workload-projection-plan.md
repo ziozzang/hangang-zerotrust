@@ -1,6 +1,6 @@
 # 네이티브 Workload 신원 전달 구현 제안
 
-상태: 설계 제안. 네이티브 정책 구현을 시작했으며 전체 연결은 미구현이다.
+상태: 프로토콜·원천 owner 설계 제안. 네이티브 정책 C단계는 머지했고 전체 연결은 미구현이다.
 기존 Service 검증 결과는 Workload·Human 지원 완료를 의미하지 않는다.
 
 실제 호패 TokenReview 결과를 Workload/AAL0 그대로 전용 추가 RPC·SDK 증명·품계의
@@ -41,3 +41,15 @@ capability를 재생성하지 않는다. 용량이 차면 아직 유효한 owner
 
 mapping v2 candidate는 버전과 outcome별 principal class를 명시한다. v1 직렬화는 그대로
 유지한다. 기존 v1 candidate나 legacy subject 할당을 typed Workload 권한으로 승격하지 않는다.
+
+## 네이티브 정책 C단계 머지
+
+품계 source a45b37b에서 선택적 typed map과 Workload/AAL0 리소스 평가를 같은 컴파일
+정책에 추가했다. 기존 users와 양방향 fallback을 거부한다. mapping v2는 타입 메타데이터를
+명시하며 기존 릴리즈·새 빌드의 v1 진단 출력은 byte동일하다. 실제 원천 설치 테스트에서
+최초 만료·같은 lifetime 재설치 거부·새 View의 이전 capture 철회·typed grant 삭제 후 세대
+증가를 확인했다.
+
+전체 workspace 기본 90개·observed feature 95개와 양쪽 all-target strict Clippy가 통과했다.
+main에 머지했으며 공개 품계 0.1.7·운영 산출물은 그대로다. 새 receipt RPC·불투명 SDK·
+TokenReview 원천 owner·서명 permit·paired 출력 연결 후에야 전체 Workload 배포를 주장할 수 있다.

@@ -1,6 +1,6 @@
 # Typed native Workload projection — implementation proposal
 
-Status: proposed; native policy implementation started, full chain unimplemented.
+Status: protocol/source-owner proposal; native policy stage C merged, full chain unimplemented.
 Existing qualified Service projection does not establish Workload or Human support.
 
 A real Hopae TokenReview result must remain Workload/AAL0 through an additive
@@ -56,3 +56,18 @@ expiry and initial original-budget limits must be reviewed together before codin
 Mapping v2 candidates explicitly report their mapping version and each outcome's
 principal class. V1 serialization remains unchanged. Neither a v1 candidate nor a
 legacy subject assignment may silently acquire typed Workload authority.
+
+## Native policy stage C merged
+
+Pumgye source `a45b37b` adds the optional typed map and Workload/AAL0 scoped
+resource evaluator to the same compiled policy. Both directions of class fallback
+are refused. Mapping v2 reports typed outcome metadata; actual old-release/new-build
+v1 diagnostic output is byte-identical. Actual native source installation tests
+cover original expiry, same-lifetime reinstall refusal, fresh View retirement of
+old captures and revision advance after typed grant deletion.
+
+The entire workspace passed 90 default tests and 95 observed-feature tests, with
+strict all-target Clippy in both configurations. This source is merged to main;
+published Pumgye 0.1.7 and its operating artifact are unchanged. New receipt RPCs,
+opaque Workload SDK, TokenReview source owner, signed permits and paired output are
+still required before any full-chain Workload deployment claim.

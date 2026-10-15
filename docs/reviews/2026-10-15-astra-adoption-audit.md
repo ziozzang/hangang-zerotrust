@@ -146,3 +146,31 @@ account enabled with administrator role; no viewer accounts were returned. Thus 
 configured mapping itself does not establish a missing-role explanation. The
 operator's actual existing browser/session is still unverified. No credentials,
 account identifiers or policy data are included in this report.
+
+
+## Reconciliation at 22:13 KST
+
+A new check against the operating HTTPS origin again observed root 303 to `/ui/`
+and UI 200. A fresh system-administrator browser found all 19 navigation entries
+and opened Hopae, Sumunjang and Pumgye without module/global/page errors. The
+390px browser also opened all three without errors or page overflow. This uses
+system-administrator authentication, not the operator's existing SSO/browser
+session; the reported symptom therefore remains unexplained.
+
+Operating versions remain Hangang 0.3.9, Hopae 0.0.9, Pumgye 0.1.7 and
+Sumunjang 0.3.6. Candidate Hangang source `f45fe3e` passes 1,315 Rust tests
+(58 existing exclusions), strict Clippy and 148 browser cases with no skips.
+All eight production static binaries are frozen. The browser cases use production
+plugin packages with mocked owner HTTP; they are not live K3s browser acceptance.
+Bounded host/plugin locale lifecycle fixes are in candidate source, not the
+operating site, and do not complete ADM-06. Totals remain 3 complete / 4 partial /
+2 incomplete.
+
+The first actual K3s Workload run passed its initial four-component
+authentication-to-backend request and rejected the identical paired-proof replay.
+The overall run failed at the realm-change fixture: it changed the bootstrap
+ConfigMap and restarted Hopae, while Hopae correctly restored DB-owned profiles.
+The fixture must publish and restore through the owning profile CAS API with
+readback before retrying. This is partial evidence, not full Workload acceptance
+or authorization to describe the candidate as deployed. No Human whole-chain or
+10k/100k throughput acceptance is established. Astra remains stopped.

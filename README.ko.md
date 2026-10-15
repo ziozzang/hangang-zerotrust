@@ -179,3 +179,11 @@ flowchart LR
 [현재 Astra 반영 감사](docs/ko/2026-10-15-astra-adoption-audit.md)는 완료한 런타임
 검증과 미완인 관리자 UX를 구분한다. 한강 0.3.8 레이아웃·작업 참조 source는 전체
 workspace/Clippy/브라우저를 통과했으며 정확한 static/K3s/내부 반영은 진행 중이다.
+
+
+[최신 릴리스와 운영 반영](docs/ko/QUALIFICATION_0311_019.md)에 한강 0.3.11·품계 0.1.9,
+실제 격리 SAR·Service·Workload 검증과 관리자 세 모듈 브라우저 검증을 기록했다.
+위의 이전 버전 기록은 당시 상태다. 호패 0.0.10·수문장 0.3.6 운영 런타임은 유지한다.
+[네이티브 Human 연결 설계](docs/ko/2026-10-16-human-native-wire-design.md)와
+[요청 바인딩 v2 계약](docs/ko/2026-10-16-request-binding-v2.md)을 기반으로 다음 구현을
+진행한다. 설계·기준값만으로 Human RPC를 활성화하지 않는다.

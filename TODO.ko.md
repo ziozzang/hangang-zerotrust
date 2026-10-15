@@ -1026,4 +1026,12 @@ permit/투영·분산 복구/다중 노드 검증은 남아 있습니다.
 - [x] 호패 `1fb5db3`: 실제 컴파일 provider/원천 소유권·동시 retirement 수정, 최종1080/42·strict Clippy·독립 검토.
 - [x] 한강 `d422c1c`: 호환 품계 코어·API 컨텍스트별 서비스/할당 콘솔·일반 라우트 분리, 최종1321/58·브라우저45·strict Clippy·독립 검토.
 - [x] 품계 `b184bdd`: 실제 기본-off 인증·연결 재사용 SAR 리스너·같은 View/TLS 아래 전송 경계, 기본126/전체135·양쪽 strict Clippy·실제 로컬 바이너리/TLS·독립 검토.
-- [ ] 격리 실제 API-server·정확한 버전별 static 산출물·통합 릴리즈/운영 반영 필요. 소스 병합은 운영 활성화가 아니다. [근거·남은 경계](docs/ko/2026-10-16-native-authority-gates.md).
+- [x] 최종 static 산출물로 격리 API-server SAR18·Service/Any/브라우저·Workload 통과, 서명 한강0.3.11·품계0.1.9 공개·내부 반영 완료. [최종 근거와 한계](docs/ko/QUALIFICATION_0311_019.md).
+
+
+## 네이티브 Human 후속 — 2026-10-16
+
+- [x] 호패 `87d19a0` 소스에서 실제 Engine/HandleView·현재 session/user/primary/factor/application·컴파일 material 원천을 원래 private admission에 연결. 전체1111 통과/43 제외, material19·실제 CLI 재시작·소유 OIDC/LDAP/TOTP 검사 통과. Human RPC나 운영 반영 완료는 아니다.
+- [x] 한영 [Human 연결 설계](docs/ko/2026-10-16-human-native-wire-design.md)·[v2 기준 계약/벡터](docs/ko/2026-10-16-request-binding-v2.md) 공개, Python 계약8개·기존7스키마/42사례 검증.
+- [ ] 기존 v1을 유지하면서 독립 기준값에 대한 추가 Rust v2 codec 검증·병합.
+- [ ] 디코딩 전 Human admission·원천 기반 receipt/SDK·typed 품계 권한·쌍 출력 구현. 실제 공급자/MFA→한강→백엔드·철회/재전송·관리자 브라우저 검증 후 릴리스/활성화.

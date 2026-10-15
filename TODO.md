@@ -1756,4 +1756,12 @@ This section supersedes earlier pending stage notes without discarding their fai
 - [x] Hopae `1fb5db3`: actual compiled provider/source ownership and overlapping retirement fix; final1080/42 and strict Clippy with independent review.
 - [x] Hangang `d422c1c`: compatible Pumgye core pin, context-aware API-service/assignment console, local network-route separation; final1321/58, browser45, strict Clippy and independent review.
 - [x] Pumgye `b184bdd`: real default-off authenticated persistent SAR listener, same View and below-TLS output fencing; default126/all-features135 and both strict Clippy, actual local binary/TLS tests and independent review.
-- [ ] Actual disposable API-server, exact versioned static artifacts and joint release/adoption remain required. Source merge is not operating activation. [Evidence and remaining boundaries](docs/reviews/2026-10-16-native-authority-gates.md).
+- [x] Exact final static artifacts passed disposable API-server SAR18, Service/Any/browser and Workload gates; signed Hangang0.3.11/Pumgye0.1.9 were published and internally adopted. [Final evidence and limits](docs/QUALIFICATION_0311_019.md).
+
+
+## Native Human follow-up — 2026-10-16
+
+- [x] Hopae `87d19a0` source joins actual Engine/HandleView/current session, user, primary, factor, application and compiled material owners to original private admission. Full1111 passed/43 ignored, material19 and real CLI restart tests/owned OIDC/LDAP/TOTP passed; no Human RPC or operating adoption claimed.
+- [x] Publish EN/KO [Human chain design](docs/reviews/2026-10-16-human-native-wire-design.md) and [v2 reference contract/vectors](docs/reviews/2026-10-16-request-binding-v2.md), eight Python contract tests and existing7-schema/42-case validation.
+- [ ] Qualify and merge additive Rust v2 codec against independent vectors; preserve v1.
+- [ ] Implement predecode Human admission, source-backed receipt/SDK, typed Pumgye grants and paired output; qualify actual native provider/MFA → Hangang → backend, revocation/replay and browser administration before release/activation.

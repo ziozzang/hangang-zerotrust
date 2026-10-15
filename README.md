@@ -212,3 +212,12 @@ records the subsequent qualified Service identity composition release. The
 distinguishes completed runtime gates from unfinished administrator UX. Hangang
 0.3.8 layout/operation-reference source has passed workspace/Clippy/browser checks;
 its exact static/K3s/internal rollout remains in progress.
+
+
+[Latest qualified releases and operating adoption](docs/QUALIFICATION_0311_019.md)
+records Hangang 0.3.11 and Pumgye 0.1.9, actual disposable SAR/Service/Workload
+qualification and all-three-admin browser acceptance. Earlier version notes above
+are historical. Hopae 0.0.10 and Sumunjang 0.3.6 remain the operating runtimes.
+[Native Human chain design](docs/reviews/2026-10-16-human-native-wire-design.md)
+and [canonical request binding v2](docs/reviews/2026-10-16-request-binding-v2.md)
+track the next implementation; design/reference vectors do not activate Human RPCs.

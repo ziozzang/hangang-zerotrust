@@ -156,11 +156,13 @@ class Tap(grpc.GenericRpcHandler):
             self.inflight += 1
             # Capture once before any upstream await. Arming affects only future calls.
             hooks = self.hooks if self.hooks is not None and self.hooks.armed else None
+            started = None
             try:
                 if hooks is not None:
                     try:
                         raw = hooks.mutate(name,raw)
-                    except Exception:
+                    except Exception as error:
+                        if isinstance(error,grpc.aio.AioRpcError):hooks.status(error.code())
                         hooks.counts['failed'] += 1
                         await context.abort(grpc.StatusCode.FAILED_PRECONDITION,'tap qualification refused')
                 if len(raw) > METHODS[name]:
@@ -168,17 +170,26 @@ class Tap(grpc.GenericRpcHandler):
                     await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED,'tap mutated frame limit')
                 count['forwarded'] += 1
                 started = hooks.now() if hooks is not None and hooks.mode == 'exact_pair_replay' else None
+                if started is not None and name == '/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
+                    hooks.step('first_project',started,context)
                 reply = await self.call(name,raw,context)
                 if hooks is not None and hooks.mode == 'exact_pair_replay' and name == '/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
                     try:
                         reply = await hooks.replay(raw,reply,started,self.call,context)
-                    except Exception:
+                    except Exception as error:
+                        if isinstance(error,grpc.aio.AioRpcError):hooks.status(error.code())
                         hooks.counts['failed'] += 1
                         count['refused'] += 1
                         await context.abort(grpc.StatusCode.FAILED_PRECONDITION,'tap qualification refused')
                 count['ok'] += 1
                 return reply
+            except asyncio.CancelledError:
+                if started is not None and hooks is not None and hooks.mode=='exact_pair_replay' and name=='/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
+                    hooks.cancelled(started,context)
+                raise
             except grpc.aio.AioRpcError as error:
+                if hooks is not None and hooks.mode=='exact_pair_replay' and name=='/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
+                    hooks.status(error.code())
                 count['refused'] += 1
                 await context.abort(error.code(), 'upstream refused')
             finally:

@@ -1,5 +1,7 @@
 """Explicit qualification-only DTO hooks. No authentication/capability objects."""
 import hashlib
+import asyncio
+import math
 import hmac
 from pathlib import Path
 import re
@@ -119,12 +121,13 @@ class Hooks:
             raise ValueError('native BOOTTIME required')
         self.counts = {'cookie_substitutions':0,'replay_attempts':0,'replay_refused':0,'pum_before':0,'pum_after':0,'control_sequence_complete':0,'failed':0}
         self.last_replay = None
+        self.progress = None
 
     def now(self):
         return time.clock_gettime_ns(time.CLOCK_BOOTTIME)
 
     def snapshot(self):
-        return {'mode':self.mode,'armed':self.armed,'counts':dict(self.counts),'last_replay':self.last_replay,
+        return {'mode':self.mode,'armed':self.armed,'counts':dict(self.counts),'last_replay':self.last_replay,'progress':None if self.progress is None else dict(self.progress),
                 'requires_runner_query_budget_check':self.mode == 'exact_pair_replay'}
 
     def arm(self):
@@ -144,18 +147,49 @@ class Hooks:
             self.counts['cookie_substitutions'] += 1
         return raw
 
+    def step(self, stage, started, context):
+        # Diagnostic samples only. Never replace a cancellation or grant budget.
+        if self.progress is None or stage=='first_project':
+            self.progress={'stage':stage,'elapsed_boottime_ns':None,'deadline_remaining_ms':None,
+                'first_project_elapsed_boottime_ns':None,'first_output_remaining_ms':None,'pum_before_remaining_ms':None,
+                'through_replay_elapsed_boottime_ns':None,'cancelled':False,'rpc_code':None,'replay_rpc_code':None,'clock_failed':False}
+        try:
+            elapsed=self.now()-started
+            remaining=context.time_remaining()
+            if elapsed<0 or remaining is None or not math.isfinite(remaining):
+                raise ValueError()
+            self.progress.update(stage=stage,elapsed_boottime_ns=elapsed,deadline_remaining_ms=max(0,int(remaining*1000)),rpc_code=None)
+        except BaseException:
+            self.progress['stage']=stage
+            self.progress['clock_failed']=True
+
+    def cancelled(self, started, context):
+        if self.progress is not None:
+            self.step(self.progress['stage'],started,context)
+            self.progress['cancelled']=True
+
+    def status(self, code):
+        if self.progress is not None and isinstance(code,grpc.StatusCode):
+            self.progress['rpc_code']=code.name
+
     async def replay(self, raw, reply, started, call, context):
         project, query = self.wire.pair(raw)
         output = self.wire.output.FromString(reply)
         if output.request_id != project.request_id or output.cache_ttl_ms or not 0 < output.remaining_ms <= 1000 or output.chain_sha256 != hashlib.sha256(project.permission_query).digest() or output.request_sha256 != query.request.request_sha256:
             raise Refused()
+        self.step('pum_before',started,context)
+        self.progress['first_project_elapsed_boottime_ns']=self.progress['elapsed_boottime_ns']
+        self.progress['first_output_remaining_ms']=output.remaining_ms
         before = self.wire.current(await call(OBSERVE,project.permission_query,context),query)
+        self.progress['pum_before_remaining_ms']=before.remaining_ms
         self.counts['pum_before'] += 1
         self.counts['replay_attempts'] += 1
+        self.step('replay',started,context)
         replay_started = self.now()
         try:
             await call(PROJECT,raw,context)
         except grpc.aio.AioRpcError as error:
+            self.progress['replay_rpc_code']=error.code().name
             if error.code() != grpc.StatusCode.UNAVAILABLE or error.details() != 'native Human projection refused':
                 raise Refused() from None
         else:
@@ -165,6 +199,8 @@ class Hooks:
         if replay_elapsed < 0 or through_replay_elapsed < 0:
             raise Refused()
         self.counts['replay_refused'] += 1
+        self.progress['through_replay_elapsed_boottime_ns']=through_replay_elapsed
+        self.step('pum_after',started,context)
         after = self.wire.current(await call(OBSERVE,project.permission_query,context),query)
         self.counts['pum_after'] += 1
         if after.owner_now_ms < before.owner_now_ms or after.remaining_ms > before.remaining_ms or after.proof_remaining_ms > before.proof_remaining_ms:
@@ -178,5 +214,6 @@ class Hooks:
                             'through_replay_elapsed_boottime_ns':through_replay_elapsed,
                             'pum_before_remaining_ms':before.remaining_ms,
                             'pum_after_remaining_ms':after.remaining_ms}
+        self.step('complete',started,context)
         self.counts['control_sequence_complete'] += 1
         return reply

@@ -54,3 +54,9 @@ qualification에 선택적 JSON bool `initially_armed`를 추가했다. 생략�
 replay의 `last_replay.through_replay_elapsed_boottime_ns`는 첫 Project 직전부터 replay 거부까지, 첫 Project와 Pum-before를 포함한 로컬 시간이다. 기존 elapsed는 replay RPC만의 시간이다. Pum-after 뒤 전체 output budget 검사도 유지한다. runner는 실제 원래 Hop query admission에 rate·양자화를 보수적으로 적용하여 이 구간이 유효했는지 검사해야 한다. 이 값이나 거부 상태만으로 새 lease·외국 절대 시각·ledger 원인을 만들면 안 된다.
 
 NativeTap wrapper는 고정 qualification과 arm/snapshot을 제공하며 replay에 한해 실제 Pum Observe를 직접 고정 upstream으로 추가한다. 관리 HTTPS·원천 관측은 실제 peer로 유지한다. 실제 TLS/IPC 테스트는 default·unarmed·중복/잘못된 명령·진행 중 RPC·정리만 검증하며 native proof를 만들어 전체 체인 완료를 주장하지 않는다.
+
+## 취소 시 부분 replay 진행 정보
+
+snapshot의 progress는 시작 전 null이며 이후 고정 stage(first_project/pum_before/replay/pum_after/complete), 로컬 BOOTTIME 경과·원래 RPC deadline 남은 ms·첫 Project 경과·검증된 첫 output/PumBefore 남은 시간·replay까지 경과, cancelled, 고정 gRPC enum 이름, clock_failed만 담는다. 읽을 수 없는 수치는 null일 수 있다. payload·사용자/receipt ID·토큰·키·본문·외국 절대 시각은 없다.
+
+각 await 전에 stage/time을 기록하고 Pum-after 전에 replay 경과를 보존한다. CancelledError는 진단만 갱신하고 그대로 다시 던진다. 응답 대체·재시도·예산 갱신·완료 승격은 없다. last_replay는 기존 전체 제어 순서 성공 뒤에만 생기며 부분 정보는 replay 통과가 아니다. 최근 한 controlled Project의 정보이므로 runner는 검증 요청을 직렬화하고 실패 증거를 보존해야 한다. 실제 transport 취소 테스트는 Pum-after 정보 유지·성공 응답 없음·sequence 미완료를 검증한다. 채널 warmup은 추가하지 않았고 cold TLS 원인을 counter만으로 추정하지 않는다.

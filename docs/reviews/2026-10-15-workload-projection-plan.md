@@ -81,3 +81,18 @@ with approximately constant-time insertion/lookup, bounded cleanup work and expl
 capacity admission. No provider call, signing callback or await may run under a
 record-table lock. Capacity pressure refuses rather than evicting an admissible
 proof. This is a design requirement, not a measured throughput result.
+
+
+## Immutable SDK adoption milestone
+
+Hopae source `4ea3e1473de61d6b46f5420efe481c126790d800` is now pushed to public
+main after packaging plus B/D integration was rechecked: 1,045 workspace tests
+passed, 42 existing exclusions, 53 default SDK tests and strict workspace Clippy.
+Actual native source/public SDK cases include fixed kind3/AAL0, original source
+expiry, independent observation, refresh, withdrawal and missing-record refusal.
+The replacement-server test uses independent native owners in one OS process;
+it is not an actual operating-system restart or real Kubernetes JWT experiment.
+Pumgye may now pin this exact SDK source for its dedicated Workload permission
+RPC. Permission, output and final gateway dispatch remain unqualified until their
+actual integration gates pass. Authentication alone is not resource authorization.
+See the [gateway adoption contract](../design/WORKLOAD_GATEWAY_ADOPTION.md).

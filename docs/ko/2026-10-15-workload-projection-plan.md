@@ -61,3 +61,14 @@ TokenReview 원천 owner·서명 permit·paired 출력 연결 후에야 전체 W
 삽입·조회, 제한된 정리 작업과 명시적 용량 admission을 사용한다. 기록 lock 안에서 provider
 호출·서명 callback·await를 수행하지 않는다. 용량 부족이면 유효한 증명을 축출하지 않고
 거부한다. 이는 설계 요구이며 측정한 처리량 주장은 아니다.
+
+
+## SDK 고정 원천 반영
+
+호패 4ea3e1473de61d6b46f5420efe481c126790d800을 공개 main에 push했다. packaging과 B/D
+결합 후 전체 1,045개·기존 제외 42개, SDK 기본 53개와 strict workspace Clippy를 재확인했다.
+실제 원천·공개 SDK에서 kind3/AAL0·최초 만료·독립 관측·refresh·회수·레코드 누락 거부를
+검증했다. 교체 서버 검사는 동일 OS 프로세스의 독립 native owner이며 실제 OS 재시작이나
+Kubernetes JWT 검증이 아니다. 품계는 이제 정확한 SDK source를 고정해 전용 Workload
+판정 RPC를 구현한다. 권한·출력·최종 게이트웨이 전달은 아직 검증 완료가 아니다.
+[게이트웨이 반영 계약](design/WORKLOAD_GATEWAY_ADOPTION.md)을 따른다.

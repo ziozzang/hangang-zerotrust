@@ -3,6 +3,8 @@
 Reconciled by Sol against retained original reviews, current source, test logs,
 signed release/adoption records and a fresh coordinator browser check. Astra is
 stopped. This audit does not start a new Astra review or qualify the whole product.
+Current administrator totals are 3/4/2 after operating 0.3.9 adoption; earlier
+follow-up paragraphs retain historical pending states.
 
 | Review scope | Current evidence | Remaining boundary |
 | --- | --- | --- |

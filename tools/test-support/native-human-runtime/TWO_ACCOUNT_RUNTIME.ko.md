@@ -6,4 +6,4 @@
 
 소유 loopback OIDC issuer의 a/b 계정은 서로 다른 RS256 subject를 발급한다. 실제 Hop가 issuer/audience/nonce/PKCE를 검증하고 실제 세션을 만들어야 한다. `human1`은 public SDK 실제 Issue·독립 Observe 결과에서 얻으며 도구에서 계산하지 않는다. ready는 양쪽 실제 AAL1 로그인 후0600으로 게시한다. `login`/`revoke`는 account와 AAL을 지정하고 실제 portal/TOTP/logout을 사용한다. 각 계정의 TOTP seed와 Browser 세션을 분리한다. TOTP 대기는 fixture 제어 시간이며 native proof 예산을 늘리지 않는다.
 
-현재 일곱 Python 테스트는 실제 소유 OIDC 토큰 서명·subject 분리·nonce·일회용 code·PKCE 거부, scope 검증, 계정별 seed, 설정 전용 mocked startup을 검증한다. 새 어댑터로 실제 Hop 실행·두 사용자 portal/TOTP·네 코어 backend 검증은 아직 하지 않았다. 이전 단일 계정 결과를 새 체인의 완료 증거로 확대하지 않는다. 비밀은 출력하지 않고 소유 프로세스만 정리한다.
+현재 열 Python 테스트는 실제 소유 OIDC 토큰 서명·subject 분리·nonce·일회용 code·PKCE 거부, scope 검증, 계정별 seed, 설정 전용 mocked startup을 검증한다. 별도 실제 공개 b08 production 바이너리(SHA50a447b0d437500745c248275a2fc413633482efc24229372c6f04ec73fac65e)로 단일 scope의 두 사용자 primary·독립 TOTP AAL2·A logout 거부와 B 세션 유지·자식 정리를 통과했다. SDK receipt·Pum·H4·Root/backend 검증은 아직 하지 않았다. 이전 단일 계정 결과를 새 체인의 완료 증거로 확대하지 않는다. 비밀은 출력하지 않고 소유 프로세스만 정리한다.

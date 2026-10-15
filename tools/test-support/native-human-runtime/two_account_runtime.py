@@ -21,7 +21,7 @@ def load_scopes(path):
    need(isinstance(s[k],list) and len(s[k])<=limit and all(isinstance(x,str) and 1<=len(x)<=128 and re.fullmatch(r"[a-z0-9!#$%&'*+.^_`|~-]+",x) for x in s[k]) and len(set(s[k]))==len(s[k]),'scope_header_manifest')
   forbidden={'authorization','proxy-authorization','proxy-authenticate','www-authenticate','cookie','set-cookie','host','forwarded','connection','keep-alive','content-length','transfer-encoding','te','trailer','upgrade','expect'}
   need(all(x not in forbidden and not x.startswith(('x-forwarded-','x-hopae-','x-hangang-','x-pumgye-','x-sumunjang-')) and x not in s['reserved_headers'] for x in s['headers']),'scope_reserved_header')
-  identity=(s['service'],s['audience'],s['application'],s['route'],s['route_revision'],s['destination_sha256'],s['header_revision'],tuple(sorted(s['headers'])))
+  identity=(s['service'],s['audience'],s['route'],s['destination_sha256'])
   need(identity not in seen,'scope_duplicate');seen.add(identity)
   if application is None:application=s['application']
   need(s['application']==application,'scope_one_application')
@@ -90,6 +90,37 @@ class AccountBrowser(base.Browser):
   need(s==302,'provider_callback_'+str(s));u=urllib.parse.urlsplit(h['location']);need(u.hostname=='app.example.test','handoff_host');s,h,b=self.request(u.hostname,u.path+'?'+u.query,gateway=True);need(s in (200,302),'handoff_'+str(s));need('__Host-hopae' in self.cookies['app.example.test'],'app_cookie')
 class Fixture(base.Fixture):
  def __init__(self,args):
+  self.process=None;self.issuer=None;self.log=None;self.ldap=None
+  try:self._initialize(args)
+  except BaseException:
+   try:self.close()
+   except BaseException:pass # Preserve the original startup failure; close records safe cleanup stages.
+   raise
+ def close(self):
+  errors=[]
+  process=getattr(self,'process',None)
+  if process is not None:
+   try:
+    process.terminate()
+    try:process.wait(timeout=10)
+    except subprocess.TimeoutExpired:process.kill();process.wait(timeout=5)
+   except Exception:
+    errors.append('process_cleanup')
+    try:process.kill();process.wait(timeout=5)
+    except Exception:errors.append('process_kill_cleanup')
+  issuer=getattr(self,'issuer',None)
+  if issuer is not None:
+   try:issuer.close();self.issuer=None
+   except Exception:errors.append('issuer_cleanup')
+  log=getattr(self,'log',None)
+  if log is not None:
+   try:log.close();self.log=None
+   except Exception:errors.append('log_cleanup')
+  if errors:
+   try:private(self.root/'cleanup-error-private.json',{'stages':errors})
+   except Exception:pass
+   raise RuntimeError('owned_cleanup_failed')
+ def _initialize(self,args):
   self.root=pathlib.Path(args.directory);self.root.mkdir(mode=0o700,parents=True,exist_ok=False);self.provider='oidc';self.issuer=TwoAccountIssuer();self.portal=port();self.gateway=port();self.grpc=port();self.caller=secrets.token_urlsafe(36);self.browsers={};self.process=None;self.totp_seeds={};self.account='a';self.ldap=None;self.ldap_password=None
   def sslcmd(*a):subprocess.run(['openssl',*a],cwd=self.root,check=True,capture_output=True)
   sslcmd('req','-x509','-newkey','rsa:2048','-nodes','-days','1','-subj','/CN=owned-ca','-keyout','ca.key','-out','ca.pem','-addext','basicConstraints=critical,CA:TRUE')

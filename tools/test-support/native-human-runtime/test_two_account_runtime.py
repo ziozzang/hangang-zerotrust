@@ -55,6 +55,31 @@ class Configuration(unittest.TestCase):
      self.assertEqual(len(f.metadata['scopes']),2)
      self.assertEqual(launch.call_count,1)
     finally:f.close()
+ def test_same_source_key_different_policy_or_revision_is_still_duplicate(self):
+  for key,value in [('header_revision',14),('route_revision',12),('headers',['x-other'])]:
+   other=scope();other[key]=value
+   with self.assertRaises(RuntimeError):self.load([scope(),other])
+ def test_partial_initialization_preserves_primary_and_closes_owned_resources(self):
+  with tempfile.TemporaryDirectory() as d:
+   args=SimpleNamespace(directory=str(Path(d)/'owned'),prepared_scopes=[scope()])
+   issuer=mock.Mock();issuer.close.side_effect=RuntimeError('cleanup_secondary')
+   f=adapter.Fixture.__new__(adapter.Fixture)
+   with mock.patch.object(adapter,'TwoAccountIssuer',return_value=issuer),mock.patch.object(adapter.subprocess,'run',side_effect=RuntimeError('openssl_primary')):
+    with self.assertRaisesRegex(RuntimeError,'openssl_primary'):f.__init__(args)
+   issuer.close.assert_called_once()
+   self.assertEqual(json.loads((Path(args.directory)/'cleanup-error-private.json').read_text())['stages'],['issuer_cleanup'])
+   # Existing directory is not owned: do not mutate it while preserving mkdir failure.
+   with self.assertRaises(FileExistsError):adapter.Fixture(args)
+   with tempfile.TemporaryDirectory() as fresh:
+    args.directory=str(Path(fresh)/'owned')
+    with mock.patch.object(adapter,'TwoAccountIssuer',side_effect=RuntimeError('issuer_primary')):
+     with self.assertRaisesRegex(RuntimeError,'issuer_primary'):adapter.Fixture(args)
+ def test_cleanup_continues_after_process_failure(self):
+  f=adapter.Fixture.__new__(adapter.Fixture);f.process=mock.Mock();f.process.terminate.side_effect=RuntimeError('process');f.issuer=mock.Mock();f.log=mock.Mock();issuer=f.issuer;log=f.log
+  with tempfile.TemporaryDirectory() as d:
+   f.root=Path(d)
+   with self.assertRaisesRegex(RuntimeError,'owned_cleanup_failed'):f.close()
+   issuer.close.assert_called_once();log.close.assert_called_once()
  def test_browser_uses_only_fixed_prepared_route_marker(self):
   with tempfile.TemporaryDirectory() as d:
    fixture=SimpleNamespace(root=Path(d),caller='private-owned-caller',gateway=1,portal=2,route='fixed-route')

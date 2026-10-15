@@ -2,8 +2,10 @@
 
 [한국어](../ko/0018-authority-time-observations.md)
 
-Status: draft; shared numeric core implemented, wire/native integration not
-implemented. Publication gate for native cross-host receipts.
+Status: draft; shared numeric core implemented, source-side observed RPC prototype
+under development. Native client/permit/replay integration is not implemented.
+Publication gate for native cross-host receipts. See the
+[Astra review record](../reviews/2026-10-15-authority-time.md).
 
 ## Evidence and problem
 

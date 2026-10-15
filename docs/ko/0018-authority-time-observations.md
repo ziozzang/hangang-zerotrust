@@ -2,8 +2,10 @@
 
 [English](../adr/0018-authority-time-observations.md)
 
-상태: 초안. 공용 수치 코어는 구현했고 wire/네이티브 연결은 미구현입니다.
-네이티브 교차 호스트 receipt의 공개 릴리즈 gate입니다.
+상태: 초안. 공용 수치 코어는 구현했고 원천 측 관측 RPC 프로토타입은 개발 중입니다.
+네이티브 클라이언트·permit·replay 연결은 미구현입니다. 네이티브 교차 호스트
+receipt의 공개 릴리즈 gate입니다.
+[Astra 검토 기록](2026-10-15-authority-time-review.md)을 참고합니다.
 
 ## 증거와 문제
 

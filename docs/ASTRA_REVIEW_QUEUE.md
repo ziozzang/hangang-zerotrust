@@ -48,3 +48,22 @@ functional gates. No performance claim follows from these reviews.
 
 Review artifacts initially stay local and must be checked for sensitive details
 before their findings are incorporated into repository documentation.
+
+## First execution results
+
+The durable [review record](reviews/2026-10-15-authority-time.md) consolidates
+confirmed evidence, boundaries and proposed integration gates.
+
+- A1 produced a source review and a deterministic native profile-publication
+  regression patch. The coordinator applied a provisional final-check ordering
+  correction; regression execution and final requalification are in progress.
+- A2 delivered seven external SDK tests. All seven passed, including 400
+  physical-time offset/phase/asymmetric-latency scenarios. These prove the tested
+  numeric and cryptographic properties, not authenticated transport or replay
+  consumption. A2 continues with an observed-RPC fault test plan.
+- A3 identified a migration gate: receiver wall-forward cleanup can discard a
+  nonce while its foreign source proof remains live. New relative observations
+  can then re-admit it. Durable monotonic ownership, restart behavior and exact
+  issuer-process affinity must be specified before changing replay admission.
+- A1 continues with final-output cancellation/caller/publication interleavings;
+  A3 continues with bounded issuer-affine and independent-receiver designs.

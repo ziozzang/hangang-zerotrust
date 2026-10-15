@@ -98,12 +98,16 @@ class Hooks:
     def __init__(self, config, methods, read):
         mode = config.get('mode')
         expected = {'mode','schemas','cookie_b_file'} if mode == 'issue_cookie_b' else {'mode','schemas'}
-        if mode not in {'issue_cookie_b','exact_pair_replay'} or set(config) != expected:
+        if mode not in {'issue_cookie_b','exact_pair_replay'} or set(config) - {'initially_armed'} != expected:
             raise ValueError('invalid qualification mode')
         if mode == 'issue_cookie_b' and ISSUE not in methods:
             raise ValueError('Issue route required')
         if mode == 'exact_pair_replay' and not {PROJECT,OBSERVE} <= set(methods):
             raise ValueError('Project and direct Pum Observe routes required')
+        armed=config.get('initially_armed',True)
+        if type(armed) is not bool:
+            raise ValueError('invalid armed state')
+        self.armed=armed
         self.mode = mode
         self.wire = Wire(config['schemas'],read)
         self.cookie = None
@@ -120,10 +124,18 @@ class Hooks:
         return time.clock_gettime_ns(time.CLOCK_BOOTTIME)
 
     def snapshot(self):
-        return {'mode':self.mode,'counts':dict(self.counts),'last_replay':self.last_replay,
+        return {'mode':self.mode,'armed':self.armed,'counts':dict(self.counts),'last_replay':self.last_replay,
                 'requires_runner_query_budget_check':self.mode == 'exact_pair_replay'}
 
+    def arm(self):
+        if self.armed:
+            return False
+        self.armed=True
+        return True
+
     def mutate(self, name, raw):
+        if not self.armed:
+            return raw
         if self.mode == 'exact_pair_replay' and name == PROJECT:
             self.last_replay = None
             self.wire.pair(raw)  # Validate framing; forward the ORIGINAL bytes.
@@ -148,8 +160,9 @@ class Hooks:
                 raise Refused() from None
         else:
             raise Refused()
+        through_replay_elapsed = self.now()-started
         replay_elapsed = self.now()-replay_started
-        if replay_elapsed < 0:
+        if replay_elapsed < 0 or through_replay_elapsed < 0:
             raise Refused()
         self.counts['replay_refused'] += 1
         after = self.wire.current(await call(OBSERVE,project.permission_query,context),query)
@@ -162,6 +175,7 @@ class Hooks:
         if context.time_remaining() is None or context.time_remaining() <= 0 or elapsed < 0 or elapsed >= output.remaining_ms*1000000:
             raise Refused()
         self.last_replay = {'elapsed_boottime_ns':replay_elapsed,
+                            'through_replay_elapsed_boottime_ns':through_replay_elapsed,
                             'pum_before_remaining_ms':before.remaining_ms,
                             'pum_after_remaining_ms':after.remaining_ms}
         self.counts['control_sequence_complete'] += 1

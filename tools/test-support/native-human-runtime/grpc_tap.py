@@ -154,24 +154,26 @@ class Tap(grpc.GenericRpcHandler):
                 count['refused'] += 1
                 await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, 'tap capacity')
             self.inflight += 1
+            # Capture once before any upstream await. Arming affects only future calls.
+            hooks = self.hooks if self.hooks is not None and self.hooks.armed else None
             try:
-                if self.hooks is not None:
+                if hooks is not None:
                     try:
-                        raw = self.hooks.mutate(name,raw)
+                        raw = hooks.mutate(name,raw)
                     except Exception:
-                        self.hooks.counts['failed'] += 1
+                        hooks.counts['failed'] += 1
                         await context.abort(grpc.StatusCode.FAILED_PRECONDITION,'tap qualification refused')
                 if len(raw) > METHODS[name]:
                     count['refused'] += 1
                     await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED,'tap mutated frame limit')
                 count['forwarded'] += 1
-                started = self.hooks.now() if self.hooks is not None and self.hooks.mode == 'exact_pair_replay' else None
+                started = hooks.now() if hooks is not None and hooks.mode == 'exact_pair_replay' else None
                 reply = await self.call(name,raw,context)
-                if self.hooks is not None and self.hooks.mode == 'exact_pair_replay' and name == '/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
+                if hooks is not None and hooks.mode == 'exact_pair_replay' and name == '/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
                     try:
-                        reply = await self.hooks.replay(raw,reply,started,self.call,context)
+                        reply = await hooks.replay(raw,reply,started,self.call,context)
                     except Exception:
-                        self.hooks.counts['failed'] += 1
+                        hooks.counts['failed'] += 1
                         count['refused'] += 1
                         await context.abort(grpc.StatusCode.FAILED_PRECONDITION,'tap qualification refused')
                 count['ok'] += 1
@@ -199,6 +201,22 @@ class Tap(grpc.GenericRpcHandler):
             await channel.close()
         if self.hooks is not None:
             self.hooks.cookie = None
+
+    def control(self,command):
+        if command=={'op':'snapshot'}:
+            return self.snapshot()
+        if command=={'op':'arm'}:
+            return self.arm()
+        if command=={'op':'shutdown'}:
+            return {'ok':True,'op':'shutdown'}
+        raise ValueError('invalid control command')
+
+    def arm(self):
+        if self.hooks is None:
+            return {'ok':False,'op':'arm','stage':'not_configured'}
+        if not self.hooks.arm():
+            return {'ok':False,'op':'arm','stage':'already_armed'}
+        return {'ok':True,'op':'arm','armed':True}
 
     def snapshot(self):
         result = {'contract': 'qualification-grpc-tap-v1', 'inflight': self.inflight,
@@ -235,13 +253,9 @@ async def main(args):
             if not line:
                 break
             command = json.loads(line)
-            if command == {'op': 'snapshot'}:
-                print(json.dumps(tap.snapshot()), flush=True)
-            elif command == {'op': 'shutdown'}:
-                print('{"ok":true,"op":"shutdown"}', flush=True)
+            print(json.dumps(tap.control(command)), flush=True)
+            if command == {'op':'shutdown'}:
                 break
-            else:
-                raise ValueError('invalid control command')
     finally:
         watcher.cancel()
         with contextlib.suppress(asyncio.CancelledError):

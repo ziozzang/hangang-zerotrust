@@ -36,3 +36,5 @@ method 상한은 최대32KiB인 검증 부분집합으로 Source의128KiB frame 
 Pum Human 진단용 고정 method 두 개를 추가했다: `HumanResourceAuthorization/Decide`2048바이트, `HumanObservedProjectionPermits/Issue`8192바이트. 실제 native 상한과 같으며 payload를 해석하거나 수정하지 않는다. Root→tap caller는 공통이어도 실제 Hop/Pum outbound caller 파일은 서로 달라야 한다. Pum 관리 HTTPS는 tap을 거치지 않는다. TLS 두 upstream의 독립 caller·raw 전달·정확한 크기 상한/초과 거부는 transport 시험이며 native grant 증거가 아니다. 기존 original deadline·무재시도·ok/refused 집계만 유지하고 gRPC 세부 상태 histogram을 만들었다고 주장하지 않는다.
 
 기존 Root health watcher가 실제 `hangang.pumgye.v1.Authorization/Decide`를 호출하므로 이 고정 method2048바이트도 실제 Pum으로 전달한다. 가짜 health 응답이나 lease 우회가 아니다.
+
+선택적 qualification Hooks의 시작 initially_armed·단방향 arm IPC는 [phase2 제어](GRPC_TAP_HOOKS.ko.md)를 따른다. Hooks가 없으면 arm은 고정 not_configured로 거부하며 전달 구성을 만들거나 바꾸지 않는다.

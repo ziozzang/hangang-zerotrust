@@ -108,8 +108,8 @@ previously built qualification client refusal. The origin now collects the
 complete entity; the client was rebuilt from current Pumgye source. The complete
 run exits zero. The old client's exact internal refusal is not established, and
 the initial logs remain private. A fresh cold backup passed archive/hash and
-restart checks. Its new off-host copy is still transferring and is not verified
-complete; the prior verified off-host backup remains available. This is candidate
+restart checks. Its off-host transfer subsequently completed; full-file SHA-256 matches the
+complete remote archive, and the prior verified off-host backup is preserved. This is candidate
 functional qualification, not new public release or operating migration, full
 streaming/projection/fleet completion or throughput proof.
 

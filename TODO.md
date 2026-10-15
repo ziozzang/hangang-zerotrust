@@ -1561,8 +1561,8 @@ passes isolated/full recheck. This is source/local qualification.
 - [x] Qualify exact Hangang 0.3.5/Pumgye 0.1.6 static native-dispatch candidates
   on the backed-up actual Kubernetes/browser fixture, with complete final target/
   entity assertions, native owners, durable revocation/Pod replacement and refused
-  backend non-dispatch. [Evidence](docs/PACKAGING.md). New off-host copy remains
-  pending; public release and operating migration are still open.
+  backend non-dispatch. [Evidence](docs/PACKAGING.md). The off-host copy subsequently completed with matching full-file hashes;
+  release and operating migration evidence follows below.
 
 ## Native final dispatch release adoption — 2026-10-15
 
@@ -1577,7 +1577,8 @@ passes isolated/full recheck. This is source/local qualification.
   stream semantics, and measure complete authenticated-chain throughput.
 
 See [release and adoption evidence](docs/PACKAGING.md). The latest cold-backup
-off-host transfer remains incomplete; the prior verified copy is preserved.
+off-host copy is now complete with matching full-file hashes; the prior verified
+copy is also preserved.
 
 ## Live-evidence permit signing boundary — 2026-10-15
 

@@ -142,3 +142,32 @@ dispatch. Source is on main; the latest deployed release remains 0.3.5.
 This is a local route owner check. It does not add a remote route observation
 endpoint, signed route claim, permit RPC, projection activation or replay
 consumption. Those must preserve this native snapshot ownership when integrated.
+
+## Request-scoped native route references — 2026-10-15
+
+Hangang `2a4a95a` registers actual prepared native requests before authority
+observation and checks their references again at final upstream admission.
+Capture verifies exact route membership through a snapshot-built index and the
+compiled route scope. References bind snapshot identity, final absolute URI,
+method and prepared digest, expire after one second, and are removed by native
+owner Drop/cancellation. A new registry cannot resolve prior references.
+Registration is globally capped at 128 with 16 lock shards; snapshot metadata
+is shared, entity/credential fields are not copied and no SQL is performed.
+
+Five tests cover changed destination/query/method/digest, foreign bindings,
+equal-revision replacement, actual task cancellation, expiry, restart isolation
+and concurrent capacity reclamation. All targets pass 1,289 tests/58 existing
+explicit ignores, strict Clippy and 922 documentation links. Both actual native
+and compatibility four-server mTLS gRPC durable-restart fixtures pass. This is
+source/local qualification; no new static release or Kubernetes adoption is
+claimed for these references. The separate cold backup off-host copy has now
+completed and full-file hashes agree on both hosts.
+
+Remote route lookup still requires mandatory mTLS and separate decision-role
+authentication, bounded decoding/deadlines, configured owner addressing and
+owner-derived service/resource/action/client-IP context. It must not accept a
+caller URL, classification, allow verdict or a bare numeric revision as native
+ownership. These references neither authorize projection nor consume receipt
+nonces. Permit RPC, actual projection-owner checks, durable paired replay
+consumption, final dispatch integration and distributed membership/restore
+fences remain required.

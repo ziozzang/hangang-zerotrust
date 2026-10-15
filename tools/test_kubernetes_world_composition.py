@@ -43,6 +43,15 @@ if 'rollout' in args:sys.exit(23)
         self.assertEqual(result.returncode,2)
         self.assertIn('--pumgye-responsive requires --browser-probe',result.stderr)
 
+    def test_live_browser_flags_require_browser_and_packages_before_kube(self):
+        argv=[sys.executable,str(Path(__file__).with_name('kubernetes_world_smoke.py')),'--kubectl','/never/invoked','--hopae-fixture','/unused','--sumunjang-plugin','/unused','--echo-image','node:fixture']
+        for name in ['hangang','hopae','pumgye','sumunjang']:argv+=['--'+name+'-image',name+':fixture']
+        for flag in ['--host-navigation','--plugin-locale']:
+            result=subprocess.run(argv+[flag],capture_output=True,text=True,timeout=5)
+            self.assertEqual(result.returncode,2);self.assertIn('require --browser-probe',result.stderr)
+        result=subprocess.run(argv+['--plugin-locale','--browser-probe','/unused'],capture_output=True,text=True,timeout=5)
+        self.assertEqual(result.returncode,2);self.assertIn('both reviewed Hopae and Sumunjang packages',result.stderr)
+
     def test_default_has_no_composition_resources_or_credentials(self):
         items=self.render(False)
         self.assertNotIn('relay',[item['metadata']['name'] for item in items])

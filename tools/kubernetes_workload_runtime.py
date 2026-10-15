@@ -143,6 +143,20 @@ def preflight(args):
         issuer=args.workload_issuer, cluster=args.workload_cluster_id, audience='orders-workload', sa_uid='preflight-sa', pod_uid='preflight-pod')
 
 
+def verify_stage_diagnostic(value):
+    """Strict safe diagnostic schema only; never counts as replay evidence."""
+    keys={'event','stage','tonic_code','reply_status','elapsed_ms','ingress_count','admitted_count','upstream_completed_count','cancelled_count'}
+    codes={'ok','cancelled','unknown','invalid_argument','deadline_exceeded','not_found','already_exists','permission_denied','resource_exhausted','failed_precondition','aborted','out_of_range','unimplemented','internal','unavailable','data_loss','unauthenticated'}
+    if (not isinstance(value,dict) or set(value)!=keys
+            or value['event']!='workload_verify_stage'
+            or value['stage'] not in {'ingress','upstream_pending','admission_refused','upstream_completed'}
+            or value['tonic_code'] not in codes
+            or value['reply_status'] not in {'none','200','400','401','403','429','503','other'}
+            or any(type(value[key]) is not int or not 0<=value[key]<=2**64-1 for key in ['ingress_count','admitted_count','upstream_completed_count','cancelled_count'])
+            or type(value['elapsed_ms']) is not int or not 0<=value['elapsed_ms']<=60000):
+        raise AssertionError('invalid Verify diagnostic schema')
+
+
 def token_credential(result):
     status = result.get('status', {})
     token = status.get('token')
@@ -286,15 +300,22 @@ class Workload:
     def replay_facts(self):
         raw = self.kube('-n', self.namespace, 'logs', 'deployment/workload-tap').decode()
         facts = []
+        self.verify_diagnostics = []
         for line in raw.splitlines():
             value = json.loads(line)
-            if value.get('event') != 'workload_pair_replay':
+            if isinstance(value,dict) and value.get('event') == 'workload_verify_stage':
+                verify_stage_diagnostic(value)
+                self.verify_diagnostics.append(value)
+                continue
+            if not isinstance(value,dict) or value.get('event') != 'workload_pair_replay':
                 raise AssertionError('unexpected tap evidence event')
             if type(value.get('passed')) is not bool or type(value.get('elapsed_ms')) is not int or value['elapsed_ms'] < 0:
                 raise AssertionError('invalid safe tap counters')
             # Copy only allowlisted scalar metadata, never raw logging payloads.
             facts.append({key: value[key] for key in ['event', 'passed', 'replay_status',
                 'auth_and_permit_owner_checks', 'original_first_reply_returned_unchanged', 'elapsed_ms'] if key in value})
+        if self.args.evidence_dir:
+            (self.args.evidence_dir/'workload-verify-stage.json').write_text(json.dumps(self.verify_diagnostics,indent=2)+'\n')
         return facts
 
     def check_replay_increment(self, before):

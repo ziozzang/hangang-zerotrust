@@ -9,3 +9,5 @@ The diagnostic tests cover secret-bearing errors/replies, unknown status, admiss
 Diagnostic writes are fallible and errors are ignored, including during Drop. Each record is bounded below4096 bytes. Synchronous qualification-only logging adds I/O cost; these tests are not throughput qualification.
 
 Frozen diagnostic tap: source640a3dd487d81d908e8caedfeeb830e15357df9d, rawSHA256775a14a97c3842a9161911e4f2168195d6e19d2dc62faaaf419d513da6740806. Runner-only pin updated; held public SDK probe source/hash remain unchanged. This pin is not proof of actual cluster qualification; old artifacts remain preserved.
+
+The replay parser separately validates the exact Verify-stage keyset, enums and bounded integer types (booleans refused), saves these only as diagnostics, and excludes them from pair counts. Unknown or malformed events still fail. Run3 exposed the missing mixed-event parser compatibility before first Project; no product failure or replay pass is inferred. Frozen tap640 bytes are unchanged by this Python-only fix.

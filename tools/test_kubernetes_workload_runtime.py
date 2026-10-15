@@ -121,6 +121,26 @@ class RuntimePreparation(unittest.TestCase):
         value['passed']=False
         with self.assertRaises(AssertionError):owner.check_replay_increment([])
 
+    def test_verify_diagnostics_do_not_count_as_replay_or_mask_failures(self):
+        diagnostic={'event':'workload_verify_stage','stage':'upstream_completed','tonic_code':'ok','reply_status':'200','elapsed_ms':5,'ingress_count':1,'admitted_count':1,'upstream_completed_count':1,'cancelled_count':0}
+        replay={'event':'workload_pair_replay','passed':True,'replay_status':'Unavailable','auth_and_permit_owner_checks':'before_and_after_replay','original_first_reply_returned_unchanged':True,'elapsed_ms':10}
+        lines=[diagnostic]
+        owner=runtime.Workload(SimpleNamespace(evidence_dir=None),'owned-world-test',lambda *a,**kw:'\n'.join(json.dumps(v) for v in lines).encode(),{})
+        self.assertEqual(owner.replay_facts(),[])
+        with self.assertRaises(AssertionError):owner.check_replay_increment([])
+        lines.extend([replay,diagnostic]);owner.check_replay_increment([])
+        self.assertEqual(owner.verify_diagnostics,[diagnostic,diagnostic])
+        self.assertEqual(len(owner.replay_facts()),1)
+        replay['passed']=False
+        with self.assertRaises(AssertionError):owner.check_replay_increment([])
+        for field,bad in [('reply_status','reserved-secret'),('tonic_code','arbitrary'),('elapsed_ms',True),('ingress_count',-1),('stage','arbitrary')]:
+            malformed=copy.deepcopy(diagnostic);malformed[field]=bad;lines[:]=[malformed]
+            with self.assertRaises(AssertionError):owner.replay_facts()
+        malformed=copy.deepcopy(diagnostic);malformed['secret']='reserved-secret';lines[:]=[malformed]
+        with self.assertRaises(AssertionError):owner.replay_facts()
+        lines[:]=[{'event':'unknown'}]
+        with self.assertRaises(AssertionError):owner.replay_facts()
+
     def test_cleanup_continues_after_global_uid_conflict_without_deleting_replacement(self):
         calls=[]
         def kube(*args,**kw):

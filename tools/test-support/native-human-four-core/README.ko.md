@@ -11,3 +11,5 @@ Hop의 Source/receiver/permit key/plan은 첫 로그인 전부터 설정한다. 
 첫 실제 POST는 backend204와 요청·효과 각각 정확히1 증가, 실제 본문 SHA, cookie/native identity/caller 제거를 요구한다. 실패 응답은 알려진 고정 오류 enum/길이/SHA만 남긴다. 재시도·예산 완화·상태 허용 확대는 없다. 프로세스 group guardian은 core가 먼저 종료돼도 PGID를 보유하며 supervisor 사망 시에도 자기 group만 정리한다. 종료 상태는0600 임시 파일/fsync/atomic replace로 공개한다. 모든 cleanup을 시도하고 원래 실패를 보존한다.
 
 현재 구현·순수 테스트와 실제 통과는 구분한다. 로컬 시도의 admin 설정 누락, 과도한 fixture network AAL에 따른 올바른403, 이후 최종 native503/backend0 실패는 보존한다. 네 컴포넌트 통과나 제품 수정으로 주장하지 않는다. 실제 양성/적대/replay/provider별 흐름, suspend·분산 철회·처리량은 별도 근거가 필요하다. 새 요청 철회 검사는 진행 중 작업의 원자적 철회를 증명하지 않는다.
+
+이후 별도 로컬 candidate 근거에서는 Root ada331c(raw1e2e234), 공개 Hop e1dd/Pum98/Sum d6fc로 첫 실제204·backend 도착/효과 각각1·본문/자격 일치·신원 헤더 제거를 통과했고, 전달 RPC7종도 성공했다. 별도 `--fresh-gates` 실행은 네트워크 최소 AAL2의 AAL1 거부/복구, 사용자 role2의 AAL1 거부, 실제 native TOTP2와 공개 SDK 관측 양성, 네트워크 AAL2의 AAL2 허용, Human 정책 CAS 철회/복구, 실제 Sum CAS/block 거부/복구 등9개 실제 HTTP 검사를 통과했다. 거부는 전부403/backend0, 양성은204/효과1이며 정리 후 측정한 소유 listener12개가 모두 닫혔다. 이전 실패는 보존한다. 로컬 candidate 기능 결과이며 제품 전체 소스 검증은 별도이다. 진행 중 철회·정확한 pair replay·적대 변조·provider별 흐름·운영 반영·처리량은 확대 주장하지 않는다.

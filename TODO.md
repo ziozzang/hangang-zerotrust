@@ -1597,8 +1597,11 @@ copy is also preserved.
 - [x] Hangang 4c7d700: retain native route/client-IP context, independent gRPC
   contract and bounded mandatory-mTLS read-only server library; actual sockets,
   cancellation/role/binding refusal and 1,294-test workspace qualification pass.
-- [ ] Integrate server startup and supervised listener ownership, remote client
-  pools/configured owner addressing and actual reference delivery to Pumgye.
+- [x] Hangang dfc099e integrates private CLI preparation, standalone lifecycle
+  and typed supervised listener handover; actual process and failure recovery
+  tests pass. This is local source qualification, not new operating adoption.
+- [ ] Integrate remote client pools/configured owner addressing and actual
+  reference delivery to Pumgye.
 - [ ] Qualify the resulting permit/projection/replay path through actual gateway
   effects, signed static packages, Kubernetes and operating adoption. Current
   operating releases remain unchanged; full provider/fleet/adapter/throughput

@@ -206,3 +206,33 @@ to Pumgye, permit/projection owner checks, paired replay and distributed/Kuberne
 adoption remain required. No GitHub Actions were enabled. Inactive compiler
 incremental caches were subsequently removed under the build-directory lock,
 recovering 31.6 GiB while retaining binaries, source, databases and backups.
+
+## Route observation process and supervisor integration — 2026-10-15
+
+Hangang `dfc099e` adds `--route-owner-config`. Credential/TLS preparation opens
+no socket, so `--check` can validate an occupied active listener; it also refuses
+reused administrator credentials and declared address overlaps. The private
+listener is prepared before activation and started only with the ready gateway.
+Standalone shutdown owns its task. Unexpected service termination withdraws
+readiness and follows normal gateway cleanup.
+
+Supervised generations transfer the socket through a distinct typed descriptor
+role; exact address, singleton role, existing descriptor limits and CLOEXEC
+checks apply. Missing/extra listener ownership refuses. Private resources are
+reloaded for the successor, while request reference records are not transferred.
+Actual process tests verify standalone shutdown, occupied-port validation, HUP
+with a new serving PID, rejection of an invalid replacement and continued mTLS
+handling by the retained generation. The initial failed fixture captured only
+stderr and missed the supervisor stdout diagnostic; combined log capture fixes
+observation, without changing candidate acceptance. The failed runner log remains
+private.
+
+All targets pass 1,298 tests/58 existing explicit ignores. Strict Clippy passes
+after a mechanical conditional-style correction; the final focused lifecycle/FD
+checks and actual four-process native resource/durable-restart chain pass.
+942 local documentation links pass. Source and EN/KO guides are on main; no new
+static release, Kubernetes or operating adoption is claimed.
+
+Remote Pumgye clients and reference delivery, owner-checked signed permits,
+projection/paired replay, full identity/provider and fleet/adapter/throughput
+requirements remain open. Existing operating releases and grants are unchanged.

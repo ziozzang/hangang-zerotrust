@@ -29,7 +29,7 @@ def initial_policy(client_ip):
             'roles': {'reader1': {'permissions': ['read'], 'information_classes': ['internal'], 'minimum_aal': 1},
                       'reader2': {'permissions': ['read'], 'information_classes': ['internal'], 'minimum_aal': 2}},
             'users': {}, 'workload_users': {}, 'human_users': {},
-            'networks': [{'cidr': network, 'roles': ['reader1', 'reader2']}]}},
+            'networks': [{'cidr': network, 'roles': ['reader1']}]}},
         'resources': {'db:orders': {'service': 'orders', 'information_class': 'internal', 'actions': {'select': 'read'}}}}}
 
 

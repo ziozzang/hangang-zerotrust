@@ -15,6 +15,9 @@ class PolicyMetadata(unittest.TestCase):
         for key in ('users','workload_users','human_users'):self.assertEqual(service[key],{})
         self.assertEqual(document['policy']['resources']['db:orders']['actions'],{'select':'read'})
         self.assertEqual(service['roles']['reader2']['minimum_aal'],2)
+        # Native compiler combines the network and user assurance floors by max.
+        # Baseline network must not impose AAL2 on every Human user.
+        self.assertEqual(service['networks'],[{'cidr':'192.0.2.10/32','roles':['reader1']}])
     def test_scoped_grants_use_management_cas_and_never_legacy_fallback(self):
         # Pure policy metadata validation only; these labels are NOT verified identities.
         runtime=pum.PumRuntime.__new__(pum.PumRuntime);runtime.policy=lambda:pum.initial_policy('192.0.2.10')

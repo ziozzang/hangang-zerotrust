@@ -187,3 +187,5 @@ workspace/Clippy/브라우저를 통과했으며 정확한 static/K3s/내부 반
 [네이티브 Human 연결 설계](docs/ko/2026-10-16-human-native-wire-design.md)와
 [요청 바인딩 v2 계약](docs/ko/2026-10-16-request-binding-v2.md)을 기반으로 다음 구현을
 진행한다. 설계·기준값만으로 Human RPC를 활성화하지 않는다.
+
+[소유한 네이티브 Human 런타임 fixture](tools/test-support/native-human-runtime/README.ko.md)는 별도 공개 SDK/Pum 검증용 실제 포털·원천·TOTP 설정을 재현합니다. Human 출력 활성화나 전체 연결 완료 주장은 하지 않습니다.

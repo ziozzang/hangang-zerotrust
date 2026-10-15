@@ -221,3 +221,5 @@ are historical. Hopae 0.0.10 and Sumunjang 0.3.6 remain the operating runtimes.
 [Native Human chain design](docs/reviews/2026-10-16-human-native-wire-design.md)
 and [canonical request binding v2](docs/reviews/2026-10-16-request-binding-v2.md)
 track the next implementation; design/reference vectors do not activate Human RPCs.
+
+[Owned native Human runtime fixture](tools/test-support/native-human-runtime/README.md) provides reproducible actual portal/provider/TOTP setup for separate public SDK/Pum gates; it does not activate Human output or qualify the full chain.

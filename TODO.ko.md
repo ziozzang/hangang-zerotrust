@@ -1033,5 +1033,5 @@ permit/투영·분산 복구/다중 노드 검증은 남아 있습니다.
 
 - [x] 호패 `87d19a0` 소스에서 실제 Engine/HandleView·현재 session/user/primary/factor/application·컴파일 material 원천을 원래 private admission에 연결. 전체1111 통과/43 제외, material19·실제 CLI 재시작·소유 OIDC/LDAP/TOTP 검사 통과. Human RPC나 운영 반영 완료는 아니다.
 - [x] 한영 [Human 연결 설계](docs/ko/2026-10-16-human-native-wire-design.md)·[v2 기준 계약/벡터](docs/ko/2026-10-16-request-binding-v2.md) 공개, Python 계약8개·기존7스키마/42사례 검증.
-- [ ] 기존 v1을 유지하면서 독립 기준값에 대한 추가 Rust v2 codec 검증·병합.
+- [x] 호패 `eefc358`: 실제 body 바이트 기반 Rust v2 codec 독립 검토·병합, v1 유지. 최종 SDK 기본60/native62·바인딩9·전체 target/feature strict Clippy/fmt 통과, 독립 Python 기준값7개 일치. 순수 codec이며 Human RPC/원천 활성화는 남아 있다.
 - [ ] 디코딩 전 Human admission·원천 기반 receipt/SDK·typed 품계 권한·쌍 출력 구현. 실제 공급자/MFA→한강→백엔드·철회/재전송·관리자 브라우저 검증 후 릴리스/활성화.

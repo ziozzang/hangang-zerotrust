@@ -1767,3 +1767,11 @@ This section supersedes earlier pending stage notes without discarding their fai
 - [ ] Implement predecode Human admission, source-backed receipt/SDK, typed Pumgye grants and paired output; qualify actual native provider/MFA → Hangang → backend, revocation/replay and browser administration before release/activation.
 
 - [x] Hopae b317120 durable identity storage/H0 source and Pumgye9c3d69a typed Human core independently reviewed, fully tested and merged. [Exact source checkpoint and remaining full chain](docs/reviews/2026-10-16-human-source-checkpoint.md).
+
+## Native Human paired source checkpoint — 2026-10-16
+
+- [x] Publish Hopae `e1dd9728e184eb4975fbe1ce8dae0505571f4ff1`: actual predecode Human Source/SDK and contract4 paired projection, original query lifetime, canonical ledger, final current/cancellation fence and legacy Verify compatibility. Exact final native71 plus explicit actual SDK/Pum pair1 and strict checks passed; earlier full1208/SDK69 belong to the pre-final candidate.
+- [x] Publish Pumgye `98ecfcd5f319c203b35d2e37aee9ce95a040d874`: all three shared Hop SDK pins unified to that source. Default133/observed150, strict checks and actual new Hop OIDC/LDAPS/mandatory StartTLS H3 gates passed. Network/route/plan fixture peers remain explicitly outside the four-core claim.
+- [ ] Qualify Hangang's generated Human Project integration and actual four-core HTTP/backend flow with real Sum, Root route and Hop plan owners, both-account lineage, live revocation and replay; then build signed static releases, migrate with backups and adopt runtime/admin packages. Current debug executables and config-loader checks are development evidence, not deployment qualification.
+
+[Evidence scope and source checkpoint](docs/reviews/2026-10-16-human-source-checkpoint.md).

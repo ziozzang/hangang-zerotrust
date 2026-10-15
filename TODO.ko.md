@@ -1037,3 +1037,11 @@ permit/투영·분산 복구/다중 노드 검증은 남아 있습니다.
 - [ ] 디코딩 전 Human admission·원천 기반 receipt/SDK·typed 품계 권한·쌍 출력 구현. 실제 공급자/MFA→한강→백엔드·철회/재전송·관리자 브라우저 검증 후 릴리스/활성화.
 
 - [x] 호패b317120의 영구 신원 저장/H0 원천·품계9c3d69a의 typed Human 코어 독립 검토·전체 검사·병합. [정확한 근거와 남은 전체 경로](docs/ko/2026-10-16-human-source-checkpoint.md).
+
+## 네이티브 Human 쌍 원천 체크포인트 — 2026-10-16
+
+- [x] 호패 `e1dd9728e184eb4975fbe1ce8dae0505571f4ff1` 공개: 디코딩 전 실제 Human Source/SDK·contract4 쌍 projection·원래 요청 수명·공통 ledger·최종 current/취소 경계·기존 Verify 호환성. 정확한 최종 native71개와 실제 SDK/품계 쌍1개·strict 검사를 통과했다. 앞선 전체1208/SDK69는 최종 수정 전 후보 결과다.
+- [x] 품계 `98ecfcd5f319c203b35d2e37aee9ce95a040d874` 공개: 공유 호패 SDK 세 곳을 같은 원천으로 고정했다. 기본133/확장150·strict·새 호패의 실제 OIDC/LDAPS/필수 StartTLS H3 검사를 통과했다. 네트워크·route·plan 픽스처 검사는 네 코어 전체 검증으로 세지 않는다.
+- [ ] 한강의 generated Human Project 연결과 실제 수문장·Root route·호패 plan 원천을 사용하는 네 코어 HTTP/backend 흐름, 두 계정 신원 계보·예산이 살아있는 회수·재사용 거부를 검증한다. 이후 서명 static 릴리즈·백업을 동반한 마이그레이션·런타임/관리자 패키지 운영 적용을 진행한다. 현재 debug 바이너리·설정 검사만으로 배포 검증을 대신하지 않는다.
+
+[근거 범위와 원천 체크포인트](docs/ko/2026-10-16-human-source-checkpoint.md).

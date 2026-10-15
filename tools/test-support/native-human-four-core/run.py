@@ -85,6 +85,14 @@ def run(args):
         require(facts['backend']['request_delta']==1 and facts['backend']['effect_delta']==1,'first_http_exact_effect')
         require(after['last_effect']['body_sha256']==hashlib.sha256(b'actual-human-effect').hexdigest(),'final_actual_body')
         require(not {'cookie','x-hopae-human-policy-subject','x-hopae-human-policy-issuer','x-forwarded-user','x-hopae-gateway-key'} & set(after['last_effect']['header_names']),'origin_identity_strip')
+        if args.fresh_gates:
+            phase='fresh_request_gates'
+            from scenarios import run_fresh_gates, ScenarioFailure
+            try:
+                facts['fresh_gates']=run_fresh_gates(hop,pum,root,backend,network,observations['a']['subject'],cookies['a'],lambda cookie:observe(args.observer,args.observer_sha256,supervisor.root/'hop-ready.json',cookie,supervisor.root,'a-aal2'))
+            except ScenarioFailure as failure:
+                facts['fresh_gates']=failure.facts
+                raise
         facts['passed']=True
     except BaseException as caught:
         error=caught
@@ -110,6 +118,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--manifest',required=True);parser.add_argument('--directory',required=True)
     parser.add_argument('--tap-python',required=True)
+    parser.add_argument('--fresh-gates',action='store_true',help='actual fresh HTTP MFA/policy/network gates; no in-flight claim')
     parser.add_argument('--observer',required=True);parser.add_argument('--observer-sha256',required=True)
     args=parser.parse_args()
     os.umask(0o077)

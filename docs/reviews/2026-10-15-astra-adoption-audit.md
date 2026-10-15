@@ -110,3 +110,32 @@ Latest: Hangang 0.3.8 is now publicly released and both internal console/gateway
 
 
 0.3.9 is publicly released and internally adopted; actual K3s and live-site evidence is in the [release record](2026-10-15-native-observed-adoption.md). ADM-04 moves from incomplete to partial; current totals are 3/4/2. Plugin live-locale composites remain unfinished. Earlier 3/3/3 totals record the prior audit state.
+
+
+## Live-site recheck at 21:16 KST and remaining rollout boundaries
+
+The operator reported that the administrator screens appeared unavailable again.
+A fresh Chromium check against the operating HTTPS origin confirmed: root redirects
+to `/ui/`, HTML and all requested JavaScript return 200, and an anonymous visitor
+receives the login dialog. The HTML response uses `Cache-Control: no-store`.
+With a fresh system-administrator session, all 19 navigation entries appear;
+Hopae, Sumunjang and Pumgye each render without page/module/global errors.
+All three pages remain within a 390px viewport, with wide tables scrolling locally.
+These checks do not reproduce the operator's existing account, SSO session or browser
+state. The actual cause of that reported symptom is not established. Current code
+intentionally hides administrator modules from viewer accounts; this is a diagnostic
+possibility, not a finding about the operator's role. No account or policy was changed.
+
+Operating versions remain Hangang 0.3.9, Hopae 0.0.9, Pumgye 0.1.7 and Sumunjang
+0.3.6. Workload policy UI candidate `4b3be284` has 142 distinct passing browser cases
+on its final source but is not installed. New Workload source/binaries are not an
+operating full-chain claim. The real HTTP preliminary policy path was found to use
+legacy `users` before final Workload dispatch and can refuse a legitimate
+`workload_users`-only grant. Pumgye fix `adaf985` passes default 90/all-feature 99
+workspace tests and both strict Clippy configurations; its Hangang integration is
+still uncompiled. Full real-HTTP and four-core K3s qualification must precede release.
+
+The administrator tally remains **3 complete / 4 partial / 2 incomplete**.
+Locale lifecycle, shared forms/accessibility, consistent recovery and contextual
+cross-module links remain open. Astra remains stopped; the checks above use Sol
+and retained review evidence.

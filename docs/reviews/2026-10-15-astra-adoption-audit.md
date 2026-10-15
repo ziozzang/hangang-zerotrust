@@ -68,3 +68,19 @@ mutation, withdraws the role before disclosure, verifies redaction and matching
 audit ID/status, then verifies no backend call for the next refused request. All
 seven plugin-module tests pass. This is source validation, not yet a release or
 operating-site replacement, and does not complete all of ADM-03.
+
+## Subsequent Pumgye layout candidate
+
+Hangang source `ca3d6dc` aligns Pumgye fields/panels with host tokens and puts each
+wide table in a separately named, focusable scroll region. Raw authority/role JSON
+moves into collapsed diagnostics while source ownership remains visible. The policy
+editor stays available for the existing resource editing workflow. Thirty-three
+selected browser tests pass, including all fourteen existing Pumgye behavior tests.
+Reserved 390px fixtures now fit the viewport; operating-site replacement is pending.
+
+Desktop 200% layout is tested at 640 CSS pixels for a 1280px viewport. The separate
+mobile stress case uses the host's existing minimum of 320 CSS pixels and does not
+claim 195 CSS-pixel support. This focused fix does not complete all of ADM-06.
+Combined 0.3.8 candidate `c5610e0` includes the operation-reference fix; its workspace
+passed 1,312 tests with 58 exclusions and strict all-target Clippy. Static build,
+exact new-artifact K3s/UI qualification and internal adoption are next.

@@ -1732,3 +1732,5 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [x] Hangang 0.3.7: exact-artifact K3s run2 exit0 and owned cleanup; five signed assets/public round-trip, internal gateway and console adopted. Preserve initial 503 failure and unconfirmed cause; restoration test is bounded availability, not increased proof lifetime.
 
 - [x] Pumgye native Workload policy stage C `a45b37b` merged: same compiler, typed-only map, v1 byte compatibility, explicit v2 metadata and source-owner withdrawal tests; workspace 90/95 and strict Clippy. RPC/full-chain activation remains pending.
+
+- [x] Hopae 0.0.9 published and internally adopted: 1,017 tests/strict Clippy, exact static local chains, actual K3s All/default Bearer plus SDK/browser/circuit counters, signed/public five-asset verification, protected owner data and restart. Root0.3.8/Any remains a separate next gate.

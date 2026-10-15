@@ -217,3 +217,32 @@ Workspace 1,312개 통과·58개 제외와 strict Clippy를 통과했다. 최초
 바로 200이므로 첫 503의 재현·원인 입증은 아니다. 소유 namespace 두 개와 정확한 생성
 CRD를 정리하고 노드 둘의 Ready를 확인했다. 합성 Retain PV는 클러스터 정책대로 보존했다.
 단일 물리 호스트 검증이며 HA를 입증하지 않는다.
+
+## 호패 0.0.9 조합 인증 공개와 내부 반영
+
+[호패 0.0.9](https://github.com/ziozzang/hopae/releases/tag/v0.0.9)을
+8c06a90에서 공개했다. 런타임 source는 c97113e이고 1fd8f3e는 fixture 변경, 이후 변경은
+릴리즈 가이드 packaging이다. 정확한 static SHA-256은
+`db994813667c6ff6850234e68c369344dd03eadd3511c5d728f77a280921683a`이다.
+초안·비인증 공개 다운로드의 파일 5개가 서명 고정본과 같았고 서명·원본·아카이브의
+실행 파일/가이드/플러그인 전체 byte를 독립 검증했다. 영어·한국어 인증 설정 문서도 포함했다.
+
+Service/AAL0 API key·HTTPS relay All/Any 조합, 명시적 신원 매핑, 제시한 자격 격리와
+최초 원천 예산을 로컬 native로 검증했다. verifier CA snapshot은 크기가 제한되고 connector
+owner에 묶이며 custom root는 기존 신뢰에 추가된다. 호스트명·인증서 검증을 우회하지 않는다.
+전체 테스트 1,017개·기존 제외 42개와 strict Clippy를 통과했다. 실제 Kubernetes All 모드와
+일반 Bearer 모드 모두 독립 SDK/브라우저/네이티브 권한·출력·원천 회수 검사 후 exit 0이었다.
+네 판정 서비스·별도 HTTPS verifier·카운터 백엔드를 사용했다. circuit 검사는 실제 native
+provider-unavailable 상태와 relay 호출 수를 대조하며, 일반 HTTP 503만으로 거부 원인을
+단정하지 않는다. 소유 namespace·생성 CRD를 정리하고 두 노드 Ready·기존 워크로드/파일
+보존을 확인했다. 새 한강 0.3.8 후보와 Any 모드 검증은 후속 게이트로 별도 진행한다.
+
+초기 브라우저 인증 형식·원인 미확정 startup·catalog 복원·circuit 검사 전제 실패는 보존한다.
+이후 통과로 불명확했던 원인이 해결됐다고 주장하지 않는다. 최초 증명/요청 예산이나
+애플리케이션 자동 재시도는 완화하지 않았다.
+
+내부 반영은 읽기 전용·network 없는 설정 검사, 비공개 binary/설정/SQLite rollback 백업,
+사용자/provider/세션/grant/MFA/프로필 원천/환경 보존, native mTLS·HTTP 만료 자격 거부,
+실행 해시·영속 재시작 검사를 통과했다. 최초 CLI 인자 위치 오류는 운영 변경 전 사전
+검사에서 중단됐고 수정한 사전 검사·반영이 통과했다. 기존 운영 프로필은 바꾸지 않았으며
+설치만으로 조합 인증을 활성화하거나 Human/Workload 전체 연결을 완료한 것은 아니다.

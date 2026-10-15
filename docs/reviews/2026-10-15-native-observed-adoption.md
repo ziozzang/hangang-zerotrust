@@ -257,3 +257,41 @@ readiness and non-dispatch gates. Its restore attempt returned 200 directly; it
 does not reproduce or establish the cause of the earlier 503. Both owned namespaces
 and the exact created CRD were removed, both nodes were Ready, and synthetic Retain
 PVs were preserved under cluster policy. This single-host cluster establishes no HA.
+
+## Hopae 0.0.9 composition publication and internal adoption
+
+[Hopae 0.0.9](https://github.com/ziozzang/hopae/releases/tag/v0.0.9) is published
+at `8c06a90`. Runtime source is `c97113e`, with fixture-only `1fd8f3e` and subsequent
+release-guide packaging. Its exact static SHA-256 is
+`db994813667c6ff6850234e68c369344dd03eadd3511c5d728f77a280921683a`.
+All five assets matched the frozen signed stage after draft and anonymous public
+downloads; independent verification covered signature, raw identity and every
+archive executable/guide/plugin byte. English/Korean authentication configuration
+guides are included.
+
+All/Any Service/AAL0 API-key plus HTTPS-relay composition, explicit identity
+mapping, presented-credential isolation and original source budget passed local
+native tests. Production verifier CA snapshots are bounded and bind connector
+ownership; custom roots are additive, with no hostname/certificate bypass.
+Workspace qualification passed 1,017 tests, with 42 existing exclusions, and strict
+Clippy. Actual Kubernetes All mode and ordinary Bearer mode both exited zero with
+independent SDK/browser/native permission/output/source-withdrawal gates. Four
+core services, a separate HTTPS verifier and a counted backend were used. Circuit
+qualification requires exact provider-unavailable native RPC responses and actual
+relay call counts; a generic HTTP 503 does not establish which authority refused.
+Owned namespaces/created CRD were cleaned, both nodes were Ready and existing
+workload identities/artifacts were preserved. Any mode with the new Hangang 0.3.8
+candidate remains a subsequent gate, not part of this completed All/default result.
+
+Initial browser credential-format, unexplained startup, catalog-restoration and
+circuit-test assumption failures are retained. A later pass does not explain the
+unconfirmed startup/availability observations. No original source/request budget
+or automatic application retry was relaxed.
+
+Internal adoption passed a read-only/no-network configuration preflight, private
+binary/configuration/SQLite rollback backups, unchanged users/providers/sessions/
+grants/MFA/profile authority/environment, native mTLS/HTTP expired-credential
+refusal, exact installed hash and durable restart. An initial preflight CLI argument
+placement error stopped before any operating mutation; corrected preflight and
+rollout then passed. Existing operating profiles remain unchanged; installing this
+release does not activate composition or complete Human/Workload projection.

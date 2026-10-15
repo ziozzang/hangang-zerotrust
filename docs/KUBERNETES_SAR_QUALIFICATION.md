@@ -120,3 +120,31 @@ errors remain separate from the primary failure and never skip cleanup/baseline
 checks. A diagnostic error prevents a success result. Startup/port-forward
 budgets are unchanged; a slow startup produces preserved failure evidence rather
 than silently broadening the qualification deadline.
+
+## Preserved first real attempt and narrow image derivative
+
+The first actual attempt did NOT qualify: API-server failed exec with EPERM;
+separately kubectl port-forward refused a still-Pending Pod. The original evidence
+and successful owned cleanup remain private; neither failure is reclassified as
+a native authorization denial. The official pinned image's binary layer contains
+`security.capability` (`cap_net_bind_service=ep`), confirmed from hashed OCI layer
+bytes. Upstream Dockerfile explicitly applies it. `drop:ALL` prevents that file
+capability from executing; no low port is needed by this fixture.
+
+`tools/build_sar_apiserver_image.py` makes a qualification-only derivative from
+that EXACT official child. It stages the verified binary bytes in a fresh plain
+file (no capability attribute), overlays it in the same official base, and checks
+final bytes/metadata and actual local nonroot/dropALL/no-new-privileges/read-only,
+network-none `--version`. It adds no runtime capability, root or global setting.
+The build emits private image/archive/config provenance; parent import must add
+its actual immutable manifest `image` reference. `--api-derived-evidence` permits
+only the fixed `docker.io/sar-qualification/kube-apiserver@sha256:...` namespace
+AND exact reviewed official image/layer/binarySHA/capability-removal/version facts.
+This is a packaging exception, not an arbitrary image bypass. Runtime imageID
+attestation still applies separately; an image config digest is not an OCI
+manifest digest. Official digests remain source provenance.
+
+Before launching port-forward, the helper polls for Pod phase Running plus every
+expected container Running. Readiness polling and forwarding share the ORIGINAL
+10-second deadline. No unconditional startup sleep or deadline expansion was
+introduced. Failure still invokes private diagnostic/owned cleanup finalization.

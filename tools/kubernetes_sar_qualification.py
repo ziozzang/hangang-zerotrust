@@ -4,8 +4,15 @@ import argparse, base64, copy, hashlib, http.client, json, os, pathlib, re, secr
 
 PREFIX='sar-qualification-'
 IMAGE=re.compile(r'^(registry\.k8s\.io/kube-apiserver|registry\.k8s\.io/etcd)@sha256:[0-9a-f]{64}$')
-def check_images(api,etcd,pum):
-    if not IMAGE.fullmatch(api) or not api.startswith('registry.k8s.io/kube-apiserver@'):raise ValueError('pinned official API-server digest required')
+def validate_derived_api(image,proof):
+    from build_sar_apiserver_image import OFFICIAL,LAYER,BINARY_SHA
+    if not re.fullmatch(r'docker.io/sar-qualification/kube-apiserver@sha256:[0-9a-f]{64}',image):raise ValueError('fixed derived API namespace required')
+    required={'kind':'reviewed-capability-free-apiserver','official_image':OFFICIAL,'official_layer':LAYER,'official_binary_sha256':BINARY_SHA,'final_binary_sha256':BINARY_SHA,'staged_capability_absent':True,'final_capability_absent':True,'local_constrained_exec_version':'Kubernetes v1.37.1','image':image}
+    if any(proof.get(k)!=v for k,v in required.items()) or not re.fullmatch(r'sha256:[0-9a-f]{64}',proof.get('config_id','')):raise ValueError('reviewed cap-free official binary provenance required')
+
+def check_images(api,etcd,pum,derived=None):
+    if derived is not None:validate_derived_api(api,derived)
+    elif not IMAGE.fullmatch(api) or not api.startswith('registry.k8s.io/kube-apiserver@'):raise ValueError('pinned official API-server digest required')
     if not IMAGE.fullmatch(etcd) or not etcd.startswith('registry.k8s.io/etcd@'):raise ValueError('pinned official etcd digest required')
     if not re.fullmatch(r'[^\s@]+@sha256:[0-9a-f]{64}',pum):raise ValueError('exact Pum candidate digest required')
 
@@ -28,9 +35,9 @@ def certificates(root,namespace):
     run('genrsa','-out','service-account.key','2048')
     for f in root.iterdir():f.chmod(0o600)
 
-def render(namespace,api_image,etcd_image,pum_image,material):
+def render(namespace,api_image,etcd_image,pum_image,material,derived=None):
     if not re.fullmatch(PREFIX+r'[a-z0-9]{8,20}',namespace):raise ValueError('owned namespace prefix/suffix required')
-    check_images(api_image,etcd_image,pum_image)
+    check_images(api_image,etcd_image,pum_image,derived)
     authority=f'sar.{namespace}.svc:8443'
     files=copy.deepcopy(material)
     fingerprint=hashlib.sha256(ssl.PEM_cert_to_DER_cert(files['reviewer.pem'])).hexdigest()
@@ -52,10 +59,11 @@ def render(namespace,api_image,etcd_image,pum_image,material):
     return [{'apiVersion':'v1','kind':'Namespace','metadata':{'name':namespace}},secret,{'apiVersion':'v1','kind':'Service','metadata':{'name':'sar','namespace':namespace},'spec':{'selector':{'owned-sar':'pumgye'},'ports':[{'port':8443,'targetPort':8443}]}},pod('pumgye',[pum],[{'name':'data','emptyDir':{}}]),pod('api',[etcd,api],[{'name':'data','emptyDir':{}}])]
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--api-image',required=True);p.add_argument('--etcd-image',required=True);p.add_argument('--pum-image',required=True);p.add_argument('--output',type=pathlib.Path,required=True);p.add_argument('--execute',action='store_true');p.add_argument('--kubectl');p.add_argument('--backup-evidence',type=pathlib.Path);p.add_argument('--approval',choices=['owned-disposable-only']);p.add_argument('--candidate-evidence',type=pathlib.Path);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--api-image',required=True);p.add_argument('--etcd-image',required=True);p.add_argument('--pum-image',required=True);p.add_argument('--output',type=pathlib.Path,required=True);p.add_argument('--api-derived-evidence',type=pathlib.Path);p.add_argument('--execute',action='store_true');p.add_argument('--kubectl');p.add_argument('--backup-evidence',type=pathlib.Path);p.add_argument('--approval',choices=['owned-disposable-only']);p.add_argument('--candidate-evidence',type=pathlib.Path);a=p.parse_args()
     os.umask(0o077);a.output.mkdir(mode=0o700,parents=True,exist_ok=False);ns=PREFIX+secrets.token_hex(6);certificates(a.output,ns)
     material={f.name:f.read_text() for f in a.output.iterdir() if f.suffix in ('.pem','.key')};material.update({k:secrets.token_urlsafe(40) for k in ['sar-token','admin-token','decision-token']})
-    docs=render(ns,a.api_image,a.etcd_image,a.pum_image,material);(a.output/'manifest-private.json').write_text(json.dumps({'apiVersion':'v1','kind':'List','items':docs}))
+    derived=json.loads(a.api_derived_evidence.read_text()) if a.api_derived_evidence else None
+    docs=render(ns,a.api_image,a.etcd_image,a.pum_image,material,derived);(a.output/'manifest-private.json').write_text(json.dumps({'apiVersion':'v1','kind':'List','items':docs}))
     if a.execute:
         if not a.kubectl or not a.backup_evidence or not a.approval or not a.candidate_evidence:p.error('execution requires kubectl, verified backup evidence and explicit owned approval')
         execute(a,docs,material)
@@ -136,11 +144,28 @@ def collect_diagnostics(kube,namespace,namespace_uid,pod_uids,output):
     (output/'pod-status-private.json').write_text(json.dumps({'pods':statuses,'diagnostic_errors':errors},indent=2))
     if errors:raise RuntimeError('private diagnostics incomplete')
 
+def pod_running(pod):
+    if pod.get('status',{}).get('phase')!='Running':return False
+    expected={c['name'] for c in pod['spec']['containers']}
+    statuses=pod.get('status',{}).get('containerStatuses',[])
+    return {c['name'] for c in statuses}==expected and all('running' in c.get('state',{}) for c in statuses)
+
+def wait_pod_running(read,alive,now=time.monotonic,sleep=time.sleep,deadline=None):
+    if deadline is None:deadline=now()+10
+    while True:
+        if not alive():raise ValueError('owned Pod namespace changed')
+        pod=read()
+        if pod_running(pod):return
+        if now()>=deadline:raise RuntimeError('owned Pod startup deadline')
+        sleep(.1)
+
 def execute(a,docs,material):
     candidate=json.loads(a.candidate_evidence.read_text())
     validate_prerequisites(json.loads(a.backup_evidence.read_text()),candidate,a.pum_image)
     pins=json.loads(pathlib.Path(__file__).with_name('kubernetes_sar_images.json').read_text())
-    if a.api_image!='registry.k8s.io/kube-apiserver@'+pins['kube-apiserver']['linux_amd64_digest'] or a.etcd_image!='registry.k8s.io/etcd@'+pins['etcd']['linux_amd64_digest']:raise ValueError('execution requires reviewed official platform digests')
+    if a.api_derived_evidence:validate_derived_api(a.api_image,json.loads(a.api_derived_evidence.read_text()))
+    elif a.api_image!='registry.k8s.io/kube-apiserver@'+pins['kube-apiserver']['linux_amd64_digest']:raise ValueError('execution requires reviewed official API digest')
+    if a.etcd_image!='registry.k8s.io/etcd@'+pins['etcd']['linux_amd64_digest']:raise ValueError('execution requires reviewed official platform digests')
     require_runtime_attestation({'api':a.api_image,'etcd':a.etcd_image,'pumgye':a.pum_image},candidate.get('runtime_images',{}))
     namespace=docs[0]['metadata']['name'];owned_uid=None;forwards=[];pod_uids={};evidence={'passed':False,'namespace':namespace,'checks':[],'images':{'api':a.api_image,'etcd':a.etcd_image,'pum':a.pum_image}}
     def kube(*args,body=None):
@@ -161,11 +186,14 @@ def execute(a,docs,material):
         if obj['kind']=='Pod':pod_uids[obj['metadata']['name']]=created['metadata']['uid']
         return created
     def forward(pod,remote):
+        deadline=time.monotonic()+10
+        def owned():require_owner();return True
+        wait_pod_running(lambda:json.loads(kube('-n',namespace,'get','pod',pod,'-o','json')),owned,deadline=deadline)
         import socket
         with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
         log=(a.output/('forward-'+pod+'-'+str(remote)+'.log')).open('ab')
         process=subprocess.Popen([a.kubectl,'-n',namespace,'port-forward','--address','127.0.0.1','pod/'+pod,str(port)+':'+str(remote)],stdout=log,stderr=log);forwards.append((process,log))
-        for _ in range(100):
+        while time.monotonic()<deadline:
             if process.poll() is not None:raise RuntimeError('owned port-forward failed')
             try:
                 with socket.create_connection(('127.0.0.1',port),timeout=.2):return port

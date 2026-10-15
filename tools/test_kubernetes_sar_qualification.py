@@ -107,4 +107,24 @@ class QualificationTests(unittest.TestCase):
    with self.assertRaises(ValueError):q.collect_diagnostics(kube,'owned','old',{'api':'pod'},pathlib.Path(d))
   self.assertEqual(kube.call_count,1)
 
+ def test_pod_running_requires_all_containers_not_merely_phase(self):
+  pod={'spec':{'containers':[{'name':'api'},{'name':'etcd'}]},'status':{'phase':'Pending','containerStatuses':[]}}
+  self.assertFalse(q.pod_running(pod));pod['status']['phase']='Running';self.assertFalse(q.pod_running(pod));pod['status']['containerStatuses']=[{'name':'api','state':{'waiting':{}}},{'name':'etcd','state':{'running':{}}}];self.assertFalse(q.pod_running(pod));pod['status']['containerStatuses'][0]['state']={'running':{}};self.assertTrue(q.pod_running(pod))
+ def test_startup_poll_waits_before_forward_with_original_ten_second_bound(self):
+  good={'spec':{'containers':[{'name':'api'}]},'status':{'phase':'Running','containerStatuses':[{'name':'api','state':{'running':{}}}]}}
+  values=iter([{'spec':good['spec'],'status':{'phase':'Pending'}},good]);reads=[]
+  def read():reads.append(1);return next(values)
+  q.wait_pod_running(read,lambda:True,now=lambda:0,sleep=lambda _:None);self.assertEqual(len(reads),2)
+  times=iter([0,10])
+  with self.assertRaises(RuntimeError):q.wait_pod_running(lambda:{},lambda:True,now=lambda:next(times),sleep=lambda _:None)
+ def test_derived_api_requires_exact_official_binary_and_fixed_namespace(self):
+  from build_sar_apiserver_image import OFFICIAL,LAYER,BINARY_SHA
+  image='docker.io/sar-qualification/kube-apiserver@sha256:'+'a'*64
+  proof={'kind':'reviewed-capability-free-apiserver','official_image':OFFICIAL,'official_layer':LAYER,'official_binary_sha256':BINARY_SHA,'final_binary_sha256':BINARY_SHA,'staged_capability_absent':True,'final_capability_absent':True,'local_constrained_exec_version':'Kubernetes v1.37.1','image':image,'config_id':'sha256:'+'b'*64}
+  q.validate_derived_api(image,proof)
+  for key,value in [('final_binary_sha256','f'*64),('final_capability_absent',False),('official_image','evil'),('local_constrained_exec_version','unknown')]:
+   bad=copy.deepcopy(proof);bad[key]=value
+   with self.assertRaises(ValueError):q.validate_derived_api(image,bad)
+  with self.assertRaises(ValueError):q.validate_derived_api(image.replace('sar-qualification','arbitrary'),proof)
+
 if __name__=='__main__':unittest.main()

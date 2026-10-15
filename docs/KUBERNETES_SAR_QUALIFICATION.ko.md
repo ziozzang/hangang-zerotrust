@@ -36,3 +36,13 @@ Pum 장애/새 Pod 복구를 검사한다. 개인 client key/CA signing key는 �
 교체되면 로그를 버린다(로그 API에 원자적 UID precondition은 없다). Secret API는
 읽지 않는다. 진단 실패도 원래 실패와 별도로 기록하며 cleanup/baseline 검사를
 막지 않는다. 기존 시작/port-forward deadline은 확대하지 않았다.
+
+첫 실제 실행은 실패로 보존한다. 공식 API-server binary의 file capability 때문에
+비root/dropALL에서 exec EPERM이 발생했고, 별도로 Pending Pod에 port-forward를
+시작해 kubectl이 거부했다. 해시 검증한 실제 OCI layer에서 capability를 확인했다.
+새 build helper는 같은 공식 binary bytes만 capability 없는 새 파일로 staging하고
+동일 base에 덮어쓴 별도 qualification 이미지를 만든다. root/추가 capability/NNP
+완화 없이 실제 로컬 --version 실행도 확인한다. 고정 derivative namespace와 정확한
+공식 source/layer/binarySHA/속성 제거 증거를 모두 요구하며 임의 이미지 예외는 없다.
+Pod와 모든 container Running을 먼저 확인하되 port-forward와 원래10초 deadline을
+공유한다. 최초 실패는 인증 거부나 qualification 성공으로 재분류하지 않는다.

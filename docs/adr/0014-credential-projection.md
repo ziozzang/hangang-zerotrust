@@ -443,3 +443,34 @@ caller guards, fixed peer resource configuration, bounded blocking execution,
 receiver RPC and Hangang final credential delivery remain required. Receiver
 projection stays inactive. Fleet/restore fences, static release, Kubernetes/
 operating adoption and throughput remain open.
+
+## Native receiver peer and credential resource preparation
+
+Hopae bd2b3f8 adds reference-only `projection_receiver` configuration: a fixed
+HTTPS root authority, server identity, absolute bounded PEM paths and peer token
+environment reference, plus unique declared origin secret/environment references.
+Native issuer, trusted permit keys, profiles, declared plans and authenticated
+mTLS gRPC are required together. Every declared bearer plan must have a matching
+reference. Preparation and final projection share the bounded RFC 6750 validator.
+
+Startup prepares the lazy persistent client and zeroizing native capabilities
+before instance lock/store/listener creation, retaining them in
+`Services.projection_resources`. Malformed/oversized/missing resources and unsafe
+values refuse without bootstrap state effects. Requests cannot choose an owner
+URL or an environment variable. Peer acceptance occurs during actual RPC; an
+online Pumgye process is not required merely to prepare the resources.
+
+Library 535 tests (one existing ignore), full workspace and strict Clippy pass
+(after mechanical conditional cleanup). Focused tests cover strict dependencies,
+reference-only configuration, missing resources before state creation, malformed
+private keys, oversized CA files, token validation and a real mTLS protocol peer.
+The actual four-server fixture starts Hopae before Pumgye with prepared resources,
+retains key/bootstrap/durable-withdrawal/outage checks, refuses a missing CA with
+the owned database unchanged and restores without new key history. Existing
+no-receiver/no-permit mode passes separately.
+
+This closes native peer/capability preparation, not receiver RPC registration.
+Actual issuer/profile/application/caller guard wiring, bounded blocking execution,
+receiver RPC and Hangang final credential delivery remain required. Projection
+stays inactive; coordinated signer rotation, fleet/restore fences, static release,
+Kubernetes/operating adoption and throughput gates remain open.

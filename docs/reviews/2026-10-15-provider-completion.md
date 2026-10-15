@@ -53,3 +53,22 @@ reused rather than reimplemented.
 Do not add unrelated SAML, nested-group or introspection work merely because a
 provider name exists. Retain the original full mixed-identity scope without
 counting design, source tests, release artifacts and enabled deployment as equal.
+
+## Next implementation boundary: explicit service composition
+
+A reviewed design is now being implemented in an isolated source branch. It is
+not a passing implementation, released feature or configured operating route.
+One opt-in profile declares two fixed credential slots (native API key and bounded
+HTTPS verifier), exact verified issuer/realm/subject/kind relationships and one
+canonical Service identity. The proposed `Authorization: Hopae-Compose` envelope
+keeps credentials in the existing protected header and sends each connector only
+its declared slot. Legacy Bearer profiles remain separate.
+
+All requires both branches; Any permits an absent sibling but refuses every
+invalid presented credential or ambiguous canonical identity. No cross-kind
+identity conversion or AAL increase is allowed. Original shortest lifetime, whole
+BOOTTIME budget, cancellation, retained connector circuit and publication withdrawal
+remain mandatory. Actual provider orchestration, native ingress, credential
+isolation and adversarial tests must pass before this boundary is completed.
+Human/workload composition, account recovery, directory withdrawal and full-chain
+provider qualification remain separate tasks above.

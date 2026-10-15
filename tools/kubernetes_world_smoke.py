@@ -38,10 +38,28 @@ def main():
     parser.add_argument('--credential-projection',action='store_true')
     parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
     parser.add_argument('--pumgye-responsive',action='store_true',help='Opt-in actual embedded Pumgye UI390px bounds and keyboard gate')
+    parser.add_argument('--workload',action='store_true',help='Actual native Workload chain; requires reviewed immutable capability manifest and public Workload SDK probe')
+    parser.add_argument('--workload-capabilities',type=Path)
+    parser.add_argument('--workload-utility-image')
+    parser.add_argument('--workload-issuer')
+    parser.add_argument('--workload-cluster-id')
+    parser.add_argument('--workload-reviewer-audience')
     parser.add_argument('--composition',action='store_true',help='Service-only API key plus an additional owned HTTPS relay Pod')
     parser.add_argument('--composition-mode',choices=['all','any'],default='all')
     parser.add_argument('--evidence-dir',type=Path,help='Private owned diagnostics directory; never stores credential configuration')
     args=parser.parse_args()
+    from kubernetes_workload_plan import validate_mode
+    try:
+        validate_mode(workload=args.workload, composition=args.composition, observed=args.observed,
+                      credential_projection=args.credential_projection, native_resource=args.native_resource,
+                      resource_catalog=args.resource_catalog, receipt_client=args.receipt_client)
+    except ValueError as error:
+        parser.error(str(error))
+    from kubernetes_workload_runtime import preflight, Workload
+    try:
+        preflight(args)
+    except (ValueError, OSError, KeyError, json.JSONDecodeError) as error:
+        parser.error(str(error))
     if args.pumgye_responsive and not args.browser_probe:parser.error('--pumgye-responsive requires --browser-probe')
     if args.composition and not (args.observed and args.credential_projection and args.receipt_client):
         parser.error('--composition requires --observed --credential-projection and the composition SDK receipt client')
@@ -246,6 +264,7 @@ def main():
         native_spec={'policy':{'mode':'enforce','auto_block':False,'allow':[]},'rules':{'version':1,'rules':[]},'blocks':[]}
         source_role={'apiVersion':'rbac.authorization.k8s.io/v1','kind':'Role','metadata':{'name':'native-source','namespace':namespace},'rules':[{'apiGroups':['policy.hangang.dev'],'resources':['sumunjangpolicies'],'resourceNames':['native'],'verbs':['get']}]}
         source_config=None
+        workload=Workload(args,namespace,kube,tokens) if args.workload else None
         try:
             if args.sumunjang_native_source:
                 import yaml
@@ -257,7 +276,12 @@ def main():
                 kube('create','-f','-',body=json.dumps(crd).encode())
                 owned_crd_uid=json.loads(kube('get','crd',crd_name,'-o','json'))['metadata']['uid']
                 kube('wait','--for=condition=Established','crd/'+crd_name,'--timeout=60s')
-            kube('create','namespace',namespace);created=True
+            if workload:
+                created_namespace=json.loads(kube('create','namespace',namespace,'-o','json'))
+                workload.namespace_uid=created_namespace['metadata']['uid']
+            else:
+                kube('create','namespace',namespace)
+            created=True
             if args.sumunjang_native_source:
                 native_policy={'apiVersion':'policy.hangang.dev/v1alpha1','kind':'SumunjangPolicy','metadata':{'name':'native','namespace':namespace},'spec':native_spec}
                 source_items=[{'apiVersion':'v1','kind':'ServiceAccount','metadata':{'name':'native-source','namespace':namespace}},source_role,{'apiVersion':'rbac.authorization.k8s.io/v1','kind':'RoleBinding','metadata':{'name':'native-source','namespace':namespace},'subjects':[{'kind':'ServiceAccount','name':'native-source','namespace':namespace}],'roleRef':{'apiGroup':'rbac.authorization.k8s.io','kind':'Role','name':'native-source'}},native_policy]
@@ -266,6 +290,8 @@ def main():
                 source_config={'api':'https://kubernetes.default.svc','namespace':namespace,'name':'native','uid':native_policy_uid,'ca':'/var/run/secrets/kubernetes.io/serviceaccount/ca.crt','token_file':'/var/run/secrets/kubernetes.io/serviceaccount/token'}
                 config_map['data']['sumunjang-source.json']=json.dumps(source_config)
                 print('Owned native Sum source: '+namespace+' UID '+native_policy_uid,flush=True)
+            if workload:
+                default_key=workload.prepare(items,config_map,hop,policy,gateway,commands,environments,env)
             kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode(),timeout=300)
             for name in [*commands,'echo',*(['relay'] if args.composition else [])]:
                 kube('-n',namespace,'rollout','status','deployment/'+name,'--timeout=120s',timeout=135)
@@ -314,6 +340,9 @@ def main():
                     projected={k.lower():v for k,v in json.loads(data)['headers'].items()}
                     assert projected.get('authorization')=='Bearer '+tokens['origin-bearer'],'owned origin credential mismatch'
                     assert projected.get('authorization')!='Bearer '+tokens['api'],'incoming credential leaked'
+                    if workload:
+                        assert all(secret.encode() not in data for name,secret in tokens.items() if name!='origin-bearer'),'Workload source credential reached origin'
+                        assert not key or key.encode() not in data,'input Workload bearer reached origin'
                     if args.composition:
                         assert all(secret.encode() not in data for secret in [tokens['api'],tokens['remote-api'],tokens['remote-other'],tokens['other-local'],tokens['caller'],composition_key]),'composition credential/envelope/caller reached origin'
                 return status,data
@@ -343,6 +372,10 @@ def main():
                 def source_ready():
                     c=http.client.HTTPConnection('127.0.0.1',native_readiness,timeout=3);c.request('GET','/readyz');r=c.getresponse();r.read();c.close();return r.status
                 eventually(lambda:source_report().get('available') and source_ready()==200)
+            if workload:
+                qualification_phase='workload-native-chain'
+                workload.qualify(root,forward,request,api,admin,eventually,receipt_pin)
+                return
             status,body=request();assert status==200,'initial protected request status '+str(status)
             echoed=json.loads(body);headers={k.lower():v for k,v in echoed['headers'].items()}
             if args.native_resource:assert echoed['path']=='/api/secure' and echoed['body']=='owned final entity','native final target/entity was not preserved'
@@ -589,6 +622,9 @@ def main():
                 process.terminate()
                 try:process.wait(timeout=5)
                 except subprocess.TimeoutExpired:process.kill();process.wait()
+            if created and workload:
+                workload.cleanup()
+                created=False
             if created:
                 kube('delete','namespace',namespace,'--wait=true','--timeout=120s',timeout=135)
                 print('Owned namespace removed; retained synthetic PVs remain under the cluster Retain policy.')

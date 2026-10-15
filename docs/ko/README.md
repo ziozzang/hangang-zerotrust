@@ -26,3 +26,5 @@
 [판정 코어·메타데이터 어댑터](0016-decision-core-metadata-adapters.md) — 타입 자원·DB 백본·선택적 플러그인.
 
 [권한 소유자 기준 시간 관측 초안](0018-authority-time-observations.md) — 교차 호스트 시계·집행 하한·replay 보존 상한.
+
+[Workload K3s 검증 준비](WORKLOAD_WORLD_QUALIFICATION.md) — 선택적 네이티브 실행 소스와 순수 테스트이며 실제 실행은 미검증·최종 artifact 승인 대기입니다.

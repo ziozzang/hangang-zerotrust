@@ -16,6 +16,23 @@ The original next-boundary analysis below records why those interfaces exist.
 Continue the ordered sequence from separate Pumgye prerequisite/permit clocks,
 paired replay and output, followed by actual final enforcement qualification.
 
+## Output-budget SDK and native integration in progress
+
+Hopae SDK `e01c67e` adds `ClockRates::remaining_admission_until` and a read-only
+observation registry generation accessor. The helper charges the complete RPC
+against a before-send receiver anchor, accounts for independent quantization and
+explicit oscillator bounds, rejects discontinuities/overflow, and returns only a
+numeric lower expiry. It supplies neither authenticated evidence nor replay
+retention. Native-client and default SDK suites and strict all-target/all-feature
+Clippy pass. Runtime `bf3ba2c` adds a single-read, retirement-aware BOOTTIME tick
+sample; its 35 tests, strict Clippy and musl library check pass.
+
+Pumgye protocol `6b2b781` and Hopae protocol `4ffd3c5` expose separate observed
+permit and output envelopes. Actual native authority, paired durable replay and
+Hangang final dispatch implementations are being integrated and tested. These
+protocol/SDK commits do not establish successful four-process, independent-host,
+Kubernetes, browser, signed-release or operating deployment qualification.
+
 ## Original next code boundary
 
 The exact-pin SDK is a tested foundation, but neither production consumer can

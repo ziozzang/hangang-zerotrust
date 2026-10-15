@@ -46,3 +46,10 @@ Pum 장애/새 Pod 복구를 검사한다. 개인 client key/CA signing key는 �
 공식 source/layer/binarySHA/속성 제거 증거를 모두 요구하며 임의 이미지 예외는 없다.
 Pod와 모든 container Running을 먼저 확인하되 port-forward와 원래10초 deadline을
 공유한다. 최초 실패는 인증 거부나 qualification 성공으로 재분류하지 않는다.
+
+두 번째 실제 실행도 인증 검증 전에 실패했다. API-server endpoint reconciler가
+advertise127.0.0.1을 거부하므로 downward API의 실제 status.podIP를 POD_IP로 받고
+literal 인자 --advertise-address=$(POD_IP)에 kubelet이 대입하도록 수정했다.
+shell/host network는 추가하지 않았다. 명시한 certificate/key는 유지되어 self-signed
+기본 생성으로 바뀌지 않으며 port-forward127.0.0.1 SAN 검증은 유지한다. 직접 PodIP
+TLS 검증까지 주장하지 않는다. 기존 보안·deadline 및 두 실패 증거는 보존한다.

@@ -127,4 +127,9 @@ class QualificationTests(unittest.TestCase):
    with self.assertRaises(ValueError):q.validate_derived_api(image,bad)
   with self.assertRaises(ValueError):q.validate_derived_api(image.replace('sar-qualification','arbitrary'),proof)
 
+ def test_api_advertises_actual_pod_ip_without_shell_or_host_network(self):
+  pod=self.render()[4];api=next(c for c in pod['spec']['containers'] if c['name']=='api')
+  self.assertIn('--advertise-address=$(POD_IP)',api['args']);self.assertNotIn('--advertise-address=127.0.0.1',api['args'])
+  self.assertEqual(api['env'],[{'name':'POD_IP','valueFrom':{'fieldRef':{'fieldPath':'status.podIP'}}}]);self.assertEqual(api['command'],['/usr/local/bin/kube-apiserver']);self.assertFalse(pod['spec'].get('hostNetwork',False));self.assertFalse(api['securityContext']['allowPrivilegeEscalation']);self.assertEqual(api['securityContext']['capabilities']['drop'],['ALL']);self.assertIn('--tls-cert-file=/fixture/api.pem',api['args'])
+
 if __name__=='__main__':unittest.main()

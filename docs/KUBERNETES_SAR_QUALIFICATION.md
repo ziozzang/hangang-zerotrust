@@ -148,3 +148,16 @@ Before launching port-forward, the helper polls for Pod phase Running plus every
 expected container Running. Readiness polling and forwarding share the ORIGINAL
 10-second deadline. No unconditional startup sleep or deadline expansion was
 introduced. Failure still invokes private diagnostic/owned cleanup finalization.
+
+The second real attempt separately reached API-server startup but failed endpoint
+reconciler validation of advertised127.0.0.1; no authorization assertion passed.
+Upstream `pkg/controlplane/instance.go:354` validates PublicAddress before the
+Kubernetes service controller starts. The fixture now advertises actual Pod IP
+using downward API `POD_IP=status.podIP` and literal container argument
+`--advertise-address=$(POD_IP)` (kubelet expansion, no shell/host network).
+Explicit serving cert/key files remain unchanged: upstream secure serving skips
+self-signed defaulting when files are provided. The existing127.0.0.1 SAN still
+verifies the owned port-forward client; this does not claim direct Pod-IP TLS
+verification or add that changing address to a pre-generated certificate.
+Startup budgets/security restrictions are unchanged. Both prior failures and
+owned cleanup evidence remain failures, distinct from native authorization denial.

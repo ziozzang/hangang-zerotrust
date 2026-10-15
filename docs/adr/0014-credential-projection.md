@@ -530,3 +530,18 @@ no-permit/no-projection compatibility passes too. Hopae's fixture/docs are main
 `3f08499`. Hangang's corrected full workspace regression is running; its source
 is not yet pushed. Static releases, operating/Kubernetes adoption, fleet/restore
 and throughput gates remain open.
+
+
+### Completed source gate and static release preparation
+
+Hangang `ef860c7` is main: corrected full workspace 1,302 tests pass (58 existing
+exclusions), strict all-target Clippy and 942 local documentation links pass.
+The real four-server corrected credential fixture passes twice and existing
+no-permit/no-projection compatibility passes. Native service credential delivery
+is now source-qualified; human/workload projection is not inferred from it.
+
+Version-only preparation commits are Hangang `87f11fe` (0.3.6), Hopae `25aca97`
+(0.0.8) and Pumgye `28f0c1a` (0.1.7). Static builds and signed-asset preparation
+are in progress. These versions are not yet published or operating/Kubernetes
+qualified. The full integration goal, fleet/restore and throughput gates remain
+open.

@@ -71,3 +71,13 @@ strict all-target Clippy in both configurations. This source is merged to main;
 published Pumgye 0.1.7 and its operating artifact are unchanged. New receipt RPCs,
 opaque Workload SDK, TokenReview source owner, signed permits and paired output are
 still required before any full-chain Workload deployment claim.
+
+## Hot-path record complexity
+
+Policy snapshots are immutable and published on configuration changes. Per-request
+proof records have a different update rate: insertion must not clone and republish
+the whole live record map. Use bounded sharded lookup or an equivalent structure
+with approximately constant-time insertion/lookup, bounded cleanup work and explicit
+capacity admission. No provider call, signing callback or await may run under a
+record-table lock. Capacity pressure refuses rather than evicting an admissible
+proof. This is a design requirement, not a measured throughput result.

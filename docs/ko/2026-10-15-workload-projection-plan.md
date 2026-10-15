@@ -53,3 +53,11 @@ mapping v2 candidate는 버전과 outcome별 principal class를 명시한다. v1
 전체 workspace 기본 90개·observed feature 95개와 양쪽 all-target strict Clippy가 통과했다.
 main에 머지했으며 공개 품계 0.1.7·운영 산출물은 그대로다. 새 receipt RPC·불투명 SDK·
 TokenReview 원천 owner·서명 permit·paired 출력 연결 후에야 전체 Workload 배포를 주장할 수 있다.
+
+## 요청 경로 기록의 복잡도
+
+정책 snapshot은 설정 변경 때 게시하지만 요청별 증명 기록은 훨씬 자주 갱신된다. 발급마다
+전체 live map을 복사·게시해서는 안 된다. 제한된 shard lookup 등 상수 시간에 가까운
+삽입·조회, 제한된 정리 작업과 명시적 용량 admission을 사용한다. 기록 lock 안에서 provider
+호출·서명 callback·await를 수행하지 않는다. 용량 부족이면 유효한 증명을 축출하지 않고
+거부한다. 이는 설계 요구이며 측정한 처리량 주장은 아니다.

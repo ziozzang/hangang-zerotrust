@@ -474,3 +474,35 @@ Actual issuer/profile/application/caller guard wiring, bounded blocking executio
 receiver RPC and Hangang final credential delivery remain required. Projection
 stays inactive; coordinated signer rotation, fleet/restore fences, static release,
 Kubernetes/operating adoption and throughput gates remain open.
+
+
+### Native receiver and final-dispatch source qualification
+
+Hopae `96c9af6` registers the opt-in mTLS projection receiver, captures actual
+issuer/profile/application/plan owners, revalidates permission with Pumgye, and
+bounds transactional replay/secret work to four workers. Cancellation, caller
+retirement, exact snapshot replacement and key publication fence the private
+output. Its full workspace passes 952 tests (42 existing exclusions), with strict
+Clippy. Receiver unit integration uses an actual Hopae RPC and a Pumgye protocol
+mock; it is not the four-server proof. Pumgye `63414b4` aligns the Hopae SDK; all
+72 workspace tests and strict Clippy pass.
+
+The uncommitted Hangang source now adds opt-in `project_credentials`, preserves
+the original native permission request, calls Hopae using the existing bounded
+mTLS channel and checks correlation, scope/hash, plan revision and deadline. A
+private zeroizing result allows only bounded bearer authorization or the exact
+subject header. Incoming credentials are removed, and final local route/authority
+and monotonic expiry guards remain active. All-target compilation passes.
+
+The actual four-server credential-projection fixture passed once, asserting a
+separate referenced origin bearer on every successful request, incoming credential
+removal, authority failures, withdrawal and restart tombstones. A subsequent run
+passed initial delivery and rejection cases but failed an expected-success request
+after restoring the resource's information class. That discrepancy is unresolved;
+it prevents treating this increment as stable qualification. Full Hangang regression passes 1,301 tests (58 existing exclusions), and an
+additional targeted test rejects 13 scope/header/deadline attacks. A standalone
+fixture run still refused a configuration-restoration request. A diagnostic run
+measured an unexpected authority-phase 503 at 122 ms, so whole-request one-second
+expiry alone does not explain the discrepancy. No new release or operating/Kubernetes adoption is claimed. Human/
+workload projection, coordinated rotation, fleet/restore fences, and throughput
+gates remain open.

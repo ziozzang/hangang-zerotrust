@@ -12,7 +12,15 @@ tests, fixes confirmed defects, and assigns the next ready item. Reviews do not
 replace executable acceptance evidence. Production edits and shared Cargo target
 execution remain coordinated to avoid overlapping mutations.
 
-## Running
+## Current reconciled state — 2026-10-15
+
+Read the [adoption audit](reviews/2026-10-15-astra-adoption-audit.md) before the
+historical batches below. Native Service release/adoption has progressed beyond
+the old pending text. ADM-01/02/05 are complete;03/07/08 partial;04/06/09 incomplete.
+Astra remains stopped; Sol consumes the retained findings. Subsequent sections are
+chronological evidence, not a current list of running agents or unreleased gates.
+
+## Running — historical
 
 | ID | Assignment | Expected evidence |
 | --- | --- | --- |

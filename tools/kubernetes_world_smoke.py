@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
     parser.add_argument('--composition',action='store_true',help='Service-only API key plus HTTPS relay in a fifth owned Pod')
     parser.add_argument('--composition-mode',choices=['all','any'],default='all')
+    parser.add_argument('--evidence-dir',type=Path,help='Private owned diagnostics directory; never stores credential configuration')
     args=parser.parse_args()
     if args.composition and not (args.observed and args.credential_projection and args.receipt_client):
         parser.error('--composition requires --observed --credential-projection and the composition SDK receipt client')
@@ -59,6 +60,8 @@ def main():
         image=getattr(args,component+'_image')
         if '@' in image and not re.fullmatch(r'[^@\s]+@sha256:[0-9a-f]{64}',image):
             parser.error(component+' image requires a canonical SHA-256 digest')
+    if args.evidence_dir:
+        args.evidence_dir.mkdir(mode=0o700,parents=True,exist_ok=False)
     wrapper=args.kubectl.resolve(strict=True)
     node=str(args.node_binary.resolve(strict=True)) if args.node_binary else shutil.which('node')
     if args.browser_probe and not node:parser.error('browser probe requires --node-binary when node is not in PATH')
@@ -294,13 +297,17 @@ def main():
                         if attempt==2 or time.monotonic()>=deadline:raise
                         print('Read-only backend counter transport retry',flush=True)
                     finally:c.close()
+            qualification_phase='protected-request'
             def request(method='GET',key=default_key):
                 c=Gateway('app.example.test',8443,timeout=3);headers={'Host':'app.example.test','x-forwarded-user':'forged','x-hopae-aal':'3'}
                 if key:headers['Authorization']=('Hopae-Compose ' if args.composition else 'Bearer ')+key
                 if args.native_resource:headers['Content-Type']='text/plain'
                 before=backend_count()
+                begun=time.monotonic();request_at_ms=round(time.time()*1000)
                 c.request(method,'/secure',body=b'owned final entity' if args.native_resource else None,headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
-                assert backend_count()==before+(1 if status==200 else 0),'refused Kubernetes request reached application backend'
+                after=backend_count()
+                request.last={'at_unix_ms':request_at_ms,'status':status,'elapsed_ms':round((time.monotonic()-begun)*1000),'backend_delta':after-before}
+                assert after==before+(1 if status==200 else 0),'refused Kubernetes request reached application backend'
                 if status==200 and args.credential_projection:
                     projected={k.lower():v for k,v in json.loads(data)['headers'].items()}
                     assert projected.get('authorization')=='Bearer '+tokens['origin-bearer'],'owned origin credential mismatch'
@@ -410,10 +417,14 @@ def main():
                 for field,value in [('information_class','restricted'),('minimum_aal',1),('service','billing')]:
                     document['policy']['resources']['db:orders'][field]=value
                     status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
-                    assert status==200 and request()[0]==403,'catalog change failed to refuse '+field
+                    qualification_phase='catalog-denial:'+field
+                    decision,_=request()
+                    assert status==200 and decision==403,f'catalog denial field={field}, publication_status={status}, request={request.last}'
                     document['policy']['resources']=json.loads(json.dumps(baseline))
                     status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
-                    assert status==200 and request()[0]==200
+                    qualification_phase='catalog-restoration:'+field
+                    decision,_=request()
+                    assert status==200 and decision==200,f'catalog restoration field={field}, publication_status={status}, request={request.last}'
                 document['policy']['resources']={}
                 status,document,_=api(admin,'/v1/pumgye/policy','PUT',document,extra={'If-Match':f'"{document["revision"]}"','x-hangang-config-revision':metadata['x-hangang-config-revision']})
                 assert status==200 and request()[0]==403
@@ -510,13 +521,28 @@ def main():
             print(('PASS: native Kubernetes Sum source and scratch HTTPGet readiness; ' if args.sumunjang_native_source else '')+'PASS: actual four independent K8s Pods, nonroot static artifacts, mTLS Service DNS, protected request identity, method/guest denial, real pinned console discovery/assets, mTLS plugin management reads/mutations, delegated policy CAS, immediate revocation, PVC/authority/gateway Pod replacement, private administrator state, refused backend non-dispatch and network authority outage')
         except Exception as failure:
             print('Owned qualification failed: '+type(failure).__name__,flush=True)
+            facts={'at_unix_ms':round(time.time()*1000),'phase':locals().get('qualification_phase','startup'),'last_request':getattr(locals().get('request'),'last',None)}
+            if args.sumunjang_native_source and 'source_report' in locals():
+                try:
+                    report=source_report()
+                    facts['source']={name:report[name] for name in ['available','generation','revision','policy_revision','network_revision','source_revision'] if name in report and isinstance(report[name],(bool,int,str))}
+                    facts['source_readiness_status']=source_ready()
+                except Exception: facts['source_diagnostic']='unavailable'
+            if 'admin' in locals() and 'api' in locals():
+                try:
+                    code,status,_=api(admin,'/v1/status')
+                    facts['root_status']={'http_status':code,**{name:status[name] for name in ['version','uptime_secs','revision','config_revision','generation'] if name in status and isinstance(status[name],(bool,int,str))}}
+                except Exception:facts['root_diagnostic']='unavailable'
+            print('Owned safe failure facts: '+json.dumps(facts,sort_keys=True),flush=True)
+            if args.evidence_dir:(args.evidence_dir/'failure-facts.json').write_text(json.dumps(facts,indent=2)+'\n')
             if created:
                 for name in commands:
                     try:
-                        diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=15').decode(errors='replace')
+                        diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=200').decode(errors='replace')
                         for value in [*tokens.values(),*([composition_key] if args.composition else [])]:diagnostic=diagnostic.replace(value,'[redacted]')
                         for file in ['server.key','client.key','ca.key']:diagnostic=diagnostic.replace((root/file).read_text(),'[redacted key]')
-                        print('Owned diagnostic '+name+': '+diagnostic[:4000],flush=True)
+                        if args.evidence_dir:(args.evidence_dir/(name+'.log')).write_text(diagnostic[-65536:])
+                        print('Owned diagnostic '+name+': '+diagnostic[-4000:],flush=True)
                     except (RuntimeError,subprocess.TimeoutExpired):pass
             raise
         finally:

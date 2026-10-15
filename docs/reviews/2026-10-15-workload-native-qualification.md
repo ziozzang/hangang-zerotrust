@@ -49,3 +49,30 @@ console/browser qualification of the exact candidates, signed public-asset round
 trip and backed-up internal adoption. This run does not complete Human/MFA,
 Workload administrator UX, inbound Kubernetes authentication/authorization webhooks,
 external DBMS adapters, fleet/clone/rollback fencing or throughput qualification.
+
+
+## Subsequent Service and installed-console gates
+
+The same frozen f45/848/adaf/d6fc candidates passed local observed All, strict All
+and legacy bearer regression. A separate actual K3s non-composition Service run
+passed the embedded administrator/browser, native Sum source, withdrawal and
+restart gates. Five Ready core/echo runtime imageIDs matched their approved
+per-node imports. The actual All-composition rerun also passed its native SDK,
+HTTPS relay circuit and embedded browser gates, including installed Hopae0.1.6
+and Sumunjang plugin0.1.4 live EN/KO draft/node preservation without extra owner
+requests. Host-owned navigation and 390px layout passed. Cleanup preserved all
+12 baseline Pod UIDs and removed the exact created namespace/CRD.
+
+The first All browser run failed because the expected Sum plugin child was absent.
+Native authentication/SDK/circuit gates had already passed. The original helper
+did not retain enough safe mount-error metadata to identify the cause. The rerun
+used additional path/status/timing and alert-hash diagnostics without intercepted
+API responses, relaxed selectors or proof budgets. Its success does not explain
+the original failure. Both records are retained. Neither run qualifies standalone
+hangang-console SSO or every administrator/error/locale/in-flight state.
+
+A subsequent status-page pentest exposed an additional Hangang TLS400/HSTS edge.
+The operating gateway now has a narrow two-host HSTS configuration, but that
+source fix introduces a new candidate that needs its own full source/static and
+exact-binary acceptance. These f45 results must not be presented as the final
+security candidate's completed release/adoption gates.

@@ -35,3 +35,25 @@ run1은 bootstrap만 변경해 DB 소유 profile 변경에 실패한 실행으�
 검증, 서명 공개 자산 왕복 검증, 백업 후 내부 반영이다. Human/MFA·Workload 관리자 UX,
 Kubernetes 인증/인가 webhook 원천, 외부 DBMS 어댑터, fleet/복제/rollback 및 처리량은
 이번 통과 범위에 포함되지 않는다.
+
+
+## 후속 Service·실제 설치 관리자 검증
+
+동일 f45/848/adaf/d6fc 동결 후보로 로컬 observed All·strict All·기존 bearer 회귀를
+통과했다. 별도 실제 K3s 일반 Service 실행도 임베디드 관리자/브라우저·수문장 native
+원천·회수/재시작 검증을 통과했고 코어/echo Ready5개의 실제 imageID가 노드별
+승인 import와 일치했다. All 혼합 인증 재실행은 실제 SDK·HTTPS relay 서킷·브라우저
+검증을 통과했다. 설치한 호패0.1.6·수문장 plugin0.1.4의 실제 EN/KO 전환에서 초안/DOM을
+보존하고 추가 owner 요청이 없었다. 호스트 메뉴와390px도 통과했으며 소유 namespace/CRD
+정리 후 기존12PodUID가 유지됐다.
+
+첫 All 브라우저 실행은 수문장 내부 요소가 없어 전체 실패했다. 앞선 native 인증·SDK·
+서킷은 통과했으나 당시 도구의 안전한 mount 오류 근거가 부족해 원인을 특정하지 못했다.
+재실행은 API 모의 응답·selector 완화·증거 예산 변경 없이 경로/상태/시간과 alert 해시
+진단을 추가했다. 재실행 성공을 첫 실패 원인의 설명으로 간주하지 않는다. 두 기록을
+보존한다. standalone hangang-console SSO나 모든 오류/언어/in-flight 상태 완료는 아니다.
+
+이후 상태 페이지 펜테스트에서 TLS400/HSTS 경계가 추가 확인됐다. 운영 한강에는 두
+호스트 HSTS 설정을 적용했지만 소스 수정은 새 후보이므로 전체 소스·정적 빌드·정확한
+바이너리의 후속 검증이 필요하다. f45 결과를 새 보안 후보의 릴리즈/운영 완료 근거로
+대체하지 않는다.

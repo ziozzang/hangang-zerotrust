@@ -172,3 +172,10 @@ flowchart LR
 
 
 [한강 0.3.7 후속 검증·반영](docs/ko/2026-10-15-native-observed-adoption.md#후속-한강-037-공개와-반영)에 네트워크 캐시 수명 보강·보존한 실패·공개와 내부 반영을 기록했다.
+
+
+[호패 0.0.9 조합 인증 공개·반영](docs/ko/2026-10-15-native-observed-adoption.md#호패-009-조합-인증-공개와-내부-반영)에
+후속 Service 신원 조합 릴리즈 근거를 기록했다.
+[현재 Astra 반영 감사](docs/ko/2026-10-15-astra-adoption-audit.md)는 완료한 런타임
+검증과 미완인 관리자 UX를 구분한다. 한강 0.3.8 레이아웃·작업 참조 source는 전체
+workspace/Clippy/브라우저를 통과했으며 정확한 static/K3s/내부 반영은 진행 중이다.

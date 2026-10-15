@@ -204,3 +204,11 @@ Kubernetes/browser gates and internal adoption.
 
 
 [Hangang 0.3.7 follow-up qualification and adoption](docs/reviews/2026-10-15-native-observed-adoption.md#subsequent-hangang-037-publication-and-adoption) records the subsequent network-cache lifetime fix, preserved failures and actual publication/internal rollout.
+
+
+[Hopae 0.0.9 composition publication and adoption](docs/reviews/2026-10-15-native-observed-adoption.md#hopae-009-composition-publication-and-internal-adoption)
+records the subsequent qualified Service identity composition release. The
+[current Astra adoption audit](docs/reviews/2026-10-15-astra-adoption-audit.md)
+distinguishes completed runtime gates from unfinished administrator UX. Hangang
+0.3.8 layout/operation-reference source has passed workspace/Clippy/browser checks;
+its exact static/K3s/internal rollout remains in progress.

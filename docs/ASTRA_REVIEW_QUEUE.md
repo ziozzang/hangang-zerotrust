@@ -3,6 +3,10 @@
 Status: active engineering queue, not release qualification. Korean companion:
 [review queue](ko/ASTRA_REVIEW_QUEUE.md).
 
+Review collection has concluded. No Astra reviewer is running; assignments below
+are historical batches. Implementation now consumes the retained findings and
+acceptance criteria. Unfinished follow-up drafts are not completed reviews.
+
 The coordinator assigns bounded reviews to Astra, collects counterexamples and
 tests, fixes confirmed defects, and assigns the next ready item. Reviews do not
 replace executable acceptance evidence. Production edits and shared Cargo target
@@ -85,5 +89,53 @@ confirmed evidence, boundaries and proposed integration gates.
   and strict all-target Clippy before the additional four boundary tests. Source
   is committed; release assets and operating deployments remain unchanged.
 
-Active next assignments: shared gRPC decode resource limits (A1), native caller
-role design (A2), and shared static observed-evidence/ledger interfaces (A3).
+Historical next assignments were shared gRPC decode resource limits (A1), native
+caller roles (A2), and shared static observed-evidence/ledger interfaces (A3).
+Astra collection has ended; none of these agents remains assigned.
+
+## Reusable implementation handoff
+
+Completed source milestones: Hopae `cde8416` separates signature evidence, adds
+explicit oscillator-rate arithmetic and early gRPC metadata authentication;
+Pumgye `f1ce600` and Sumunjang `d1e6caf` add the same predecode caller boundary.
+Their complete workspaces pass 987/75/131 tests respectively (Hopae has 42
+existing exclusions), with strict all-target Clippy. The Sumunjang count includes
+both binary names. Runtime `ed2eee4` provides instance-bound BOOTTIME exchange,
+deadline/retention and elapsed-stamp infrastructure: 24 tests, strict Clippy and
+musl target compilation pass. Consumer/source-suspend adoption remains open.
+
+The [administrator review](reviews/2026-10-15-admin-ui.md) consolidates three
+complementary reviews and tasks ADM-01 through ADM-09. Follow-up navigation,
+write-safety and visual-specification drafts were interrupted before being saved;
+use the original reviews' actionable criteria rather than claiming those drafts
+exist. Implementation of draft protection, policy CAS and footer placement is
+underway. Findings and prototypes are not deployed UI fixes.
+
+Ready subsequent work, in order:
+
+1. Adopt suspend-inclusive original proof budgeting and source-clock progression;
+   preserve unsupported-platform legacy behavior and observed fail-closed mode.
+2. Review and qualify the bounded unary-ingress prototype on real generated
+   services; early auth alone does not bound an authenticated decoder.
+3. Implement native fixed-owner time clients and the full permit/output/paired
+   ledger migration described by ADR 0018, then qualify independent-host/K3s gates.
+4. Implement ADM-01/02/03 data and write safety, followed by deterministic menu,
+   layout, routing, localization and accessibility batches using the retained plans.
+
+For each queued implementation, recheck actual source, retain its acceptance
+criteria and record commit/test evidence. Reuse completed reviews rather than
+requesting the same analysis again.
+
+
+Post-reset Sol implementation evidence: Hangang `b81a310` preserves Pumgye drafts
+and plugin footer/heading placement and tests delegated CAS forwarding; workspace
+and strict Clippy pass (14 Pumgye and 6 focused UI browser cases previously passed).
+Sumunjang `10eab03` adds epoch/revision policy-document CAS and uncertainty-safe
+editors; 18 focused policy tests, both mocked Chromium suites and reproducible
+plugin generation pass. Hopae `ce4d27f` adopts suspend-inclusive source proof age
+and protects editor drafts/acknowledgements: 992 workspace tests pass with 42
+existing exclusions, strict Clippy and 35 mocked Chromium cases pass. Its initial
+unrestricted suite hit an existing storage-budget timing assertion; the isolated
+case and complete rerun with four test threads passed. No time-limit assertion
+was weakened. These source commits are not rebuilt release artifacts or deployed
+K3s qualification. Consumer time migration and shared ingress limits remain open.

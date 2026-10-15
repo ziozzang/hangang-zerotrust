@@ -36,20 +36,25 @@ must validate its own receipt, live state and final guards before reporting it.
 Remaining lifetime is positive, at most 1,000 ms and never exceeds any prerequisite
 observation or signed lifetime. It is no cache lease or renewal.
 
-A native client captures local wall and monotonic time before and after the RPC.
+A native client captures its own suspend-inclusive monotonic time before and after the RPC.
 Its private observation binds the exact immutable request and configured client
 identity. A frame from a request-selected endpoint, script, ordinary auth response
 or caller-supplied allow/time value cannot construct it. Enforce mTLS/caller roles,
 correlation, digest/generation equality, size/admission/deadline bounds and local
-clock-reversal rejection before exposing the observation.
+monotonic-clock error rejection before exposing the observation. All observed
+receiver admission and replay-retention coordinates use this same fixed-origin
+axis. Receiver UTC is not an input, so wall steps cannot move expiry or cleanup.
+No per-request wall-continuity lock or epoch is required. Legacy strict UTC
+verification and source-owned UTC credential budgets remain separate.
 
-If the owner reports remaining lifetime R, convert it into a local interval:
+Under an explicit equal-rate clock assumption, if the owner reports remaining
+lifetime R, convert it into a local interval:
 
 - Earliest expiry: local RPC start + R - one millisecond of sampling uncertainty. Final admission uses this lower bound,
   intersected with every previously accepted bound and original lifetime budget.
 - Latest expiry: local RPC finish + the full signed receipt remaining lifetime
   in the owner clock domain + one millisecond. Replay rows remain until at least this
-  upper bound, using monotonic and durable rollback protection. Expiring replay
+  upper bound, with generation-tagged durable restart rules. Expiring replay
   state at the admission lower bound could admit the same still-live nonce again.
   A shorter prerequisite observation must not shorten original nonce retention:
   a later live query could still accept the same signed proof.
@@ -57,6 +62,22 @@ If the owner reports remaining lifetime R, convert it into a local interval:
 Independent fractional clock phases require outward rounding: subtract one tick
 from admission and add one to retention. This is no acceptance grace. Reject an
 observation that leaves no positive admission interval.
+
+Quantization does not bound oscillator error. With independent source/receiver
+error limits `p_s` and `p_r` in parts per million, require both below `10^6` and
+use checked rational arithmetic:
+
+- Admission delta: `floor((R_short - 1) * (10^6 - p_r) / (10^6 + p_s))`.
+- Retention delta: `ceil(R_signed * (10^6 + p_r) / (10^6 - p_s)) + 1`.
+
+Native adapters must establish their supported clock-rate model. Only admission
+shrinks; retaining tombstones longer is not acceptance grace. Neither formula
+proves arbitrary rate drift, source suspension/restore or uninterrupted source
+progress. Linux receiver infrastructure uses `CLOCK_BOOTTIME` to include host
+suspend and refuses unsupported/read-failed clocks without `Instant` fallback.
+Final boundaries must check that clock even when an async timeout has not fired.
+Source issuer progression and original proof age must also include suspend,
+including time spent awaiting authentication; their adoption remains open.
 
 Account for elapsed time without a new per-request SQL read or an unbounded queue.
 Do not refresh the interval while reusing an earlier proof. Re-query the native
@@ -80,7 +101,8 @@ An unavailable/incompatible peer refuses without fallback or widening policy.
 
 ## Required qualification
 
-Test positive/negative clock offsets, changing RPC latency, wall reversal, signed
+Test positive/negative source offsets, changing RPC latency, source wall reversal,
+receiver wall steps without deadline/cleanup movement, suspend, rate error, signed
 expiry overflow, missing/forged/mismatched observations, generation retirement,
 request/client swaps, cancellation and already accepted shorter deadlines. Prove
 no permission extension and no replay gap between lower/upper expiry bounds.
@@ -103,6 +125,9 @@ SQL or network work. The corrected complete workspace passes 958 tests with
 is Hopae `7cd9c65`; it is not part of the frozen draft release assets.
 
 This helper is numeric evidence only, not an authenticated observation or a
-permission. Native RPC fields/owner guards, independent-client adoption, paired
-ledger retention and final-output integration remain unimplemented for this
-contract. Draft releases and the cross-host Kubernetes gate remain open.
+permission. Subsequent Hopae source adds explicit owner RPCs and native guards,
+signature-only evidence and independent clock-rate arithmetic (`cde8416`). Runtime
+`ed2eee4` adds BOOTTIME instance-bound deadlines/retention and elapsed stamps.
+Source suspend-budget adoption is in progress. Independent native clients,
+permits, paired ledger retention and final output have not adopted the contract.
+Draft releases and the cross-host Kubernetes gate remain open.

@@ -100,6 +100,9 @@ def main():
         result=subprocess.run([str(wrapper),*argv],input=body,capture_output=True,timeout=timeout)
         if result.returncode:raise RuntimeError('owned Kubernetes operation failed: '+argv[0])
         return result.stdout
+    from world_failure_diagnostics import snapshot, capture, finish, cleanup_forwards as stop_forwards, cleanup_namespace as remove_namespace
+    baseline_snapshot=snapshot(kube)
+    namespace_uid=None
     def port():
         with socket.socket() as sock:sock.bind(('127.0.0.1',0));return sock.getsockname()[1]
     with tempfile.TemporaryDirectory(prefix='world-owned-pods-') as temporary:
@@ -290,8 +293,9 @@ def main():
             if workload:
                 created_namespace=json.loads(kube('create','namespace',namespace,'-o','json'))
                 workload.namespace_uid=created_namespace['metadata']['uid']
+                namespace_uid=workload.namespace_uid
             else:
-                kube('create','namespace',namespace)
+                namespace_uid=json.loads(kube('create','namespace',namespace,'-o','json'))['metadata']['uid']
             created=True
             if args.sumunjang_native_source:
                 native_policy={'apiVersion':'policy.hangang.dev/v1alpha1','kind':'SumunjangPolicy','metadata':{'name':'native','namespace':namespace},'spec':native_spec}
@@ -620,39 +624,40 @@ def main():
                     facts['root_status']={'http_status':code,**{name:status[name] for name in ['version','uptime_secs','revision','config_revision','generation'] if name in status and isinstance(status[name],(bool,int,str))}}
                 except Exception:facts['root_diagnostic']='unavailable'
             print('Owned safe failure facts: '+json.dumps(facts,sort_keys=True),flush=True)
-            if args.evidence_dir:(args.evidence_dir/'failure-facts.json').write_text(json.dumps(facts,indent=2)+'\n')
+            if args.evidence_dir:
+                try:(args.evidence_dir/'failure-facts.json').write_text(json.dumps(facts,indent=2)+'\n')
+                except OSError:print('Owned failure evidence write unavailable',flush=True)
             if created:
-                for name in [*commands,*(['workload-tap'] if workload else [])]:
-                    try:
-                        diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=200').decode(errors='replace')
-                        for value in [*tokens.values(),*([composition_key] if args.composition else [])]:diagnostic=diagnostic.replace(value,'[redacted]')
-                        for file in ['server.key','client.key','ca.key',*(['tap-server.key','tap-client.key'] if args.workload else [])]:diagnostic=diagnostic.replace((root/file).read_text(),'[redacted key]')
-                        if args.evidence_dir:(args.evidence_dir/(name+'.log')).write_text(diagnostic[-65536:])
-                        print('Owned diagnostic '+name+': '+diagnostic[-4000:],flush=True)
-                    except (RuntimeError,subprocess.TimeoutExpired):pass
+                try:
+                    sensitive=[*tokens.values(),*([composition_key] if args.composition else [])]
+                    sensitive.extend(path.read_text() for path in root.glob('*.key'))
+                    capture(kube,namespace,namespace_uid,args.evidence_dir,sensitive)
+                except Exception as diagnostic_error:
+                    print('Owned pod diagnostics unavailable: '+type(diagnostic_error).__name__,flush=True)
             raise
         finally:
-            for process in forwards:
-                process.terminate()
-                try:process.wait(timeout=5)
-                except subprocess.TimeoutExpired:process.kill();process.wait()
-            if created and workload:
-                workload.cleanup()
-                created=False
-            if created:
-                kube('delete','namespace',namespace,'--wait=true','--timeout=120s',timeout=135)
-                print('Owned namespace removed; retained synthetic PVs remain under the cluster Retain policy.')
-            if owned_crd_uid:
-                current=json.loads(kube('get','crd',crd_name,'-o','json'))
-                assert current['metadata']['uid']==owned_crd_uid,'owned CRD replaced; refusing cleanup'
-                assert not json.loads(kube('get','sumunjangpolicies','-A','-o','json'))['items'],'other CRD instances exist; refusing cleanup'
-                # Qualification requires no concurrent operator creating other
-                # native policy instances. UID+RV preconditions prevent deleting
-                # a replaced global object between this read and DELETE.
-                options={'apiVersion':'v1','kind':'DeleteOptions','preconditions':{'uid':owned_crd_uid,'resourceVersion':current['metadata']['resourceVersion']}}
-                kube('delete','--raw','/apis/apiextensions.k8s.io/v1/customresourcedefinitions/'+crd_name,'-f','-',body=json.dumps(options).encode())
-                kube('wait','--for=delete','crd/'+crd_name,'--timeout=60s')
-                print('Exact created CRD UID cleaned after instance absence check',flush=True)
+            def cleanup_forwards():
+                stop_forwards(forwards)
+            def cleanup_namespace():
+                if created and workload:
+                    workload.cleanup()
+                if created and not workload:
+                    remove_namespace(kube,namespace,namespace_uid)
+                    print('Owned namespace removed; retained synthetic PVs remain under the cluster Retain policy.')
+            def cleanup_crd():
+                if owned_crd_uid:
+                    current=json.loads(kube('get','crd',crd_name,'-o','json'))
+                    assert current['metadata']['uid']==owned_crd_uid,'owned CRD replaced; refusing cleanup'
+                    assert not json.loads(kube('get','sumunjangpolicies','-A','-o','json'))['items'],'other CRD instances exist; refusing cleanup'
+                    # Qualification requires no concurrent operator creating other
+                    # native policy instances. UID+RV preconditions prevent deleting
+                    # a replaced global object between this read and DELETE.
+                    options={'apiVersion':'v1','kind':'DeleteOptions','preconditions':{'uid':owned_crd_uid,'resourceVersion':current['metadata']['resourceVersion']}}
+                    kube('delete','--raw','/apis/apiextensions.k8s.io/v1/customresourcedefinitions/'+crd_name,'-f','-',body=json.dumps(options).encode())
+                    kube('wait','--for=delete','crd/'+crd_name,'--timeout=60s')
+                    print('Exact created CRD UID cleaned after instance absence check',flush=True)
+            finish([('forwards',cleanup_forwards),('namespace',cleanup_namespace),('crd',cleanup_crd)],baseline_snapshot,kube,args.evidence_dir)
+
 
 
 if __name__=='__main__':main()

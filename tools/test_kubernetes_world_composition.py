@@ -17,6 +17,8 @@ class CompositionManifests(unittest.TestCase):
 import json,os,sys
 from pathlib import Path
 args=sys.argv[1:]
+if args[:2] in [['get','nodes'],['get','pods']]:print(json.dumps({'items':[]}));sys.exit(0)
+if args[:2]==['create','namespace']:print(json.dumps({'metadata':{'uid':'fixture-namespace'}}));sys.exit(0)
 if args[:3]==['apply','-f','-']:
  Path(os.environ['OWNED_RENDER_FILE']).write_bytes(sys.stdin.buffer.read())
 if 'rollout' in args:sys.exit(23)

@@ -56,8 +56,11 @@ counting design, source tests, release artifacts and enabled deployment as equal
 
 ## Next implementation boundary: explicit service composition
 
-A reviewed design is now being implemented in an isolated source branch. It is
-not a passing implementation, released feature or configured operating route.
+The service-only source implementation `728b762` passed 1,016 workspace tests
+(42 existing exclusions), strict all-target/all-feature Clippy and independent
+final-response time-fence review. It is not yet a released feature or configured
+operating route. Exact production private-CA support, static rebuild and actual
+four-service composition qualification are now in progress.
 One opt-in profile declares two fixed credential slots (native API key and bounded
 HTTPS verifier), exact verified issuer/realm/subject/kind relationships and one
 canonical Service identity. The proposed `Authorization: Hopae-Compose` envelope

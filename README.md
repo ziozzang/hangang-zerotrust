@@ -174,8 +174,8 @@ for mapping, request/session checks and ownership boundaries.
 
 [Kubernetes and IAM source integration](docs/adr/0015-kubernetes-iam-authority.md):
 Hangang Ingress, Hopae TokenReview and Pumgye authoritative RBAC snapshots are
-implemented. A new Sumunjang native policy CRD authority has passed standalone
-live-cluster tests; full-chain adoption and its release remain separate. Standard
+implemented. Sumunjang 0.3.6 native policy CRD authority has passed both source/default
+four-service Kubernetes and browser qualification and is published. Standard
 NetworkPolicy diagnostics do not establish CNI enforcement.
 
 ```mermaid
@@ -183,7 +183,7 @@ flowchart LR
   K["Kubernetes API: authoritative sources"] -->|Ingress / Service| H[Hangang]
   K -->|ServiceAccount / TokenReview| O[Hopae]
   K -->|Role / Binding: authoritative snapshot| P[Pumgye]
-  K -.->|SumunjangPolicy: qualified source candidate| S[Sumunjang]
+  K -->|SumunjangPolicy: native IP policy| S[Sumunjang]
   K -.->|NetworkPolicy: diagnostics only| N[No CNI activation]
   U[Hangang console] -.->|source-aware publication| K
   O --> H
@@ -199,5 +199,5 @@ flowchart LR
 
 [Native observed adoption and releases](docs/reviews/2026-10-15-native-observed-adoption.md)
 records the exact signed Hangang 0.3.6 / Hopae 0.0.8 / Pumgye 0.1.7 candidates,
-retained Sumunjang 0.3.5, actual independent-host/Kubernetes/browser gates and
-internal adoption. The subsequent native Sumunjang source is tracked separately.
+retained Sumunjang 0.3.5, subsequent native Sumunjang 0.3.6, actual independent-host/
+Kubernetes/browser gates and internal adoption.

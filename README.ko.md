@@ -142,16 +142,16 @@ logprob 기반 후보 분포를 판단 보조에 활용하며 다른 백엔드�
 [스케일아웃 설계](docs/ko/0013-snapshot-membership-scaleout.md)에 메모리 스냅샷·도메인 DB 백본·lease 멤버십·Hangang 풀/구독 의무를 기록했습니다. 실제 fleet 구현·검증은 진행 예정입니다.
 
 [Kubernetes·IAM 원천 연동](docs/ko/0015-kubernetes-iam-authority.md): 한강 Ingress,
-호패 TokenReview, 품계의 권위 있는 RBAC 스냅샷이 구현되어 있습니다. 신규 수문장
-네이티브 정책 CRD 원천은 독립 실제 클러스터 검증을 통과했으며 전체 체인·릴리즈는
-별도 진행합니다. 표준 NetworkPolicy 진단은 CNI 집행을 의미하지 않습니다.
+호패 TokenReview, 품계의 권위 있는 RBAC 스냅샷이 구현되어 있습니다. 수문장 0.3.6
+네이티브 정책 CRD 원천은 원천·기본 모드의 실제 4서비스·브라우저 검증을 통과해
+공개했습니다. 표준 NetworkPolicy 진단은 CNI 집행을 의미하지 않습니다.
 
 ```mermaid
 flowchart LR
   K["Kubernetes API: 권위 있는 원천"] -->|Ingress / Service| H[Hangang]
   K -->|ServiceAccount / TokenReview| O[Hopae]
   K -->|Role / Binding: 권위 스냅샷| P[Pumgye]
-  K -.->|SumunjangPolicy: 원천 검증 후보| S[Sumunjang]
+  K -->|SumunjangPolicy: 네이티브 IP 정책| S[Sumunjang]
   K -.->|NetworkPolicy: 진단 전용| N[CNI 미활성]
   U[Hangang console] -.->|source-aware publication| K
   O --> H
@@ -167,5 +167,5 @@ flowchart LR
 
 [네이티브 관측 적용과 릴리즈](docs/ko/2026-10-15-native-observed-adoption.md)에
 한강 0.3.6·호패 0.0.8·품계 0.1.7의 정확한 서명 후보, 기존 수문장 0.3.5, 실제 독립
-호스트/Kubernetes/브라우저 검증과 내부 반영을 기록했습니다. 신규 수문장 원천은
-별도 후속으로 추적합니다.
+호스트/Kubernetes/브라우저 검증과 내부 반영을 기록했습니다. 후속 네이티브 수문장
+0.3.6의 공개·반영도 포함합니다.

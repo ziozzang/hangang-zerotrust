@@ -2,7 +2,8 @@
 
 Status: implemented native consumers with final local signed-artifact qualification;
 independent-host Kubernetes qualification is in progress. Current source: Hangang
-`97419f3`, Hopae `bc5b2a4`, Pumgye runtime `4724962` (packaging `d207266`).
+`97419f3`, Hopae `bc5b2a4`, Pumgye runtime `4724962` (packaging `d207266`),
+and subsequent Sumunjang `7bfd6c1`.
 [한국어](../ko/2026-10-15-native-observed-adoption.md)
 
 ## Implementation update
@@ -180,7 +181,8 @@ rollback backups, configuration and owner-data preservation, exact running binar
 hashes, management/native refusal checks and durable restarts were verified.
 Existing routes retain their configured modes; installing binaries does not
 automatically enable an unconfigured observed projection route or an external
-provider. The new Sumunjang CRD authority remains a separate subsequent candidate.
+provider. The subsequently qualified Sumunjang 0.3.6 is now separately published and adopted.
+The earlier retained-0.3.5 result remains historical evidence for that exact set.
 
 ## Subsequent Sumunjang source candidate
 
@@ -198,3 +200,29 @@ and generated plugin are being fixed. Because the dashboard is embedded, this
 requires a new exact static binary and both source/default qualification again.
 The previous staged 0.3.6 candidate is explicitly not for publication. Existing
 published/operating Sumunjang 0.3.5 remains unchanged.
+
+## Final Sumunjang 0.3.6 publication and adoption
+
+[Sumunjang 0.3.6](https://github.com/ziozzang/sumunjang/releases/tag/v0.3.6)
+is published at `7bfd6c1`, with runtime/embedded UI build inputs from `d6fc1de`.
+The exact final canonical binary is
+`25a197f1c39bddf63fe4c168294536475ed2b4ba2aa16bcbe7ee4ac2dfec8654`.
+The alias is
+`328ef91a0d95ba0c47d004b0a7c0559331a0edd37b107ea4335bd9a70db71957`.
+All seven assets matched the qualified stage after draft and anonymous public
+downloads; both raw signatures preserve the pinned release key, and all three
+archive executable hashes and final console/deployment/docs content were checked.
+
+The final scratch image and matching final plugin passed both native-source and
+ordinary DB four-service/independent SDK/browser runs. Source mode additionally
+qualified scratch HTTPGet readiness, operator-owned CRD changes, manual-write
+refusal, RBAC withdrawal, persistent-checkpoint replacement refusal, source UID
+replacement and explicit repin recovery. Both owned namespaces and the exact
+created CRD were removed. Existing workloads and node readiness were preserved.
+
+Internal server and immutable pinned plugin adoption are complete. Private
+binary/SQL/configuration rollback backups, unchanged policy, native mTLS, supervised
+HUP and all module management reads passed. A copied-file permission rejection
+restored the previous console configuration; corrected private package permissions
+and configuration preflight then passed before successful adoption. The source
+mode remains opt-in; ordinary DB management remains editable.

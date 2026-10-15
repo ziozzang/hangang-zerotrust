@@ -1719,3 +1719,10 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
   and distinguish unsupported/legacy platform behavior. The qualified observed
   chain also requires a fresh Pumgye native network RPC and observed permit/output;
   no observed bypass was established by this source observation.
+
+- [x] Subsequent Sumunjang 0.3.6 final scratch/UI passes actual source and default-DB
+  four-service/browser/independent SDK gates; publish seven verified assets and
+  adopt internal server plus pinned console package with policy/backup/HUP checks.
+- [x] Hangang classic positive-TTL BOOTTIME/cache/source-owner fix `171fc4d`: full
+  workspace 1,312 passed/58 ignored and strict Clippy. Release candidate 0.3.7
+  static/local chain passes; exact Kubernetes gate and publication remain pending.

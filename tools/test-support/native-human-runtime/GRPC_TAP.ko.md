@@ -2,9 +2,7 @@
 
 `grpc_tap.py`는 로컬 검증 전송 도구이며 인증 원천·서명기·capability 생성자·운영
 프록시가 아니다. 고정한 loopback endpoint로 변경 없는 unary raw 바이트를 전달하고
-단계별 횟수만 센다. protobuf 내용의 decode·로그·저장은 하지 않는다. cookie B
-치환, Project replay, 실제 owner 현재성 확인과 4개 코어 성공 검증은 아직 구현하지
-않았다. 정확한 설정과 명령은 [영문 계약](GRPC_TAP.md)을 따른다.
+단계별 횟수만 센다. protobuf 내용의 decode·로그·저장은 하지 않는다. 선택적 cookie B 치환·Project replay 순서는 [2단계](GRPC_TAP_HOOKS.ko.md)에 있으며 기본 비활성이다. 실제 owner·증명·4개 코어 성공 검증은 별도다. 정확한 설정과 명령은 [영문 계약](GRPC_TAP.md)을 따른다.
 
 기존 grpcio 환경을 사용한다(이번 검증1.84.0). 디렉터리는0700, 설정·호출자·키
 파일은0600으로 보관한다. 설정의 고정 method allowlist와 명시적 숫자 loopback

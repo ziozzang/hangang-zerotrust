@@ -3,8 +3,7 @@
 `grpc_tap.py` is a local test transport, not an authentication source, signer,
 capability constructor or production proxy. Phase 1 forwards unchanged unary raw
 bytes to fixed owned loopback endpoints and records stage counts. No protobuf
-payload is decoded, logged or persisted. It does not implement cookie substitution,
-project replay, owner-current controls or the actual four-core success gate yet.
+payload is decoded, logged or persisted. Explicit optional DTO mutation/replay sequences are documented in [phase2](GRPC_TAP_HOOKS.md); they are disabled by default. Actual owner/proof/full-chain qualification remains separate.
 
 Use an existing Python environment containing grpcio (qualified here with 1.84.0).
 No Cargo, dependency installation, cluster or operating-service mutation is needed.

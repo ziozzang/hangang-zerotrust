@@ -74,7 +74,7 @@ def atomic_json(path, value):
 class Tap(grpc.GenericRpcHandler):
     """One fixed upstream per allowed method, no protobuf parsing or mutation."""
     def __init__(self, config):
-        if set(config) != {'listen', 'tls', 'inbound_caller_file', 'upstreams', 'maximum_inflight'}:
+        if set(config) - {'qualification'} != {'listen', 'tls', 'inbound_caller_file', 'upstreams', 'maximum_inflight'}:
             raise ValueError('invalid tap configuration')
         self.listen = endpoint(config['listen'])
         self.inbound = token(config['inbound_caller_file'])
@@ -105,6 +105,10 @@ class Tap(grpc.GenericRpcHandler):
             prepared.append((name, endpoint(spec['endpoint']), outbound,
                 read_private(spec['ca'], 131072), read_private(spec['key'], 131072),
                 read_private(spec['certificate'], 131072)))
+        self.hooks = None
+        if 'qualification' in config:
+            from grpc_tap_hooks import Hooks
+            self.hooks = Hooks(config['qualification'],config['upstreams'],read_private)
         # All file/configuration checks finish before any channel allocation.
         for name, address, outbound, ca, key, certificate in prepared:
             creds = grpc.ssl_channel_credentials(ca, key, certificate)
@@ -114,6 +118,16 @@ class Tap(grpc.GenericRpcHandler):
             self.channels.append(channel)
             self.routes[name] = (channel.unary_unary(name), outbound)
         self.server = None
+
+    async def call(self, name, raw, context):
+        remaining = context.time_remaining()
+        if remaining is None or not math.isfinite(remaining) or remaining <= 0 or len(raw) > METHODS[name]:
+            raise ValueError('original bounded call refused')
+        rpc, caller = self.routes[name]
+        reply = await rpc(raw, timeout=min(remaining,1.0), metadata=(('authorization',caller.decode()),))
+        if len(reply) > MAX_REPLY:
+            raise ValueError('upstream reply limit')
+        return reply
 
     def service(self, details):
         name = details.method
@@ -138,12 +152,25 @@ class Tap(grpc.GenericRpcHandler):
                 await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, 'tap capacity')
             self.inflight += 1
             try:
-                rpc, caller = self.routes[name]
+                if self.hooks is not None:
+                    try:
+                        raw = self.hooks.mutate(name,raw)
+                    except Exception:
+                        self.hooks.counts['failed'] += 1
+                        await context.abort(grpc.StatusCode.FAILED_PRECONDITION,'tap qualification refused')
+                if len(raw) > METHODS[name]:
+                    count['refused'] += 1
+                    await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED,'tap mutated frame limit')
                 count['forwarded'] += 1
-                # Use the remaining original deadline; no renewal/retry/metadata relay.
-                reply = await rpc(raw, timeout=min(context.time_remaining(), 1.0), metadata=(('authorization', caller.decode()),))
-                if len(reply) > MAX_REPLY:
-                    await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, 'tap reply limit')
+                started = self.hooks.now() if self.hooks is not None and self.hooks.mode == 'exact_pair_replay' else None
+                reply = await self.call(name,raw,context)
+                if self.hooks is not None and self.hooks.mode == 'exact_pair_replay' and name == '/hangang.hopae.v1.HumanObservedCredentialProjection/Project':
+                    try:
+                        reply = await self.hooks.replay(raw,reply,started,self.call,context)
+                    except Exception:
+                        self.hooks.counts['failed'] += 1
+                        count['refused'] += 1
+                        await context.abort(grpc.StatusCode.FAILED_PRECONDITION,'tap qualification refused')
                 count['ok'] += 1
                 return reply
             except grpc.aio.AioRpcError as error:
@@ -167,10 +194,15 @@ class Tap(grpc.GenericRpcHandler):
             await self.server.wait_for_termination()
         for channel in self.channels:
             await channel.close()
+        if self.hooks is not None:
+            self.hooks.cookie = None
 
     def snapshot(self):
-        return {'contract': 'qualification-grpc-tap-v1', 'inflight': self.inflight,
-                'stages': {k: dict(v) for k, v in self.counts.items()}}
+        result = {'contract': 'qualification-grpc-tap-v1', 'inflight': self.inflight,
+                  'stages': {k: dict(v) for k, v in self.counts.items()}}
+        if self.hooks is not None:
+            result['qualification'] = self.hooks.snapshot()
+        return result
 
 
 async def main(args):

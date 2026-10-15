@@ -1578,3 +1578,15 @@ passes isolated/full recheck. This is source/local qualification.
 
 See [release and adoption evidence](docs/PACKAGING.md). The latest cold-backup
 off-host transfer remains incomplete; the prior verified copy is preserved.
+
+## Live-evidence permit signing boundary — 2026-10-15
+
+- [x] Pumgye 4c007f4 adds `Signer::issue_combined`, requiring opaque actual
+  Hopae/Sumunjang observations, exact network revision/IP and observed deadline.
+  Rechecks before/after owner callbacks reject retirement and clock reversal.
+  Workspace 66 tests, strict Clippy and actual three-authority HTTP/gRPC endpoint
+  fixtures with nonempty entity, signing/verification, block/restoration, identity
+  withdrawal/restoration, outage and seven trust refusals pass.
+- [ ] Wire live native route/projection owners and durable replay consumption
+  into a permit RPC and Hangang final dispatch. The fixture's route/plan state is
+  synthetic and local; new library source is not a newly deployed permit service.

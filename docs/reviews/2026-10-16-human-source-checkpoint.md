@@ -3,6 +3,15 @@
 Status: qualified source foundations, **not a Human runtime release or full-chain activation**.
 [한국어](../ko/2026-10-16-human-source-checkpoint.md).
 
+
+## Operating administrator recheck and migration preparation
+
+A fresh read-only Chromium check of `hangang.local.jioh.net` passed the installed Sum/Hop panels, Pum native policy menu, EN/KO in-place locale changes, browser Back/Forward,390px layout, logout disposal and no page errors. Plugin owner calls were GET-only; the Sum policy, Hop profiles and Pum policy bytes were unchanged before/after. Installed packages remain Sum0.1.4/Hop0.1.6. This checks current operating administration, not the unreleased Human UI/package acceptance. Safe receipt SHA256: `a3502ff8b81570e7051085444aeb0e16312a1ee986da77855902b5c3d91d7d04`.
+
+The [offline Hop state tool](../HOPAE_STATE_ROLLOUT.md) passed23 independent parent tests, including actual old native Store creation, candidate schema10 migration on a copy, and preparation of a separate old-schema restore. It does not stop/deploy an owner or switch mounts. Final cutover must also bind external configuration, keys, environment, image, mounts and UID; the stopped-state seal alone does not cover those files.
+
+The twelfth replay run retained the failure with diagnostics: cancellation occurred during the final Pum current-owner check with zero RPC deadline remaining. Through-replay elapsed was185596764ns, while the first projected output reported179ms remaining; full control completion and unchanged original output delivery were absent. Result SHA256: `bcd3c4e4a19294f8ec330db4a875117892fc95c16891a7580a48f22f49b3e386`. Cleanup succeeded and all12 owned listeners closed. This is not replay qualification. Explicit transport-only preparation of the unused check channel is under review; request budgets, proof lifetimes and success assertions stay unchanged.
+
 ## Actual A/B lineage and replay diagnostics
 
 The tenth owned four-core run passed A/B lineage isolation. Both A/A and B/B controls returned204 with exactly one matching backend effect. Replacing only the Human issuance cookie for an A request produced an actual valid B source proof, then503 with zero backend arrival/effect. Pum permission issuance and Hop projection were never called for that mismatch. Safe result SHA256: `d1255e56e853021d7b6fb1b0641a8986452c114e156dfa67e5da415e056c8c5e`. Cleanup succeeded and all12 owned listeners closed.

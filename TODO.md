@@ -1600,8 +1600,13 @@ copy is also preserved.
 - [x] Hangang dfc099e integrates private CLI preparation, standalone lifecycle
   and typed supervised listener handover; actual process and failure recovery
   tests pass. This is local source qualification, not new operating adoption.
-- [ ] Integrate remote client pools/configured owner addressing and actual
-  reference delivery to Pumgye.
+- [x] Pumgye 7425a83 and Hangang 6bdb6c3 connect a configured persistent mTLS
+  owner client and actual request-reference delivery, with before/after scope/IP
+  checks and explicit acknowledgement/downgrade refusal. Actual four-server
+  source qualification passes; no new static/Kubernetes/operating adoption yet.
+- [ ] Generalize configured owner addressing to fleet membership and bounded
+  multi-owner/connection-pool routing. The current route client targets one
+  configured authority and does not establish distributed discovery.
 - [ ] Qualify the resulting permit/projection/replay path through actual gateway
   effects, signed static packages, Kubernetes and operating adoption. Current
   operating releases remain unchanged; full provider/fleet/adapter/throughput

@@ -236,3 +236,36 @@ static release, Kubernetes or operating adoption is claimed.
 Remote Pumgye clients and reference delivery, owner-checked signed permits,
 projection/paired replay, full identity/provider and fleet/adapter/throughput
 requirements remain open. Existing operating releases and grants are unchanged.
+
+## Actual route observation delivery and downgrade refusal — 2026-10-15
+
+Pumgye `7425a83` loads a fixed reference-only `--route-live` authority with bounded
+lazy mTLS setup, eliminating the gateway/authority startup cycle without creating
+a pre-handshake observation. Queries bind reference, final destination/request
+digests, service/audience/resource/action and trusted native client IP. Private
+observations retain configured-client identity and count exchange time against
+a maximum one-second validity. No SQL is performed. The endpoint queries the
+actual route owner before and after identity/network/policy evaluation and
+refuses missing resources or mismatched owner scope.
+
+Hangang `6bdb6c3` pins all four Pumgye crates to the same revision and sends the
+actual retained reference only when its owner listener is configured. It requires
+the Pumgye `route_observed` acknowledgement; an absent legacy field cannot silently
+weaken this mode. Existing no-owner mode is separate and still explicit. Neither
+acknowledgement nor local observation validity is a signed permission/dispatch lease.
+
+Hopae fixture `8e1250f` qualifies the actual four executables over persistent
+mTLS gRPC: final URI/entity, wrong server identity/caller refusal, recovery,
+unchanged origin count on refusal, and an actual signed legacy Pumgye 0.1.6
+replacement followed by route-aware recovery. It also passes durable rights and
+profile withdrawal, network failure and authority outages. No-owner compatibility
+passes separately. Pumgye's 69 workspace tests and strict Clippy pass; Hangang
+passes 1,298 tests with 58 existing explicit ignores, strict Clippy after a
+mechanical test-only Copy cleanup, and 942 documentation links.
+
+Source is merged on main. This closes selected local route-observation delivery,
+not signed permits, projection/paired replay, new static/Kubernetes/operating
+adoption, all identity/provider/adapter or throughput gates. The route client
+currently targets one configured authority; multi-owner discovery, membership
+and connection-pool routing remain required for general scale-out. Existing
+operating policies, identities and release assets are unchanged.

@@ -102,3 +102,6 @@ dogfooding, not a claim that Hangang 0.3.8 has been publicly released or that th
 operating gateway has been replaced. Exact-artifact K3s Any-composition/native-source
 and responsive-browser qualification passed; the separate DB-source run is still
 underway. The ADM totals remain 3 complete, 3 partial and 3 incomplete.
+
+
+Latest: Hangang 0.3.8 is now publicly released and both internal console/gateway are adopted. Both K3s matrices passed; see the [release record](2026-10-15-native-observed-adoption.md). Earlier pending statements retain their chronology.

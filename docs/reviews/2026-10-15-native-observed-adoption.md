@@ -295,3 +295,34 @@ refusal, exact installed hash and durable restart. An initial preflight CLI argu
 placement error stopped before any operating mutation; corrected preflight and
 rollout then passed. Existing operating profiles remain unchanged; installing this
 release does not activate composition or complete Human/Workload projection.
+
+
+## Hangang 0.3.8 responsive console publication and adoption
+
+[Hangang 0.3.8](https://github.com/ziozzang/hangang/releases/tag/v0.3.8) is published
+at runtime/build source `c5610e08d7b03b26f81ada309456de914d87ffb5`. Subsequent
+`b88f7b7` only merges the qualified browser helper. The raw gateway SHA-256 is
+`4e7c2815eed3a744abe8a4ba62aa8cd28abf3467b3b5668e600d9a4db5aa4288`.
+All five draft and anonymous public assets equal the frozen stage. Independent
+verification covers the pinned Ed25519 gateway manifest and exact hashes of all
+eight static archive executables; it does not imply separate manifest signatures
+for every helper binary.
+
+Workspace qualification passed 1,312 tests with 58 existing exclusions and strict
+Clippy; 33 selected UI regressions cover existing behavior and responsive layout.
+Exact-artifact local observed/strict composition and Bearer regressions pass. Actual
+K3s Any composition passes with both Sumunjang native CRD source and normal DB
+source, including independent observed SDK, circuit recovery, CAS/revocation,
+Pod replacement, non-dispatch and the new embedded 390px UI. Both nodes remained
+Ready, all 12 pre-existing Pod UIDs were preserved and owned namespaces/created CRD
+were removed; synthetic Retain PVs remain under cluster policy. Earlier startup/
+restoration observations remain recorded and do not gain an explanation from these
+passes. No Human/Workload, HA or throughput qualification is claimed.
+
+The console and gateway are internally adopted with private binary/unit/config/SQL/
+image backups, read-only preflight, configured gateway drain, exact running hashes,
+unchanged credentials/UID/network/routing and module/policy read acceptance. A fresh
+system-administrator browser opens Pumgye, Sumunjang and Hopae without page/module/
+global errors. All three pages fit a 390px viewport; Pumgye previously expanded to
+619px. Wide tables retain scoped scrolling. The focused layout and completed-operation
+reference fixes do not complete the broader ADM-03/04/06/07/08/09 acceptance work.

@@ -246,3 +246,29 @@ provider-unavailable 상태와 relay 호출 수를 대조하며, 일반 HTTP 503
 실행 해시·영속 재시작 검사를 통과했다. 최초 CLI 인자 위치 오류는 운영 변경 전 사전
 검사에서 중단됐고 수정한 사전 검사·반영이 통과했다. 기존 운영 프로필은 바꾸지 않았으며
 설치만으로 조합 인증을 활성화하거나 Human/Workload 전체 연결을 완료한 것은 아니다.
+
+
+## 한강 0.3.8 반응형 콘솔 공개와 내부 반영
+
+[한강 0.3.8](https://github.com/ziozzang/hangang/releases/tag/v0.3.8)을 runtime/build
+source c5610e08d7b03b26f81ada309456de914d87ffb5에서 공개했다. 이후 b88f7b7은 검증한
+브라우저 helper만 머지한다. gateway 원본 SHA-256은
+`4e7c2815eed3a744abe8a4ba62aa8cd28abf3467b3b5668e600d9a4db5aa4288`이다.
+초안·비인증 공개 다운로드의 파일 5개가 동결본과 같았다. 고정 Ed25519 gateway manifest와
+아카이브의 정적 실행 파일 8개 해시를 독립 검증했으며 각 helper의 별도 manifest 서명을
+주장하지 않는다.
+
+전체 1,312개 테스트·기존 제외 58개와 strict Clippy, 선택한 UI 회귀 33개를 통과했다.
+정확한 파일의 로컬 observed/strict 조합 인증과 Bearer 회귀도 통과했다. 실제 K3s Any
+조합은 수문장 native CRD 원천·일반 DB 원천 양쪽에서 독립 SDK·circuit 복구·CAS/회수·
+Pod 교체·백엔드 미도달·390px 새 UI 검증을 통과했다. 두 노드 Ready, 기존 Pod UID 12개
+보존, 소유 namespace·생성 CRD 정리를 확인했고 합성 Retain PV는 정책대로 보존했다.
+이전 startup/복원 관측은 보존하며 이번 통과로 원인을 설명하지 않는다. Human/Workload,
+HA나 처리량 검증을 완료한 것은 아니다.
+
+콘솔·gateway를 비공개 binary/unit/config/SQL/image 백업, 읽기 전용 사전 검사, 설정된
+gateway drain, 실제 실행 해시와 자격/UID/network/route 보존 검사 후 내부 반영했다.
+새 system-admin 브라우저에서 품계·수문장·호패가 페이지·모듈·전역 오류 없이 열렸다.
+세 페이지 모두 390px 화면 안에 들어오며, 이전 품계는 619px이었다. 넓은 표의 영역 내
+스크롤은 유지한다. 이번 레이아웃·완료 작업 참조 수정은 ADM-03/04/06/07/08/09 전체
+수용 기준 완료를 의미하지 않는다.

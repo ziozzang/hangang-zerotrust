@@ -122,3 +122,23 @@ Hopae `1f486ea` connects human verify-engine output to source-only authenticatio
 Hopae `ec1ed5d` adds profile-owned service authentication receipts. Opaque non-Clone/non-serde proof captures the native owner revision after key/relay verification; issuance fixes Service/AAL0, configured service/audience and evidence/verification expiry ceiling, using profile revision for identity/credential generation and a service-separated epoch. Canonical subject hashing is shared with gateway rendering, preserving local/relay namespaces. Three tests qualify signatures, expiry, namespace, false MFA rejection, scope/kind refusal, revocation/final guard/clock rollback; workload/network issuance is unsupported. Live guards must recheck profile/key/app/path/network ownership and credential material rotation must advance the profile generation. A discovered ordinary-auth race is also fixed: a shared atomic publication fence spans DB publication through prepared snapshot installation, and gateway checks captured/current Arc identity after remote verification. Failed publication restores old availability. Controlled HTTP/native tests revoke a paused verifier's profile and require 503 without user headers. All native gates pass 904 tests (42 ignored), with static/docs/scenario checks and scoped audit under existing exceptions/warning. Receipt RPC, durable signing/key management, distributed floors and end-to-end enforcement/performance remain pending; the revocation fix applies independently to existing service authentication.
 
 Internal rollout update (2026-10-14): Hopae image `0.0.3-service-fence-ec1ed5d` is active on schema v6. Configuration and keys were preserved; stopped owner/delegation backups and the previous image remain available. Optimized private-owner mixed-auth/Lua/MFA/TOTP qualification and live console/native smoke passed. Native gates: 904 passed, 42 ignored, with the existing scoped RSA exception and rustls-pemfile warning. Production profiles remain native-only; projection is disabled and receipt issuing RPC is not activated. No production credential revocation was performed for the race test.
+
+## Exact native gateway snapshot fence — 2026-10-15
+
+Hangang `8430198` retains the exact activated snapshot in native request leases.
+Arc identity, rather than only the public numeric revision, fences authentication,
+body preparation, authority RPCs, final upstream admission and guarded bodies.
+An equal-revision replacement retires the original request. Checks perform no
+SQL or configuration serialization; unrelated snapshot replacement is also
+conservatively retiring, as with the preceding native revision fence.
+
+Two adversarial tests cover equal-revision replacement and refusing a prepared
+body. All targets pass 1,284 tests with 58 existing explicit ignores, strict
+Clippy and 922 local documentation links. The actual four-process mTLS gRPC
+native route fixture passes final entity/target, trust and body-budget refusal,
+durable rights/profile withdrawal and authority outage without refused backend
+dispatch. Source is on main; the latest deployed release remains 0.3.5.
+
+This is a local route owner check. It does not add a remote route observation
+endpoint, signed route claim, permit RPC, projection activation or replay
+consumption. Those must preserve this native snapshot ownership when integrated.

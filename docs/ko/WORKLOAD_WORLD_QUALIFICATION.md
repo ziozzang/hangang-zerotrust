@@ -1,5 +1,7 @@
 # Workload 실제 K3s 검증 준비 계약
 
+현재 정확한 후보의 실제 gate 결과: [0.3.11 / 0.1.9 검증](QUALIFICATION_0311_019.md). 아래 준비·상태 문구는 과거 기록이며 원천 소유권·한계 계약은 계속 적용한다.
+
 현재 상태는 **선택적 실제 실행 orchestration 소스 구현, 실제 K3s 실행 미검증**이다. `--workload`는 composition(All/Any) 혼용과 미지원 browser/direct-client/통합 Sum source를 거부한다. 정확한 이미지 digest/소스/바이너리 SHA/capability 승인 파일과 고정 공개 Workload SDK probe SHA 검사를 변경 전에 통과해야 실행한다. 영구 preparation-only 차단은 제거했지만 parent의 최종 artifact 승인과 클러스터 lease 없이는 실행하면 안 된다. 기존 Service/default/All/Any 모드는 유지한다. helper로 실행 권한이나 인증 증명을 만들지 않는다.
 
 실행 전 parent의 독점 클러스터 lease, 백업 전체 SHA/tar 확인, 최종 immutable 소스/바이너리 SHA/image 및 독립 Workload SDK probe가 필요하다. 새 owned-world namespace와 두 SA(리뷰어/클라이언트), 실제 bound Pod를 원자적으로 create한다. 리뷰어의 고유 전역 ClusterRole/Binding은 tokenreviews create만 허용한다. 별도 소유 namespaced Role/Binding은 serviceaccounts의 workload-client와 pods의 workload-bound라는 정확한 두 이름에 get만 허용한다. 실제 Hop848은 TokenReview 뒤 해당 metadata/UID/삭제 상태를 GET하므로 이 권한이 없으면 첫 검증부터403으로 실패한다. 다른 이름·list/watch/write/secrets·cluster-admin·wildcard는 허용하지 않는다. 클라이언트에는 API 권한/자동 token mount를 주지 않는다. Node utility 이미지가 필요한 bound Pod이며 scratch 호환을 주장하지 않는다.

@@ -1,5 +1,7 @@
 # 별도 API-server native SAR qualification
 
+현재 정확한 후보의 실제 gate 결과: [0.3.11 / 0.1.9 검증](ko/QUALIFICATION_0311_019.md). 아래 준비·상태 문구는 과거 기록이며 원천 소유권·한계 계약은 계속 적용한다.
+
 상태: 로컬 실행 가능한 fixture 및 단위검사만 구현했으며 클러스터에서는 실행하지 않았다.
 영문 `KUBERNETES_SAR_QUALIFICATION.md`가 정확한 옵션·전제·제한의 기준이다.
 

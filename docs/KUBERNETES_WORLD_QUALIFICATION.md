@@ -1,5 +1,7 @@
 # Four-service Kubernetes functional qualification
 
+Current exact-candidate actual gate results: [0.3.11 / 0.1.9 qualification](QUALIFICATION_0311_019.md). Earlier preparation/status text below is historical; normative ownership and limits remain applicable.
+
 [한국어](ko/KUBERNETES_WORLD_QUALIFICATION.md)
 
 `tools/kubernetes_world_smoke.py` creates a uniquely owned namespace with independent

@@ -1,5 +1,7 @@
 # 네 서비스 Kubernetes 기능 검증
 
+현재 정확한 후보의 실제 gate 결과: [0.3.11 / 0.1.9 검증](QUALIFICATION_0311_019.md). 아래 준비·상태 문구는 과거 기록이며 원천 소유권·한계 계약은 계속 적용한다.
+
 [English](../KUBERNETES_WORLD_QUALIFICATION.md)
 
 `tools/kubernetes_world_smoke.py`는 고유하게 소유한 네임스페이스에 독립적인

@@ -1,6 +1,8 @@
 # Disposable native SAR qualification harness
 
-Status: implemented local fixture, unit-tested; **not executed against a cluster**.
+Current exact-candidate actual gate results: [0.3.11 / 0.1.9 qualification](QUALIFICATION_0311_019.md). Earlier preparation/status text below is historical; normative ownership and limits remain applicable.
+
+Historical preparation status: implemented local fixture, unit-tested; final actual execution is recorded above.
 `tools/kubernetes_sar_qualification.py` renders private material by default. Its
 explicit `--execute` path creates a unique owned namespace atomically, a private
 Secret, SAR Service, Pum Pod and disposable API-server/etcd Pod. It never changes

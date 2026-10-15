@@ -1653,13 +1653,13 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [x] Correct the asynchronous SQLite interruption test observation race without
   changing HTTP budgets or production scheduling; deterministic real interruption,
   rollback/restoration regression and ten actual scenario repetitions pass.
-- [ ] Complete separate Pumgye prerequisite budgets/permit source clock and observed
-  envelopes, then paired durable replay/output and final Hangang dispatch.
+- [x] Complete separate Pumgye prerequisite/permit clocks, observed envelopes,
+  paired durable replay/output and final Hangang dispatch (`080e304`/`274a661`/`97419f3`).
 - [ ] Complete original mixed-identity/provider/lifecycle requirements tracked in
   the [source audit](docs/reviews/2026-10-15-provider-completion.md); time evidence
   and service-only projection are not full provider completion.
-- [ ] Rebuild exact signed candidates and pass actual independent-host/Kubernetes/
-  browser/withdrawal/restart/failure gates before release and operating adoption.
+- [x] Rebuild exact signed candidates and pass actual independent-host/Kubernetes/
+  browser/withdrawal/restart/failure gates; publish and adopt the three releases.
 
 ## Actual observed decision chain and native source follow-up — 2026-10-15
 
@@ -1673,7 +1673,7 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [x] Freeze Hangang `97419f3`: raw socket write fences, suspend-inclusive route
   lifetime, disabled observed canceled retry, full workspace compatibility
   (1,309 passed/58 ignored), strict Clippy and actual delayed TLS refusal.
-- [ ] Qualify exact rebuilt binaries across independent hosts, Kubernetes/browser
+- [x] Qualify exact rebuilt binaries across independent hosts, Kubernetes/browser
   and operating rollout; prove delayed-connect/expiry refusal at the final I/O.
 - [ ] Connect Sumunjang Kubernetes source to authoritative decisions with adequate
   pod/namespace/direction/port evidence and explicit NetworkPolicy semantics.

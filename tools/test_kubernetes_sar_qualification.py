@@ -132,4 +132,12 @@ class QualificationTests(unittest.TestCase):
   self.assertIn('--advertise-address=$(POD_IP)',api['args']);self.assertNotIn('--advertise-address=127.0.0.1',api['args'])
   self.assertEqual(api['env'],[{'name':'POD_IP','valueFrom':{'fieldRef':{'fieldPath':'status.podIP'}}}]);self.assertEqual(api['command'],['/usr/local/bin/kube-apiserver']);self.assertFalse(pod['spec'].get('hostNetwork',False));self.assertFalse(api['securityContext']['allowPrivilegeEscalation']);self.assertEqual(api['securityContext']['capabilities']['drop'],['ALL']);self.assertIn('--tls-cert-file=/fixture/api.pem',api['args'])
 
+ def test_failed_response_status_and_bounded_private_body_precede_assertion(self):
+  with tempfile.TemporaryDirectory() as d:
+   out=pathlib.Path(d);e={'checks':[]}
+   with self.assertRaises(AssertionError):q.record_response(e,out,'native-allow',403,b'x'*70000,False)
+   self.assertEqual(e['checks'][0]['status'],403);self.assertTrue(e['checks'][0]['failure_body_truncated']);self.assertEqual((out/'response-native-allow-private.body').stat().st_size,65536)
+   with self.assertRaises(AssertionError):q.record_response(e,out,'malformed-body',200,b'{bad',lambda:json.loads('{bad'))
+   self.assertEqual(e['checks'][1]['status'],200);self.assertTrue((out/'response-malformed-body-private.body').exists())
+
 if __name__=='__main__':unittest.main()

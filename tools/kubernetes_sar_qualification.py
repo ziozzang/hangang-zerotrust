@@ -160,6 +160,15 @@ def wait_pod_running(read,alive,now=time.monotonic,sleep=time.sleep,deadline=Non
         if now()>=deadline:raise RuntimeError('owned Pod startup deadline')
         sleep(.1)
 
+def record_response(evidence,output,name,status,body,valid):
+    item={'name':name,'status':status};evidence['checks'].append(item)
+    try:accepted=valid() if callable(valid) else valid
+    except (ValueError,TypeError):accepted=False
+    if not accepted:
+        item['failure_body_bytes']=min(len(body),65536);item['failure_body_truncated']=len(body)>65536
+        (output/('response-'+name+'-private.body')).write_bytes(body[:65536])
+        raise AssertionError('observed response failed qualification: '+name)
+
 def execute(a,docs,material):
     candidate=json.loads(a.candidate_evidence.read_text())
     validate_prerequisites(json.loads(a.backup_evidence.read_text()),candidate,a.pum_image)
@@ -236,19 +245,15 @@ def execute(a,docs,material):
             revision+=1
         def expect(name,who='reader',method='GET',request_path=path,allowed=False):
             status,data=api(api_port,who,method,request_path,{'data':{'counter':'MUTATED'}} if method=='PATCH' else None)
-            if allowed:
-                if status!=200 or json.loads(data).get('data')!={'counter':'unchanged'}:raise AssertionError(name)
-            elif status==200:raise AssertionError(name)
-            elif status not in (403,500,503):raise AssertionError(name+' unexpected HTTP status')
-            evidence['checks'].append({'name':name,'status':status})
+            valid=(lambda:status==200 and json.loads(data).get('data')=={'counter':'unchanged'}) if allowed else status in (403,500,503)
+            record_response(evidence,a.output,name,status,data,valid)
         expect('native-allow',allowed=True);expect('unknown-user',who='unknown');expect('unknown-resource',request_path=path+'-unknown')
         def patch(value,allowed):
-            status,_=api(api_port,'reader','PATCH',path,{'data':{'counter':value}})
-            if status!=(200 if allowed else 403):raise AssertionError('mapped PATCH permission mismatch')
-            evidence['checks'].append({'name':'mapped-patch-allow' if allowed else 'mapped-patch-denied','status':status})
+            status,data=api(api_port,'reader','PATCH',path,{'data':{'counter':value}})
+            record_response(evidence,a.output,'mapped-patch-allow' if allowed else 'mapped-patch-denied',status,data,status==(200 if allowed else 403))
         def counter(expected):
             status,data=api(api_port,'bootstrap','GET',path)
-            if status!=200 or json.loads(data).get('data')!={'counter':expected}:raise AssertionError('backend side effect mismatch')
+            record_response(evidence,a.output,'independent-backend-readback',status,data,lambda:status==200 and json.loads(data).get('data')=={'counter':expected})
         patch('first',True);counter('first')
         denied_write=policy();denied_write['services']['api']['users']={};publish(denied_write);patch('MUST-NOT-APPLY',False);counter('first')
         publish(policy());patch('second',True);counter('second');patch('unchanged',True)

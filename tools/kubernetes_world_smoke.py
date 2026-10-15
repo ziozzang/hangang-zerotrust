@@ -397,7 +397,12 @@ def main():
             assert api(admin,f'/v1/plugins/{plugin_id}/{policy_route}')[0]==200
             if args.browser_probe:
                 browser_config=root/'browser.json'
-                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':default_key},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
+                if args.composition:
+                    browser_document=json.loads(browser_config.read_text())
+                    browser_document['application']['credentialScheme']='hopae_compose'
+                    browser_document['redactionSecrets']=[*tokens.values(),composition_key]
+                    browser_config.write_text(json.dumps(browser_document))
                 subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=240)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200
             if args.resource_catalog:
@@ -509,7 +514,7 @@ def main():
                 for name in commands:
                     try:
                         diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=15').decode(errors='replace')
-                        for value in tokens.values():diagnostic=diagnostic.replace(value,'[redacted]')
+                        for value in [*tokens.values(),*([composition_key] if args.composition else [])]:diagnostic=diagnostic.replace(value,'[redacted]')
                         for file in ['server.key','client.key','ca.key']:diagnostic=diagnostic.replace((root/file).read_text(),'[redacted key]')
                         print('Owned diagnostic '+name+': '+diagnostic[:4000],flush=True)
                     except (RuntimeError,subprocess.TimeoutExpired):pass

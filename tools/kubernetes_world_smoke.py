@@ -37,10 +37,12 @@ def main():
     parser.add_argument('--native-resource',action='store_true')
     parser.add_argument('--credential-projection',action='store_true')
     parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
+    parser.add_argument('--pumgye-responsive',action='store_true',help='Opt-in actual embedded Pumgye UI390px bounds and keyboard gate')
     parser.add_argument('--composition',action='store_true',help='Service-only API key plus an additional owned HTTPS relay Pod')
     parser.add_argument('--composition-mode',choices=['all','any'],default='all')
     parser.add_argument('--evidence-dir',type=Path,help='Private owned diagnostics directory; never stores credential configuration')
     args=parser.parse_args()
+    if args.pumgye_responsive and not args.browser_probe:parser.error('--pumgye-responsive requires --browser-probe')
     if args.composition and not (args.observed and args.credential_projection and args.receipt_client):
         parser.error('--composition requires --observed --credential-projection and the composition SDK receipt client')
     if not args.composition and args.composition_mode!='all':parser.error('--composition-mode requires --composition')
@@ -459,10 +461,12 @@ def main():
             if args.browser_probe:
                 browser_config=root/'browser.json'
                 browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':default_key},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
-                if args.composition:
+                if args.composition or args.pumgye_responsive:
                     browser_document=json.loads(browser_config.read_text())
-                    browser_document['application']['credentialScheme']='hopae_compose'
-                    browser_document['redactionSecrets']=[*tokens.values(),composition_key]
+                    if args.composition:
+                        browser_document['application']['credentialScheme']='hopae_compose'
+                        browser_document['redactionSecrets']=[*tokens.values(),composition_key]
+                    if args.pumgye_responsive:browser_document['pumgyeResponsive']=True
                     browser_config.write_text(json.dumps(browser_document))
                 subprocess.run([node,str(args.browser_probe.resolve()),str(browser_config)],check=True,timeout=240)
             status,document,metadata=api(admin,'/v1/pumgye/policy');assert status==200

@@ -121,3 +121,14 @@ TLS 이름/잘못된 clock-rate 설정/caller 오류는 probe 실패이며 provi
 않습니다. Peer 복구만으로 열린 circuit을 우회할 수 없습니다. 거부 진단은 receipt/
 시간 capability를 부여하지 않고 성공 경로는 실제 SDK issue/observe/refresh/check를
 그대로 사용합니다.
+
+## 내장 품계 UI 반응형 선택 검증
+
+`--pumgye-responsive`는 실제 browser probe가 필요하며 private 설정에 신뢰된
+pumgyeResponsive=true를 추가합니다. 기존 실제 정책 로드/게시 검사 뒤390px에서
+문서 수평 overflow 없음, 주요 panel의 양수 padding, viewport 안의 form control/
+table wrapper, 보이는 source summary와 이름 있는 권한 표 region의 키보드 수평
+scroll을 검사합니다. 표 cell/action은 wrapper 안에서 scroll할 수 있으며 모두
+동시에 viewport 안에 있어야 한다는 주장은 하지 않습니다. 이후1280px desktop으로
+복구하고 기존 기능 gate를 전부 유지합니다. 정확한 새 내장 UI 후보의 opt-in 검사로
+기존037/기본 모드에 새 CSS 검사나 시간 예산 변경을 강제하지 않습니다.

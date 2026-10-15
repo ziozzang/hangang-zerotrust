@@ -142,3 +142,16 @@ configuration and caller failures must fail the probe and never count as provide
 denials. Peer recovery alone cannot bypass the open circuit. This denial diagnostic
 grants no receipt or time capability; the ordinary successful probe still uses the
 actual SDK issue/observe/refresh/check sequence.
+
+## Opt-in embedded Pumgye responsive UI gate
+
+`--pumgye-responsive` requires the actual browser probe and adds trusted
+`pumgyeResponsive=true` to its private configuration. After the existing real policy
+load and publication checks, it sets a390px viewport and verifies no document
+horizontal overflow, positive main-panel padding, form controls and table wrappers
+within the viewport, visible source summary, and keyboard horizontal scrolling of
+the named authorization region. Table cells/actions may scroll within their wrapper;
+they need not all remain inside the viewport simultaneously. The probe then restores
+a1280px desktop viewport and preserves every subsequent functional gate. This is
+opt-in for the exact new embedded UI candidate; existing037/default runs do not gain
+new CSS assertions or time-budget changes.

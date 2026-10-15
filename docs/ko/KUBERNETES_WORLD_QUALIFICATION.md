@@ -89,3 +89,25 @@ PV는 기존 Retain 정책대로 유지했다. 선택된 gRPC 데이터 평면·
 한강 상태 보존·네트워크 원천 장애를 포함한다. 기존 Ingress와 운영 서비스도
 정상이다. 테스트 클러스터 패키지 검증이며 운영 반영·모든 네이티브 배포 모드·
 전체 성능 검증까지 완료한 것은 아니다.
+
+## 서비스 전용 혼합 구성 검증
+
+`--composition --observed --credential-projection`은 네 production owner와 테스트
+백엔드에 독립된 다섯 번째 인증 relay Pod를 추가합니다. 기본은 명시적인 All이며
+`--composition-mode any`로 Any를 선택합니다. 고정 호패 프로필이 로컬 API 키와
+HTTPS relay slot 및 정확한 Service 신원 관계를 선언합니다. Namespace 소유 CA를
+`api_relay.ca_file`로 mount하고 정확한 Service DNS 인증서를 검증합니다. 인증서/
+서버이름 검증은 유지합니다. Relay Secret 환경에는 원격 키 둘과 fixture 제어 키만,
+호패에는 로컬 키만 전달하며 원격 provider 키를 전달하지 않습니다.
+
+요청은 제한된 envelope payload의 Hopae-Compose를 사용합니다. 독립 receipt probe는
+고정 credential_scheme=hopae_compose 설정과 credential 환경의 payload만 사용하고
+기존 모드의 Bearer 기본값을 유지해야 합니다. 실제 issue, 독립 observation, 소비형
+refresh와 최종 검사가 필수입니다. 누락/제시된 실패/서로 다른 검증 신원 거부, relay
+circuit 개방과 명시적 source Pod 교체 복구를 검사합니다. 모든 거부에서 backend
+count가 같아야 하며 성공 응답에는 별도 origin 키만 있고 provider 키 둘/envelope/
+native caller 키는 없어야 합니다.
+
+AAL0의 Service 혼합 구성 범위입니다. Human MFA, Workload 혼합, 로컬 계정 복구,
+streaming 또는 임의 배포 구조를 검증했다는 뜻은 아닙니다. 기본 모드는 기존 네
+production owner를 유지하며 relay 키/Pod/혼합 설정을 만들지 않습니다.

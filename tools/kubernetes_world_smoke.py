@@ -37,7 +37,12 @@ def main():
     parser.add_argument('--native-resource',action='store_true')
     parser.add_argument('--credential-projection',action='store_true')
     parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
+    parser.add_argument('--composition',action='store_true',help='Service-only API key plus HTTPS relay in a fifth owned Pod')
+    parser.add_argument('--composition-mode',choices=['all','any'],default='all')
     args=parser.parse_args()
+    if args.composition and not (args.observed and args.credential_projection and args.receipt_client):
+        parser.error('--composition requires --observed --credential-projection and the composition SDK receipt client')
+    if not args.composition and args.composition_mode!='all':parser.error('--composition-mode requires --composition')
     if args.sumunjang_native_source != bool(args.sumunjang_crd_manifest):
         parser.error('--sumunjang-native-source and --sumunjang-crd-manifest must be used together')
     if args.observed and not args.credential_projection:
@@ -72,9 +77,15 @@ def main():
         openssl('req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'ca.key','-out',root/'ca.pem','-days','1','-subj','/CN=Owned world CA','-addext','basicConstraints=critical,CA:TRUE')
         for name,usage in [('server','serverAuth'),('client','clientAuth')]:
             openssl('req','-new','-newkey','rsa:2048','-nodes','-keyout',root/f'{name}.key','-out',root/f'{name}.csr','-subj',f'/CN={name}')
-            ext=root/f'{name}.ext';ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage='+usage+'\nsubjectAltName='+','.join('DNS:'+c+'.'+namespace+'.svc' for c in ['hangang','hopae','sumunjang','pumgye'])+',DNS:app.example.test,IP:127.0.0.1\n')
+            ext=root/f'{name}.ext';ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage='+usage+'\nsubjectAltName='+','.join('DNS:'+c+'.'+namespace+'.svc' for c in (['hangang','hopae','sumunjang','pumgye','relay'] if args.composition else ['hangang','hopae','sumunjang','pumgye']))+',DNS:app.example.test,IP:127.0.0.1\n')
             openssl('x509','-req','-in',root/f'{name}.csr','-CA',root/'ca.pem','-CAkey',root/'ca.key','-CAcreateserial','-days','1','-extfile',ext,'-out',root/f'{name}.pem')
         tokens={name:secrets.token_hex(32) for name in ['api','caller','gateway-admin','guard-collector','guard-admin','pum-decision','pum-admin','hopae-delegation']}
+        if args.composition:
+            tokens.update({name:secrets.token_hex(32) for name in ['remote-api','remote-other','other-local','relay-control']})
+        def composition_wire(entries):
+            return base64.urlsafe_b64encode(json.dumps({'version':1,'credentials':[{'slot':slot,'credential':credential} for slot,credential in entries]},separators=(',',':')).encode()).decode().rstrip('=')
+        composition_key=composition_wire([('local',tokens['api']),('partner',tokens.get('remote-api',''))])
+        default_key=composition_key if args.composition else tokens['api']
         def tls(name):return {'server_name':name+'.'+namespace+'.svc','ca':'/tls/ca.crt','certificate':'/tls/client.crt','key':'/tls/client.key'}
         digest=hashlib.sha256(bytes([1]))
         for value in ['hopae:owned','services','worker']:
@@ -88,6 +99,11 @@ def main():
             hop['admin']={'public_url':'https://admin.example.test','hangang_delegation':{'authority':'hangang','key_env':'HOPAE_CONSOLE_DELEGATION_KEY'}}
         hop['apps'][0].update(app_id='orders',ports=[8443])
         hop['authentication_gateway']={'authority_id':'owned','profiles':[{'service_id':'orders','host':'app.example.test','ports':[8443],'realm':'services','api_keys':[{'token_env':'OWNED_API_KEY','subject':'worker'}],'networks':['127.0.0.1/32']}]}
+        if args.composition:
+            profile=hop['authentication_gateway']['profiles'][0]
+            profile['api_keys'].append({'token_env':'OWNED_OTHER_KEY','subject':'other'})
+            profile['api_relay']={'url':f'https://relay.{namespace}.svc:9443/verify','issuer':'owned-partner','timeout_ms':500,'allow_private_endpoints':True,'ca_file':'/tls/ca.crt'}
+            profile['composition']={'mode':args.composition_mode,'timeout_ms':800,'slots':[{'id':'local','provider':'api_key'},{'id':'partner','provider':'api_relay'}],'identities':[{'subject':subject,'bindings':[{'slot':'local','issuer':'hopae:owned','realm':'services','subject':subject,'kind':'service'},{'slot':'partner','issuer':'owned-partner','realm':'services','subject':partner,'kind':'service'}]} for subject,partner in [('worker','partner-worker'),('other','partner-other')]]}
         policy={'version':1,'information_classes':['internal'],'services':{'orders':{'permissions':['read','write'],'require_guard':True,'roles':{'reader':{'permissions':['read'],'information_classes':['internal'],'minimum_aal':0}},'users':{subject:['reader']},'networks':[{'cidr':'127.0.0.1/32','roles':['reader']}]}}}
         gateway={'http':[{'id':'orders','host':'app.example.test','path_prefix':'/secure','access_mode':'protected','backends':[f'http://echo.{namespace}.svc:8080'],'auth':{'url':'http://127.0.0.1:8701/_hopae/verify','native':{'transport':'grpc','address':f'hopae.{namespace}.svc:8703','tls':tls('hopae')},'request_headers':['authorization'],'response_headers':['x-forwarded-user','x-hopae-aal','x-hopae-principal-kind'],'static_request_headers':{'x-hopae-gateway-key':{'env':'FIXTURE_KEY'},'x-hopae-contract':'1'},'forward_response':True},'resource_policy':{'resource_id':'orders','principal':{'source':'external','subject_header':'x-forwarded-user'},'allow':[],'pumgye':{'service_id':'orders','information_class':'internal','permissions':{'GET':['read'],'POST':['write']}}}}],'pumgye_authority':{'transport':'grpc','decision_address':f'pumgye.{namespace}.svc:9087','management_address':f'pumgye.{namespace}.svc:9084','decision_token_env':'PUMGYE_DECISION_TOKEN','admin_token_env':'PUMGYE_ADMIN_TOKEN','tls':tls('pumgye'),'timeout_ms':1000}}
         if args.resource_catalog:
@@ -169,6 +185,8 @@ def main():
             plugins=json.loads(config_map['data']['plugins.json'])
             plugins['plugins'].append({'id':'hopae','directory':'/state/hopae-plugin','manifest_sha256':hashlib.sha256(raw).hexdigest(),'backend':f'https://hopae.{namespace}.svc:8702','token_env':'HOPAE_CONSOLE_DELEGATION_KEY','delegate_actor':True,'delegation_authority':'hangang','tls':tls('hopae')})
             config_map['data']['plugins.json']=json.dumps(plugins)
+        if args.composition:
+            config_map['data']['composition-relay.js']="const https=require('https'),fs=require('fs');let calls=0,unavailable=false;const server=https.createServer({key:fs.readFileSync('/tls/tls.key'),cert:fs.readFileSync('/tls/tls.crt')},(q,r)=>{let parts=[],size=0;q.on('data',c=>{size+=c.length;if(size>2048){q.destroy();return;}parts.push(c)});q.on('end',()=>{const reply=(status,value)=>{let body=JSON.stringify(value);r.writeHead(status,{'content-type':'application/json','content-length':Buffer.byteLength(body)});r.end(body)};if(q.url==='/__state'){if(q.headers.authorization!=='Bearer '+process.env.RELAY_CONTROL){reply(401,{});return;}if(q.method==='POST'){try{let next=JSON.parse(Buffer.concat(parts).toString());if(Object.keys(next).some(k=>k!=='unavailable')||typeof next.unavailable!=='boolean'){reply(400,{});return;}unavailable=next.unavailable}catch{reply(400,{});return;}}reply(200,{calls,unavailable});return;}if(q.url!=='/verify'||q.method!=='POST'){reply(404,{});return;}calls++;if(unavailable){reply(503,{});return;}let subject=q.headers.authorization==='Bearer '+process.env.REMOTE_API?'partner-worker':q.headers.authorization==='Bearer '+process.env.REMOTE_OTHER?'partner-other':null;let body;try{body=JSON.parse(Buffer.concat(parts).toString())}catch{reply(400,{});return;}if(!subject){reply(401,{});return;}if(body.service_id!=='orders'){reply(200,{active:false});return;}reply(200,{active:true,subject,service_id:'orders',expires_at:Date.now()+900})})});server.listen(9443,'0.0.0.0');"
         resource('Secret','world-credentials',stringData=tokens)
         resource('Secret','world-tls',stringData={'tls.crt':(root/'server.pem').read_text(),'tls.key':(root/'server.key').read_text(),'ca.crt':(root/'ca.pem').read_text(),'client.crt':(root/'client.pem').read_text(),'client.key':(root/'client.key').read_text()})
         def env(name,key):return {'name':name,'valueFrom':{'secretKeyRef':{'name':'world-credentials','key':key}}}
@@ -181,6 +199,7 @@ def main():
             source_args=commands['sumunjang'];position=source_args.index('--bootstrap-policy');del source_args[position:position+2]
             source_args+=['--kubernetes-authority','/config/sumunjang-source.json','--readiness-listen','0.0.0.0:9083']
         environments={'hopae':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
+        if args.composition:environments['hopae'].append(env('OWNED_OTHER_KEY','other-local'))
         if args.receipt_client:environments['hopae'].append(env('OWNED_RECEIPT_SEED','receipt-seed'))
         if args.authenticated_client or args.credential_projection:
             commands['pumgye']+=['--authentication-trust','/config/authentication-trust.json','--authentication-live','/config/authentication-live.json','--network-live','/config/network-live.json']
@@ -216,6 +235,9 @@ def main():
             resource('Service',name,spec={'selector':{'app':name},'ports':[{'name':'p'+str(p),'port':p,'targetPort':p} for p in ports]})
         echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;let chunks=[];q.on('data',c=>chunks.push(c));q.on('end',()=>r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url,body:Buffer.concat(chunks).toString('utf8')})));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
         resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
+        if args.composition:
+            relay=resource('Deployment','relay',spec={'replicas':1,'selector':{'matchLabels':{'app':'relay'}},'template':{'metadata':{'labels':{'app':'relay'}},'spec':{'automountServiceAccountToken':False,'securityContext':{'runAsNonRoot':True,'runAsUser':65532,'runAsGroup':65532,'fsGroup':65532},'containers':[{'name':'relay','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','/config/composition-relay.js'],'env':[env('REMOTE_API','remote-api'),env('REMOTE_OTHER','remote-other'),env('RELAY_CONTROL','relay-control')],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'readinessProbe':{'tcpSocket':{'port':9443},'periodSeconds':2},'resources':{'requests':{'cpu':'50m','memory':'32Mi'},'limits':{'cpu':'1','memory':'128Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True}]}],'volumes':[{'name':'config','configMap':{'name':'world-config'}},{'name':'tls','secret':{'secretName':'world-tls','defaultMode':416}}]}}});relay['apiVersion']='apps/v1'
+            resource('Service','relay',spec={'selector':{'app':'relay'},'ports':[{'port':9443,'targetPort':9443}]})
         native_spec={'policy':{'mode':'enforce','auto_block':False,'allow':[]},'rules':{'version':1,'rules':[]},'blocks':[]}
         source_role={'apiVersion':'rbac.authorization.k8s.io/v1','kind':'Role','metadata':{'name':'native-source','namespace':namespace},'rules':[{'apiGroups':['policy.hangang.dev'],'resources':['sumunjangpolicies'],'resourceNames':['native'],'verbs':['get']}]}
         source_config=None
@@ -240,7 +262,7 @@ def main():
                 config_map['data']['sumunjang-source.json']=json.dumps(source_config)
                 print('Owned native Sum source: '+namespace+' UID '+native_policy_uid,flush=True)
             kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode(),timeout=300)
-            for name in [*commands,'echo']:
+            for name in [*commands,'echo',*(['relay'] if args.composition else [])]:
                 kube('-n',namespace,'rollout','status','deployment/'+name,'--timeout=120s',timeout=135)
                 print('Ready: '+name,flush=True)
             def forward(name,remote):
@@ -272,9 +294,9 @@ def main():
                         if attempt==2 or time.monotonic()>=deadline:raise
                         print('Read-only backend counter transport retry',flush=True)
                     finally:c.close()
-            def request(method='GET',key=tokens['api']):
+            def request(method='GET',key=default_key):
                 c=Gateway('app.example.test',8443,timeout=3);headers={'Host':'app.example.test','x-forwarded-user':'forged','x-hopae-aal':'3'}
-                if key:headers['Authorization']='Bearer '+key
+                if key:headers['Authorization']=('Hopae-Compose ' if args.composition else 'Bearer ')+key
                 if args.native_resource:headers['Content-Type']='text/plain'
                 before=backend_count()
                 c.request(method,'/secure',body=b'owned final entity' if args.native_resource else None,headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
@@ -283,6 +305,8 @@ def main():
                     projected={k.lower():v for k,v in json.loads(data)['headers'].items()}
                     assert projected.get('authorization')=='Bearer '+tokens['origin-bearer'],'owned origin credential mismatch'
                     assert projected.get('authorization')!='Bearer '+tokens['api'],'incoming credential leaked'
+                    if args.composition:
+                        assert all(secret.encode() not in data for secret in [tokens['api'],tokens['remote-api'],tokens['remote-other'],tokens['other-local'],tokens['caller'],composition_key]),'composition credential/envelope/caller reached origin'
                 return status,data
             def api(local,path,method='GET',body=None,token=None,extra=None):
                 c=http.client.HTTPConnection('127.0.0.1',local,timeout=3);headers={'Authorization':'Bearer '+(token or tokens['gateway-admin']),'Content-Type':'application/json'}
@@ -316,13 +340,21 @@ def main():
             assert headers['x-forwarded-user']==subject and headers['x-hopae-aal']=='0'
             if not args.credential_projection:assert 'authorization' not in headers
             else:print('PASS: actual four-Pod native permission and paired credential projection delivers only the separate origin bearer over mTLS Service DNS')
+            if args.composition:
+                expected=401 if args.composition_mode=='all' else 200
+                assert request(key=composition_wire([('local',tokens['api'])]))[0]==expected
+                assert request(key=composition_wire([('partner',tokens['remote-api'])]))[0]==expected
+                for entries in [[('local','invalid-local-at-least-thirty-two-bytes'),('partner',tokens['remote-api'])],[('local',tokens['api']),('partner','invalid-remote-at-least-thirty-two-bytes')],[('local',tokens['api']),('partner',tokens['remote-other'])]]:
+                    assert request(key=composition_wire(entries))[0]==401,'invalid or ambiguous presented sibling accepted'
+                print('PASS: Kubernetes service-only composition '+args.composition_mode+' uses fixed credential slots and explicit verified identities; missing/invalid/ambiguous factors and secret isolation checked')
             assert request('POST')[0]==403 and request(key=None)[0]==401
             if args.receipt_client:
                 receipt_port=forward('hopae',8703)
                 receipt_config={'settings':{'transport':'grpc','address':f'localhost:{receipt_port}','tls':{'server_name':f'hopae.{namespace}.svc','ca':str(root/'ca.pem'),'certificate':str(root/'client.pem'),'key':str(root/'client.key')}},'issuer_ref':'owned-world','key_epoch':1,'public_key':receipt_pin,'service':'orders','audience':'orders-api','method':'GET','target':'/secure','body':'','headers':[['x-hopae-contract','1'],['x-forwarded-host','app.example.test'],['x-forwarded-proto','https'],['x-forwarded-port','8443'],['x-forwarded-for','127.0.0.1'],['x-original-method','GET'],['x-original-url','https://app.example.test:8443/secure']]}
                 if args.observed:receipt_config.update(identity_authority='world1',source_ppm=500,receiver_ppm=500)
+                if args.composition:receipt_config['credential_scheme']='hopae_compose'
                 receipt_path=root/'receipt-client.json';receipt_path.write_text(json.dumps(receipt_config))
-                receipt_environment=dict(os.environ,OWNED_RECEIPT_CALLER=tokens['caller'],OWNED_RECEIPT_CREDENTIAL=tokens['api'])
+                receipt_environment=dict(os.environ,OWNED_RECEIPT_CALLER=tokens['caller'],OWNED_RECEIPT_CREDENTIAL=default_key)
                 with (root/'receipt-client.log').open('w') as log:
                     result=subprocess.run([str(args.receipt_client.resolve()),str(receipt_path)],input='allow\n',env=receipt_environment,text=True,stdout=subprocess.PIPE,stderr=log,timeout=10)
                 if result.returncode!=0 and args.receipt_clock_diagnostic:
@@ -447,6 +479,26 @@ def main():
                 assert api(admin,f'/v1/plugins/{plugin_id}/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned K8s fixture'},tokens['gateway-admin'])[0]==200
                 assert request()[0]==403
                 assert api(admin,f'/v1/plugins/{plugin_id}/blocks','DELETE',{'network':'127.0.0.1/32'},tokens['gateway-admin'])[0]==200 and request()[0]==200
+            if args.composition:
+                relay_port=forward('relay',9443)
+                def relay_state(unavailable=None):
+                    class Relay(http.client.HTTPSConnection):
+                        def connect(self):self.sock=ctx.wrap_socket(socket.create_connection(('127.0.0.1',relay_port),timeout=3),server_hostname='relay.'+namespace+'.svc')
+                    connection=Relay('relay.'+namespace+'.svc',9443,timeout=3)
+                    connection.request('GET' if unavailable is None else 'POST','/__state',body=None if unavailable is None else json.dumps({'unavailable':unavailable}),headers={'Authorization':'Bearer '+tokens['relay-control'],'Content-Type':'application/json'})
+                    response=connection.getresponse();value=json.loads(response.read());connection.close();assert response.status==200;return value
+                relay_state(True)
+                for _ in range(3):assert request()[0]==503
+                count=relay_state()['calls']
+                assert request()[0]==503 and relay_state()['calls']==count,'open circuit contacted unavailable relay'
+                relay_state(False)
+                assert request()[0]==503 and relay_state()['calls']==count,'provider recovery silently bypassed open circuit'
+                # Explicit owned Pod replacement gives a new source/runtime owner;
+                # durable profile/replay history stays on its original PVC.
+                kube('-n',namespace,'rollout','restart','deployment/hopae')
+                kube('-n',namespace,'rollout','status','deployment/hopae','--timeout=120s',timeout=135)
+                eventually(lambda:request()[0]==200)
+                print('PASS: actual HTTPS relay outage opens circuit, suppresses calls after peer recovery, explicit Hopae Pod replacement preserves durable configuration and recovers fresh observed composition')
             kube('-n',namespace,'scale','deployment/sumunjang','--replicas=0')
             kube('-n',namespace,'wait','--for=delete','pod','-l','app=sumunjang','--timeout=60s')
             assert request()[0]==503

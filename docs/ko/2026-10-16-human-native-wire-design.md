@@ -96,14 +96,14 @@ hangang.hopae.v1 field/RPC를 바꾸지 않으며 다음을 추가합니다. 번
 | HumanReceiptReply | request_id1 / 기존 AuthenticationReceiptContext2 / receipt3 |
 | HumanReceiptObservedReply | receipt1 / observation2 |
 | HumanReceiptObservationRequest | request_id1 / context2 / receipt3 / request_sha2564 |
-| HumanReceiptTimeReply | request_id1 / owner_now_ms2 / remaining_ms3 / receipt_sha2564 / clock_domain5 / profile_revision6 / application_generation7 / key_registry_revision8 / cache_ttl_ms9=0 |
+| HumanReceiptTimeReply | request_id1 / owner_now_ms2 / remaining_ms3 / receipt_sha2564 / clock_domain5 / source_revision6 / application_generation7 / key_registry_revision8 / cache_ttl_ms9=0 |
 | HumanAuthenticationReceipts | IssueObserved(HumanReceiptRequest), ObserveTime(HumanReceiptObservationRequest) |
 | HumanObservedCredentialProjection | Project(기존 ProjectionRequest)→기존 ObservedProjectionReply. permission_contract4만 허용. |
 | Pum HumanObservedProjectionPermits | 기존 AuthenticatedResourceRequest로 Issue, 기존 PermitValidationRequest로 Observe; 기존 observed permit/report 반환. |
 
 Human issue는 bounded descriptor와 서버 header policy로 v2를 재계산합니다. entity
 hash는 authenticated PEP의 요청 attestation이지 source identity capability가 아닙니다.
-제안 decode cap32KiB·owner admission64이며 기존 Verify/header 제한도 적용합니다.
+추가 프로토콜·SDK 후보는 기존 128KiB frame 상한과 Verify/header 제한을 유지합니다. 유효한 기존 인증 헤더를 축소하지 않습니다. 원천 record의 개수·바이트 한도는 설정 가능해야 하며 고정 admission64는 wire 계약이 아닙니다.
 누락·중복·잘못된 길이/0 hash·correlation·contract·scope mismatch는 Engine/sign 전에
 거부합니다. cookie/header/body/proof/default Debug는 release에서도 명시적으로 redaction합니다.
 
@@ -122,10 +122,10 @@ realm·exact current native user ID를 묶습니다. caller email/realm/session/
 계정 연결은 실제 owning native identity 정책이며 revision/AAL/proof epoch는 별개입니다.
 
 Epoch 제안은
-`hobs1:<32lowernonzero-process-nonce>:<authority>:p:<source-scope-revision>:a:<app-generation>`
+`hobs1:<32lowernonzero-process-nonce>:<authority>:s:<source-scope-revision>:a:<app-generation>`
 입니다. authority40·전체128·revision1..9007199254740991·leading zero 금지와 strict
 re-encode를 적용하는 별도 parser이며 다른 class/legacy epoch를 거부합니다.
-clock_domain은 정확히 nonce입니다. Human profile_revision은 실제 Human scope 게시
+clock_domain은 정확히 nonce입니다. Human source_revision은 실제 Human scope 게시
 owner로, 초기에는 durable config generation과 exact prepared app Arc에서 나옵니다.
 Service authentication_gateway profile이나 user/session revision이 아닙니다. Human
 runtime을 만들기 위해 Service profile을 억지 활성화하면 안 됩니다.

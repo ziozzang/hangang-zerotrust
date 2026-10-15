@@ -133,7 +133,7 @@ message HumanReceiptTimeReply {
   uint64 request_id = 1; uint64 owner_now_ms = 2;
   uint32 remaining_ms = 3; bytes receipt_sha256 = 4;
   string clock_domain = 5;
-  uint64 profile_revision = 6; uint64 application_generation = 7;
+  uint64 source_revision = 6; uint64 application_generation = 7;
   uint64 key_registry_revision = 8; uint32 cache_ttl_ms = 9; // zero
 }
 service HumanObservedCredentialProjection {
@@ -144,8 +144,10 @@ service HumanObservedCredentialProjection {
 Human issue does not accept subject, AAL, generations, receipt, or a caller's
 `request_sha256`; it recomputes v2 from the bounded descriptor and fixed header
 policy. A descriptor's body hash is the authenticated PEP's attestation, not proof
-of an identity or a source capability. Decode limit proposal: 32 KiB (existing
-Verify/header limits still apply); fixed admission capacity 64 per configured owner.
+of an identity or a source capability. The additive protocol/SDK candidate uses the existing 128 KiB frame ceiling
+(existing Verify/header limits still apply), preserving valid native authentication
+headers. Retained-record count and byte quotas remain configurable source-owner
+limits; no fixed admission capacity of 64 is part of the wire contract.
 Reject absent/duplicate/wrongly sized fields, all-zero hashes, invalid correlation,
 unknown contract, extra header slots, and original/final scope mismatch before
 Engine/signing. No body bytes, cookies or header values enter default Debug/error
@@ -169,12 +171,12 @@ cannot select that coordinate. Existing Service/Workload s_48 and legacy strict
 session-receipt behavior remain unchanged. Account linking is only the actual
 owning native identity policy; current revision/AAL/proof epochs remain separate.
 
-Proposed canonical epoch:
-`hobs1:<32lowernonzero-process-nonce>:<authority>:p:<source-scope-revision>:a:<app-generation>`.
+Canonical epoch allocated by the protocol/SDK candidate (not production activation):
+`hobs1:<32lowernonzero-process-nonce>:<authority>:s:<source-scope-revision>:a:<app-generation>`.
 Reuse strict bounded re-encode validation (authority <=40, whole <=128, revisions
 1..9007199254740991, no leading zeros); a separate Human parser rejects all Service/
 Workload/legacy namespaces. `clock_domain` is exactly that nonce. Human
-`profile_revision` means the **actual Human scope publication**, sourced initially
+`source_revision` means the **actual Human scope publication**, sourced initially
 from the owning durable config generation and exact prepared app Arc; it is not an
 `authentication_gateway` Service profile or a session/user revision. Human source
 startup must not require enabling Service profiles merely to build its runtime.

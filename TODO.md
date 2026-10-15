@@ -1698,3 +1698,15 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
   gateway replacement and network outage; owned namespace cleaned.
 - [x] New Sumunjang `60f19a5` standalone real Kubernetes native CRD authority
   qualification passes separately; full-chain adoption and new release remain open.
+
+## Signed observed releases and internal adoption — 2026-10-15
+
+- [x] Publish Hangang 0.3.6, Hopae 0.0.8 and Pumgye 0.1.7 after actual signed
+  Kubernetes/browser gates; preserve previous drafts, verify signatures again after
+  GitHub download and confirm anonymous public assets match byte-for-byte.
+- [x] Internally adopt Hopae 0.0.8, Pumgye 0.1.7 and Hangang gateway/console 0.3.6
+  with private rollback backups, configuration/identity/policy preservation, exact
+  running executable hashes, native refusal checks and durable restarts.
+- [ ] Complete subsequent Sumunjang native CRD source full-chain qualification,
+  separate versioned release and internal adoption. Published Sumunjang 0.3.5 is
+  retained unchanged in the completed signed four-service qualification.

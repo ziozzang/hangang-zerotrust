@@ -1660,3 +1660,30 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
   and service-only projection are not full provider completion.
 - [ ] Rebuild exact signed candidates and pass actual independent-host/Kubernetes/
   browser/withdrawal/restart/failure gates before release and operating adoption.
+
+## Actual observed decision chain and native source follow-up — 2026-10-15
+
+- [x] Pumgye `080e304`: actual DB/Kubernetes Authority views, separate permit
+  BOOTTIME domain, authenticated prerequisites and explicit clock bounds.
+- [x] Hopae `274a661`: native paired replay transaction, generation-tagged local
+  retention, fixed Pumgye observations and guarded credential output.
+- [x] Actual four-server mTLS gRPC functional runs with API keys and external
+  authentication API relay, including circuit suppression, wrong-owner refusal,
+  final credential isolation and durable revocation/restart cases (`bc5b2a4`).
+- [ ] Freeze final Hangang source after raw socket write fencing, original
+  suspend-inclusive route-reference lifetime and full workspace compatibility.
+  The preceding actual runs used a development binary before these final fixes.
+- [ ] Qualify exact rebuilt binaries across independent hosts, Kubernetes/browser
+  and operating rollout; prove delayed-connect/expiry refusal at the final I/O.
+- [ ] Connect Sumunjang Kubernetes source to authoritative decisions with adequate
+  pod/namespace/direction/port evidence and explicit NetworkPolicy semantics.
+  Current source collection/reports are diagnostic (`activated: false`); an
+  IP-only `Network.Check` cannot be relabeled Kubernetes policy enforcement.
+- [ ] Extend original BOOTTIME source-readiness fencing to Pumgye's strict/default
+  Kubernetes decision paths; observed permits already use the stronger fence.
+- [ ] Qualify cold restore with fresh issuer domains and preserved publication
+  floors. Live DB rollback and cloned live owners with independent stale ledgers
+  need separate external fencing; ordinary restart tests do not qualify them.
+- [ ] Recover safe upstream connection reuse for observed dispatch and measure the
+  complete chain. Private per-operation transport correctness is not a 10k/100k
+  performance result or completed pooling optimization.

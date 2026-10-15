@@ -1611,3 +1611,28 @@ copy is also preserved.
   effects, signed static packages, Kubernetes and operating adoption. Current
   operating releases remain unchanged; full provider/fleet/adapter/throughput
   requirements are still open.
+
+
+## Cross-host time and bounded ingress — 2026-10-15
+
+- [x] Separate signature evidence from temporal admission; implement independent
+  rate bounds, BOOTTIME instance-bound deadlines/retention and original source
+  proof budgets across suspend (Hopae `ce4d27f`, runtime `ed2eee4`).
+- [x] Adopt shared unary ingress in runtime `0cdbd166` and Hangang `b41b492`,
+  Pumgye `34d74b6`, Sumunjang `1f73a18`, Hopae `2a96303`; preserve component
+  preauthentication and Prost while bounding DATA, single-message framing and
+  simultaneous decode/handler futures. See ADR0017 for scoped test evidence.
+- [x] Add optional fixed-owner native observed client (`2a96303`): independent
+  received-proof observation, fresh RPC correlations, explicit retirement and
+  consuming refresh. Final feature42/compatibility41 and strict Clippy/musl pass.
+- [ ] Adopt this evidence into actual authorization, permit, final output and
+  paired durable replay paths. Resolve digest-only callers, dynamic verified
+  identities and source-domain bootstrap without per-request connections.
+- [ ] Rebuild signed candidates and rerun independent-host + actual four-Pod
+  Kubernetes/browser/revocation/restart/failure qualification before publication
+  or operating replacement. Source foundations do not close this gate.
+- [ ] Qualify configurable decode budgets and complete-chain throughput; current
+  component estimates are not measured 10k/100k performance results.
+
+Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
+[implementation queue](docs/ASTRA_REVIEW_QUEUE.md).

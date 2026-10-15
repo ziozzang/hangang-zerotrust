@@ -19,7 +19,7 @@ stopped. This audit does not start a new Astra review or qualify the whole produ
 | ADM-01 draft lifecycle | Complete for the named fix | Drafts survive navigation/in-flight publication; conflicts preserve edits and logout clears them |
 | ADM-02 Sumunjang policy CAS | Complete for the versioned editor | Expected revision checked under publication lock; stale writers and source-managed writes refuse |
 | ADM-05 footer placement | Complete | Generated plugin views mount before attribution with headings |
-| ADM-03 truthful mutation outcome/correlation | Partial | Final revocation can still drop a completed operation reference; native denial is flattened to infrastructure failure |
+| ADM-03 truthful mutation outcome/correlation | Partial | Completed-operation references now survive final revocation in the internal console candidate; native denial/recovery remain incomplete |
 | ADM-07 authority freshness/source/errors | Partial | Source ownership/read-only controls exist; a failed audit can block policy refresh and stale states are inconsistent |
 | ADM-08 identity/console/service recovery | Partial | Explicit account mappings and server authorization exist; role/error/recovery UX is inconsistent |
 | ADM-04 host-owned menus/subpage routes | Incomplete | Discovery-order menu, ambiguous labels, durable subpages/history/search remain |
@@ -46,11 +46,12 @@ fix and responsive regression are next.
 
 Hangang 0.3.7, Hopae 0.0.8, Pumgye 0.1.7 and Sumunjang 0.3.6 have signed-public and
 internal-adoption evidence in the [release record](2026-10-15-native-observed-adoption.md).
-Hopae 0.0.9 composition has static/local and 1,017-test evidence, but its full K3s
-qualification remains incomplete; initial browser failures and a later post-catalog
-restoration refusal are preserved. It is not released. Workload policy stage C is
-merged, protocol stage A is local and source-owner stage B is in development; there
-is no qualified Workload/Human source-to-backend chain yet.
+Hopae 0.0.9 has now passed exact-artifact local and actual K3s Service composition
+qualification, signed public-asset verification and internal adoption. The initial
+browser and post-catalog restoration failures remain in the release evidence.
+Workload policy stage C is merged; protocol A, source owner B and SDK D have local
+implementation/test evidence. Their joint qualification is underway. No qualified
+Workload/Human source-to-backend chain exists yet.
 
 The original three Astra administrator reviews are retained. Interrupted navigation,
 write-safety and style follow-up drafts were never saved and must not be counted as
@@ -84,3 +85,20 @@ claim 195 CSS-pixel support. This focused fix does not complete all of ADM-06.
 Combined 0.3.8 candidate `c5610e0` includes the operation-reference fix; its workspace
 passed 1,312 tests with 58 exclusions and strict all-target Clippy. Static build,
 exact new-artifact K3s/UI qualification and internal adoption are next.
+
+
+## Operating console follow-up
+
+The exact 0.3.8 console candidate from `c5610e0` is now installed internally after
+private binary/unit/database backup and read-only configuration preflight. The
+actual site was rechecked using a fresh system-administrator session: Pumgye,
+Sumunjang and Hopae load without page, module or global errors. At 390px all three
+pages now measure 390px, including Pumgye previously measured at 619px. Wide tables
+scroll within their own regions. Existing authority/configuration was preserved.
+The earlier candidate paragraphs describe the pre-adoption state.
+
+All eight static binaries are built and frozen. The console candidate is internal
+dogfooding, not a claim that Hangang 0.3.8 has been publicly released or that the
+operating gateway has been replaced. Exact-artifact K3s Any-composition/native-source
+and responsive-browser qualification passed; the separate DB-source run is still
+underway. The ADM totals remain 3 complete, 3 partial and 3 incomplete.

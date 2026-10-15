@@ -33,6 +33,8 @@ OWNED_SUM_BINARY=/private/verified-sumunjang OWNED_SUM_SOURCE=/private/sum-check
  -s tools/test-support/native-human-runtime -p test_sum_runtime.py -v
 ```
 
+Set `OWNED_SUM_SHARED_TLS=1` on that command to exercise `--tls-json` with separately generated owned shared CA/dual-purpose leaf before fixture startup; it also tests a client leaf signed by another CA. This shared-material branch passed against the exact public0.3.6 binary, including allow/deny/restore and cleanup. These are fresh fixture keys, never operating identities.
+
 The real process test proves enforced Allow→native CAS/block Deny→stale CAS409 remains denied→CAS/unblock Allow, increasing native snapshot revisions, wrong/admin caller refusal, missing-client-certificate refusal and closed-listener cleanup. It records only safe private RESULT facts. Pure tests cover private ready publication and binary mismatch refusal before spawn. It does not establish Human H4/Root full-chain dispatch, Kubernetes source mode, suspend guarantees of every legacy path, distributed DBMS, atomic remote withdrawal or throughput. Existing single-account helper bytes remain unchanged.
 
 [한국어](SUM_RUNTIME.ko.md)

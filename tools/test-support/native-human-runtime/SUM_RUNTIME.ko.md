@@ -7,3 +7,5 @@
 `deny`는 실제 policy document CAS로 allow 예외를 지운 다음 실제 block을 추가한다. `restore`는 CAS allow 복구와 block 삭제 후 실제 gRPC를 확인한다. 빈 allow를 deny-all로 취급하거나 없는 deny 필드를 만들지 않는다. 두 관리 동작은 하나의 원자적 거래가 아니다. 독립 block은 allow 우선순위 때문에 단독 거부를 보장하지 않는다. 기존 상태를 임의로 덮어쓰지 않는다.
 
 실제 opt-in 테스트는 Allow→CAS/block Deny→오래된 CAS409·거부 유지→복구 Allow, revision 증가, 잘못된/관리자 caller 거부, client 인증서 누락 거부, listener 종료를 검증한다. 제어 명령은 예산을 늘리지 않는다. 소유 자식 handle/process group만 정리하고 비밀·본문·토큰은 출력하지 않는다. 이 결과는 Human 네 코어·Kubernetes 원천·분산 DB·처리량 완료 주장이 아니다.
+
+실제 테스트 명령에 `OWNED_SUM_SHARED_TLS=1`을 추가하면 별도로 만든 소유 CA·dual-purpose leaf의 `--tls-json` 분기를 실행한다. 다른 CA가 서명한 client leaf 거부도 검사한다. 이 분기 역시 정확한 public0.3.6 바이너리로 allow/deny/restore·정리를 통과했으며 운영 키는 사용하지 않았다.

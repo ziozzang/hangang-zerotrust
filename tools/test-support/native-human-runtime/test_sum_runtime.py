@@ -31,7 +31,11 @@ class ActualProductionSum(unittest.TestCase):
         import grpc
         directory=Path(tempfile.mkdtemp(prefix='native-sum-runtime-evidence-'));directory.chmod(0o700)
         args=argparse.Namespace(directory=str(directory/'owned'),binary=os.environ['OWNED_SUM_BINARY'],binary_sha256=runtime.PUBLIC_036_SHA,sum_source=os.environ['OWNED_SUM_SOURCE'],client_ip='192.0.2.10',tls_json=None)
-        fixture=None;result={'passed':False,'checks':[]}
+        if os.environ.get('OWNED_SUM_SHARED_TLS') == '1':
+            shared=directory/'shared-tls';shared.mkdir(mode=0o700)
+            material=runtime.tls_material(shared)
+            tls_json=directory/'tls.json';runtime.private_json(tls_json,material);args.tls_json=str(tls_json)
+        fixture=None;result={'passed':False,'checks':[],'shared_tls':args.tls_json is not None}
         try:
             fixture=runtime.Fixture(args)
             initial=fixture.check();self.assertEqual((initial['verdict'],initial['mode']),(1,2));result['checks'].append('native_enforce_allow')
@@ -43,6 +47,14 @@ class ActualProductionSum(unittest.TestCase):
                 with self.assertRaises(grpc.RpcError) as refused:fixture.check(channel=channel)
                 self.assertIn(refused.exception.code(),[grpc.StatusCode.UNAVAILABLE,grpc.StatusCode.DEADLINE_EXCEEDED])
             result['checks'].append('missing_mtls_refused')
+            if args.tls_json:
+                other=directory/'untrusted-client';other.mkdir(mode=0o700)
+                untrusted=runtime.tls_material(other)
+                credentials=grpc.ssl_channel_credentials(Path(fixture.tls['ca']).read_bytes(),Path(untrusted['key']).read_bytes(),Path(untrusted['certificate']).read_bytes())
+                with grpc.secure_channel(f'127.0.0.1:{fixture.transport}',credentials,options=(('grpc.ssl_target_name_override','localhost'),)) as channel:
+                    with self.assertRaises(grpc.RpcError) as refused:fixture.check(channel=channel)
+                    self.assertIn(refused.exception.code(),[grpc.StatusCode.UNAVAILABLE,grpc.StatusCode.DEADLINE_EXCEEDED])
+                result['checks'].append('untrusted_client_ca_refused')
             stale=fixture.cas(True)
             denied=fixture.check();self.assertEqual((denied['verdict'],denied['mode']),(2,2));self.assertGreater(denied['revision'],initial['revision']);result['checks'].append('actual_cas_clear_allow_and_block_deny')
             status,_=fixture.management('/v1/policy/document',{'expected_revision':stale['revision'],'policy':stale['policy']},'PUT');self.assertEqual(status,409)

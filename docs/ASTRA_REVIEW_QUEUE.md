@@ -67,3 +67,23 @@ confirmed evidence, boundaries and proposed integration gates.
   issuer-process affinity must be specified before changing replay admission.
 - A1 continues with final-output cancellation/caller/publication interleavings;
   A3 continues with bounded issuer-affine and independent-receiver designs.
+
+## Subsequent batches
+
+- A1's final-output regression patch passed in the actual Hopae mTLS harness.
+  Its resource review found late observed request-ID rejection; a new regression
+  reproduced unnecessary authentication work. The observed-only early guard now
+  passes. No new semaphore leak, secret metadata echo or downgrade fallback was
+  established. Inherited protobuf decode amplification remains a separate review.
+- A2 delivered four further native boundary tests: early ID rejection, metadata,
+  capacity-one nested issuance/refresh and cancellation permit recovery. All four
+  pass after the early-ID fix. A2 now designs explicit native caller roles.
+- A3 delivered a bounded issuer-affine replay design. Source virtual time and
+  stable receiver retention time must remain separate even in the same process.
+  A3 now inventories minimal shared static types and compatible migration APIs.
+- The source milestone passed 968 workspace tests with 42 existing exclusions
+  and strict all-target Clippy before the additional four boundary tests. Source
+  is committed; release assets and operating deployments remain unchanged.
+
+Active next assignments: shared gRPC decode resource limits (A1), native caller
+role design (A2), and shared static observed-evidence/ledger interfaces (A3).

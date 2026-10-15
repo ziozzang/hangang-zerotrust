@@ -460,3 +460,5 @@ material key, receipt signing keys, transport/caller keys and TOTP encryption ke
 remain four separately operated lifecycles. Cold restore must restart source runtime
 and preserve authoritative replay evidence; arbitrary independently cloned live
 owners/ledgers need external fencing and are unsupported here.
+
+[Source scope binding addendum](2026-10-16-human-source-scope-binding.md): mandatory authenticated scope fingerprint in Human time reports; implementation qualification is pending.

@@ -332,3 +332,5 @@ capacity를 검토합니다. source-affine topology와 full signed replay retent
 별도 lifecycle입니다. cold restore는 source runtime 재시작과 authoritative replay 증거
 보존이 필요합니다. 임의 DB rollback/live VM clone/독립 ledger는 external fencing 없이
 지원되지 않으며 즉시 원격 계정 회수나 cross-host failover를 암묵 주장하지 않습니다.
+
+[원천 scope 보완](2026-10-16-human-source-scope-binding.md): Human 시간 보고의 인증된 scope 지문이 필수이며 구현 검증은 진행 중입니다.

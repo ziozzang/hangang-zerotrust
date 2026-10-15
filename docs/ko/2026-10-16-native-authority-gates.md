@@ -28,3 +28,15 @@
 - 정확한 static 산출물·통합 콘솔·실제 API-server 검증 뒤 서명·공개·내부 반영한다. H2·헤더 파서 최적화·처리량·분산 메모리 원천/복제·수명주기/복구와 전체 원래 목표는 계속 진행한다.
 
 비공개 근거 manifest는 `/tmp/hopae-human-provider-registry-evidence.json`, `/tmp/hangang-kubernetes-api-console-evidence.json`, `/tmp/pumgye-sar-listener-evidence.json`이다. 키·운영 설정·실제 계정은 공개 문서에 넣지 않았다.
+
+## 후보 및 실제 클러스터 검증 현황
+
+Hangang `0b15bfb7f7d199b6b653cd5de567ccc667df7055`는0.3.11 버전 후보다. 전체1,321 통과/58 기존 ignored 및 strict 검사를 유지하고 musl 정적 실행파일8종을 동결했다. 새 정확한 gateway의 실제 로컬 TLS HSTS HTTP/1(16), HTTP/2(4), Sacho 가시성(24) 검사도 통과했다. 품계0.1.9 runtime 소스는 `5817ee4dc7023c91f43a73909d38406c974caa96`, 패키징 전용 후속 소스는 `5e47fc2e122596d490d1edbacd0b6d5bed35c8ee`이다. 운영 observed-authentication 기능을 유지하고 동결 raw의 실제 로컬 CLI/mTLS/연결 재사용/CAS 검사와 패키징9개 검사를 통과했다. 아직 두 후보를 서명·공개·운영 반영하지 않았다.
+
+실제 클러스터 작업 전에 새 콜드 백업의 원격·오프호스트 전체 SHA/크기/tar 검증을 통과했다. 원래 Pod12개 UID/단계(11 Running, 기존 Failed debugger1개)와 노드2개 Ready를 보존했다. Echo/Ingress HTTPS200 및 비로그인 Headlamp401도 정상이다. 복원 리허설이나 여러 물리 호스트 장애 검증은 아니다.
+
+두 노드에 정확한 이미지를 적재한 뒤 네 컴포넌트 Any/Service 결합·Kubernetes 네이티브 수문장 원천·관리자 브라우저 검사가 종료0으로 완료됐다. mTLS, 읽기 전용 제어, 한국어/영어, 소유 정책 CAS/회수, 오래된 관리자 충돌, 실제 Pod 교체, 원천 RBAC 회수/삭제/UID 교체와 거부 시 백엔드 미전달·인증된 복구를 확인했다. 기존 assertion/시간 제한은 유지했다. 근거는 `/tmp/world-0311-019-any-browser-run1.log` 및 기준선 기록이다.
+
+별도 Workload 실행은 **실패**했다. 실제 공개 SDK 발급/관측/UID 검사 직후 첫 미인가 HTTP 응답 읽기에서3초 timeout이 났다. 권한 부여/permit/output/replay 단계에는 도달하지 않았다. 품계 초기 재시작은 관측했으나 종료 사유를 남기지 못했으며 tap 초기 연결 실패만으로 HTTP 원인을 단정할 수 없다. 해당 timeout 요청의 백엔드 효과0을 주장하지 않는다. 정리·원래 Pod/노드 기준선은 통과했다. 실패를 보존하고 제한된 Pod/이전 로그 진단을 보강하며 증거/HTTP 예산을 늘리거나 Any 통과를 Workload 검증으로 대체하지 않는다.
+
+첫 별도 API-server 실행도 권한 assertion 전에 **실패**했다. 공식 바이너리의 파일 capability가 dropALL 경계에서 실행 EPERM을 일으켰고 같은 조건의 로컬 실행으로 재현했다. 포트 포워딩도 Pod Running 전에 시작했다. 후속 `1ff01bc7e77ca2ced63cbcae31b378c207eacec4`는 원래10초를 공유하는 시작/포워딩 순서와, 공식 바이너리 바이트는 그대로 두고 빌드 시 파일 capability만 제거하는 고정된 파생 이미지를 지원한다. nonroot/dropALL/권한 상승 금지와 기존 메인 authorizer는 유지한다. 로컬21개 검사는 통과했으나 파생 이미지의 실제 권한 검증은 별도 필수 게이트다. 이 실패들을 근거로 릴리즈·운영 반영하지 않는다.

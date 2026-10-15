@@ -1750,3 +1750,10 @@ This section supersedes earlier pending stage notes without discarding their fai
 - [ ] Complete remaining external/self-owned/mixed-provider lifecycle, recovery, account management, long-lived revocation, fleet/source continuity, DBMS adapters and measured throughput. Current functional gates do not complete these requirements.
 
 - [x] Pumgye `e28d483`: private duplicate-sensitive, bounded v1 SAR wire decoder and fixed nonreflecting response buffers; default116/all-features125 and both strict Clippy pass. No authenticated listener or API-server activation yet.
+
+## Native authority source qualification — 2026-10-16
+
+- [x] Hopae `1fb5db3`: actual compiled provider/source ownership and overlapping retirement fix; final1080/42 and strict Clippy with independent review.
+- [x] Hangang `d422c1c`: compatible Pumgye core pin, context-aware API-service/assignment console, local network-route separation; final1321/58, browser45, strict Clippy and independent review.
+- [x] Pumgye `b184bdd`: real default-off authenticated persistent SAR listener, same View and below-TLS output fencing; default126/all-features135 and both strict Clippy, actual local binary/TLS tests and independent review.
+- [ ] Actual disposable API-server, exact versioned static artifacts and joint release/adoption remain required. Source merge is not operating activation. [Evidence and remaining boundaries](docs/reviews/2026-10-16-native-authority-gates.md).

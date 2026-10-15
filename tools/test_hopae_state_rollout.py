@@ -158,6 +158,14 @@ class RolloutTests(unittest.TestCase):
             restored=self.root/'native-restored';r.restore(backup,state,seal,restored)
             self.assertEqual(r.schema(restored/'state/hopae.db'),original_schema)
 
+    def test_relative_private_file_explicitly_refused(self):
+        previous=Path.cwd()
+        try:
+            os.chdir(self.root);Path('private.env').write_text('PRIVATE_SENTINEL')
+            with self.assertRaises(r.Refused):r.prepare(self.state,self.config,self.backup,[Path('private.env')])
+        finally:os.chdir(previous)
+        self.assertFalse(self.backup.exists())
+
     def test_cli_error_redacts_paths_and_secret(self):
         stream=io.StringIO()
         with patch.object(os.sys,'argv',['tool','prepare','--state-dir',str(self.state),'--config',str(self.root/'PRIVATE_SENTINEL'),'--output',str(self.backup)]),contextlib.redirect_stdout(stream):

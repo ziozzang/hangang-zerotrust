@@ -26,7 +26,7 @@ def require(value):
         raise Refused()
 
 def regular(path):
-    require(path.absolute() == path.resolve())
+    require(path.is_absolute() and path == path.resolve())
     st = path.lstat()
     require(stat.S_ISREG(st.st_mode) and st.st_nlink == 1)
     require(st.st_size <= MAX_FILE)

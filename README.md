@@ -5,15 +5,16 @@
 The architecture and contract repository for a zero-trust backbone built around
 [Hangang](https://github.com/ziozzang/hangang),
 [Hopae](https://github.com/ziozzang/hopae), and
-[Guard](https://github.com/ziozzang/sumunjang).
+[Sumunjang](https://github.com/ziozzang/sumunjang).
 
 Hangang enforces admission and resource policy. Hopae owns user identity,
 sessions and external authentication providers. Sumunjang (the Guard component)
 owns network controls and risk evidence. Pumgye owns deterministic service roles,
 permissions, information classes and user/IP authorization matrices. The required
 architecture deploys Hopae, Sumunjang and Pumgye as independent servers; Pumgye
-core and server are separate crates. Earlier embedded enforcement remains the
-qualified baseline while authenticated distributed integration is being built. Jangbu, existing Sacho, Sillok and Saheon observability/audit
+core and server are separate crates. The authenticated native/gRPC distributed chain and integrated console have passed
+actual four-Pod Kubernetes qualification; broader mixed-identity and fleet gates
+remain open. Jangbu, existing Sacho, Sillok and Saheon observability/audit
 integration remain design work, with Prometheus and ClickHouse connections.
 
 **This repository contains design proposals, example contracts and validation,
@@ -73,10 +74,10 @@ flowchart TB
     K -->|scoped changes| A
     R[Canary / post-change pentest / regression checks] -->|verified outcomes| N
   end
-    H & I & G -->|audit evidence| AU[Saheon: audit / integrity / verification]
+    H & I & G & D -->|audit evidence| AU[Saheon: audit / integrity / verification]
     AU -->|bounded evidence| S
-  H & I & G -->|bounded logs / traces / events| E
-  M -->|scrape| H & I & G & E
+  H & I & G & D -->|bounded logs / traces / events| E
+  M -->|scrape| H & I & G & D & E
   H & G -->|applied changes| R
 ```
 
@@ -94,7 +95,7 @@ flowchart LR
   J <-->|LLM assistance| DG[Dorang: LLM Gateway]
   DG <-->|provider routing| LP[LLM providers / model endpoints]
   J --> V[Pre-authorized scope or reviewed approval + domain validation]
-  V --> A[Guard mitigation / Hangang routing patch]
+  V --> A[Sumunjang mitigation / Hangang routing patch]
   A --> T[Canary + post-change pentest + normal-traffic checks]
   T --> R[Measured result / uncertainty / retain or CAS rollback]
   R -->|provenance and outcome reuse| S
@@ -171,14 +172,19 @@ for mapping, request/session checks and ownership boundaries.
 
 [Scale-out design](docs/adr/0013-snapshot-membership-scaleout.md) records memory snapshots, domain DB backbones, leased membership and Hangang pool/watch obligations. Implementation and fleet qualification remain pending.
 
-[Kubernetes and IAM source integration](docs/adr/0015-kubernetes-iam-authority.md): Hangang already supports Ingress; complete Hopae/Pumgye/Sumunjang authority adapters remain proposed.
+[Kubernetes and IAM source integration](docs/adr/0015-kubernetes-iam-authority.md):
+Hangang Ingress, Hopae TokenReview and Pumgye authoritative RBAC snapshots are
+implemented. A new Sumunjang native policy CRD authority has passed standalone
+live-cluster tests; full-chain adoption and its release remain separate. Standard
+NetworkPolicy diagnostics do not establish CNI enforcement.
 
 ```mermaid
 flowchart LR
-  K["Kubernetes API: source of truth / 원천 (proposed)"] -->|Ingress / Service: implemented| H[Hangang]
-  K -.->|ServiceAccount / TokenReview| O[Hopae]
-  K -.->|Role / Binding / extension policy| P[Pumgye]
-  K -.->|NetworkPolicy / selectors| S[Sumunjang]
+  K["Kubernetes API: authoritative sources"] -->|Ingress / Service| H[Hangang]
+  K -->|ServiceAccount / TokenReview| O[Hopae]
+  K -->|Role / Binding: authoritative snapshot| P[Pumgye]
+  K -.->|SumunjangPolicy: qualified source candidate| S[Sumunjang]
+  K -.->|NetworkPolicy: diagnostics only| N[No CNI activation]
   U[Hangang console] -.->|source-aware publication| K
   O --> H
   S --> H
@@ -190,3 +196,8 @@ flowchart LR
 [Component image packaging](docs/PACKAGING.md) packages qualified static artifacts; local images do not imply Kubernetes or production rollout.
 
 [Four-service Kubernetes functional qualification](docs/KUBERNETES_WORLD_QUALIFICATION.md) records the selected actual API request chain, Pod/PVC replacement and failure gates; full administrator/provider and inbound Kubernetes delegation remain open.
+
+[Native observed adoption and releases](docs/reviews/2026-10-15-native-observed-adoption.md)
+records the exact signed Hangang 0.3.6 / Hopae 0.0.8 / Pumgye 0.1.7 candidates,
+retained Sumunjang 0.3.5, actual independent-host/Kubernetes/browser gates and
+internal adoption. The subsequent native Sumunjang source is tracked separately.

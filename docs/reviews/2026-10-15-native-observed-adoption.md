@@ -159,3 +159,25 @@ CRD/RBAC/projected-token/native mTLS decision/update/withdrawal/restart/UID-pin
 qualification. This is a later source candidate, not the retained published
 Sumunjang binary in the four-service run. Its full-chain and signed release gates
 remain separate. Safe observed connection pooling and throughput remain open.
+
+## Published artifacts and internal adoption
+
+[Hangang 0.3.6](https://github.com/ziozzang/hangang/releases/tag/v0.3.6),
+[Hopae 0.0.8](https://github.com/ziozzang/hopae/releases/tag/v0.0.8) and
+[Pumgye 0.1.7](https://github.com/ziozzang/pumgye/releases/tag/v0.1.7) are published.
+The previous drafts were privately preserved before replacement. All five assets
+per release were re-downloaded, independently signature/checksum verified and
+compared with anonymous public downloads. Raw x86_64 musl executable SHA-256:
+
+| Component | SHA-256 |
+| --- | --- |
+| Hangang | `28cdb570f4677eac52270d76033426fb4fa4dd37c9fe01a67aa96a8a151a1ace` |
+| Hopae | `3e091d0a62b20a69eee2d532addf20a361127868def6de8f52cc5d850946a9c1` |
+| Pumgye | `054249265e0eec9bbfae3e3fe93c3074648e511f2082ebc88a016e0365e9b598` |
+
+Internal Hopae/Pumgye and Hangang gateway/console now run these releases. Private
+rollback backups, configuration and owner-data preservation, exact running binary
+hashes, management/native refusal checks and durable restarts were verified.
+Existing routes retain their configured modes; installing binaries does not
+automatically enable an unconfigured observed projection route or an external
+provider. The new Sumunjang CRD authority remains a separate subsequent candidate.

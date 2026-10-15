@@ -2,13 +2,13 @@
 
 [English](README.md) · [설계 목차](docs/ko/README.md)
 
-Hangang·Hopae·Guard를 기반으로 전체 제로트러스트 구조와 계약을 설계하는 저장소입니다.
+Hangang·Hopae·수문장을 기반으로 전체 제로트러스트 구조와 계약을 설계하는 저장소입니다.
 
 - Hangang: 요청 집행, 리소스 접근 제어, 공통 관리 콘솔, 네이티브 로그인·로그아웃 진입점.
 - Hopae: 사용자·세션·외부 인증 프로바이더. Google/OIDC 처리는 Hopae에 유지합니다.
 - 수문장(기존 Guard): IP/CIDR/ASN 제어와 네트워크 위험 근거.
 - 카탈로그·분류 엔진: API·리소스·데이터의 정보등급과 정책 속성.
-- 품계: 서비스별 역할·권한·정보등급·사용자/IP 매트릭스와 결정적 권한 판단. 코어와 서버 크레이트를 분리하며, 호패·수문장과 함께 독립 서버로 배포하는 구조입니다. 기존 내장 집행은 검증된 기준 구현이며 인증된 분산 통합은 진행 중입니다.
+- 품계: 서비스별 역할·권한·정보등급·사용자/IP 매트릭스와 결정적 권한 판단. 코어와 서버 크레이트를 분리하며, 호패·수문장과 함께 독립 서버로 배포하는 구조입니다. 인증된 native/gRPC 분산 체인과 통합 콘솔의 실제 4Pod Kubernetes 검증이 통과했습니다. 전체 혼합 신원·fleet 검증은 남아 있습니다.
 - 장부: 별도 로그·트레이스 수집/조회 및 ClickHouse 연동.
 - 기존 사초: 모니터링·상태·알림. 품계 권한 관리와 함께 향후 통합을 설계합니다.
 - Sillok: 제로트러스트 온톨로지와 근거·관계·출처.
@@ -79,10 +79,10 @@ flowchart TB
     K -->|제한된 변경| A
     R[카나리 / 재펜테스트 / 회귀 검증] -->|검증된 결과| N
   end
-    H & I & G -->|감사 근거| AU[사헌: 감사 / 무결성 / 검증]
+    H & I & G & D -->|감사 근거| AU[사헌: 감사 / 무결성 / 검증]
     AU -->|제한된 근거| S
-  H & I & G -->|제한된 로그 / 트레이스 / 이벤트| E
-  M -->|scrape| H & I & G & E
+  H & I & G & D -->|제한된 로그 / 트레이스 / 이벤트| E
+  M -->|scrape| H & I & G & D & E
   H & G -->|적용된 변경| R
 ```
 
@@ -99,7 +99,7 @@ flowchart LR
   J <-->|LLM 판단 보조| DG[Dorang: LLM Gateway]
   DG <-->|프로바이더 라우팅| LP[LLM 프로바이더 / 모델 엔드포인트]
   J --> V[사전 허용 범위 또는 검토 승인 + 도메인 검증]
-  V --> A[Guard 대응 / Hangang 라우팅 패치]
+  V --> A[수문장 대응 / Hangang 라우팅 패치]
   A --> T[카나리 + 재펜테스트 + 정상 트래픽 검증]
   T --> R[효과 / 불확실성 / 유지 또는 CAS 롤백]
   R -->|출처와 결과 재사용| S
@@ -141,14 +141,18 @@ logprob 기반 후보 분포를 판단 보조에 활용하며 다른 백엔드�
 
 [스케일아웃 설계](docs/ko/0013-snapshot-membership-scaleout.md)에 메모리 스냅샷·도메인 DB 백본·lease 멤버십·Hangang 풀/구독 의무를 기록했습니다. 실제 fleet 구현·검증은 진행 예정입니다.
 
-[Kubernetes·IAM 원천 연동](docs/ko/0015-kubernetes-iam-authority.md): 한강 Ingress는 구현되어 있으며, 호패·품계·수문장 원천 연결기는 별도 구현 예정입니다.
+[Kubernetes·IAM 원천 연동](docs/ko/0015-kubernetes-iam-authority.md): 한강 Ingress,
+호패 TokenReview, 품계의 권위 있는 RBAC 스냅샷이 구현되어 있습니다. 신규 수문장
+네이티브 정책 CRD 원천은 독립 실제 클러스터 검증을 통과했으며 전체 체인·릴리즈는
+별도 진행합니다. 표준 NetworkPolicy 진단은 CNI 집행을 의미하지 않습니다.
 
 ```mermaid
 flowchart LR
-  K["Kubernetes API: source of truth / 원천 (proposed)"] -->|Ingress / Service: implemented| H[Hangang]
-  K -.->|ServiceAccount / TokenReview| O[Hopae]
-  K -.->|Role / Binding / extension policy| P[Pumgye]
-  K -.->|NetworkPolicy / selectors| S[Sumunjang]
+  K["Kubernetes API: 권위 있는 원천"] -->|Ingress / Service| H[Hangang]
+  K -->|ServiceAccount / TokenReview| O[Hopae]
+  K -->|Role / Binding: 권위 스냅샷| P[Pumgye]
+  K -.->|SumunjangPolicy: 원천 검증 후보| S[Sumunjang]
+  K -.->|NetworkPolicy: 진단 전용| N[CNI 미활성]
   U[Hangang console] -.->|source-aware publication| K
   O --> H
   S --> H
@@ -160,3 +164,8 @@ flowchart LR
 [구성요소 이미지 패키징](docs/ko/PACKAGING.md)은 검증한 정적 파일을 패키징합니다. 로컬 이미지는 K8s/운영 배포의 완료를 뜻하지 않습니다.
 
 [네 서비스 K8s 기능 검증](docs/ko/KUBERNETES_WORLD_QUALIFICATION.md)은 실제 API 요청 체인·Pod/PVC 교체·장애 거부를 기록합니다. 전체 관리자/공급자 및 K8s 인증 위임은 남아 있습니다.
+
+[네이티브 관측 적용과 릴리즈](docs/ko/2026-10-15-native-observed-adoption.md)에
+한강 0.3.6·호패 0.0.8·품계 0.1.7의 정확한 서명 후보, 기존 수문장 0.3.5, 실제 독립
+호스트/Kubernetes/브라우저 검증과 내부 반영을 기록했습니다. 신규 수문장 원천은
+별도 후속으로 추적합니다.

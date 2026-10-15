@@ -72,3 +72,24 @@ The reviewer namespaced Role uses exactly one SA name and one Pod name. A same-n
 Only after Hop restoration, `restored_http` permits bounded HTTP503→200 observations (30s overall). EVERY503 must retain independent backend delta0; first200 must be exactly backend1 with exactly one new safe tap replay PASS for that successful call. HTTP401/403/other codes, missing replay evidence, nonzero503 effects and transport errors fail immediately. This does not retry a refused application call inside the server, restart channels, relax any source1s/rate/TTL, or soften negative assertions. Each new qualification request independently uses the original perrequest budget; only the orchestration recovery window is bounded. Earlier503 tap evidence is not reused as success evidence.
 
 Local pure tests now20PASS plus3legacy composition tests. These include exact minimal RBAC rendering, actual SSAR request shapes, overbroad permission refusal,503/backend0→200/backend1 plus new replay proof, other-status/transport/sideeffect refusal and bounded deadline. Actual four-core K3s acceptance remains pending authorized execution.
+
+
+## Durable profile ownership during realm tests
+
+Realm changes must publish through the existing authenticated Hopae profile owner,
+not only edit the bootstrap ConfigMap and restart. Read
+`GET /v1/plugins/hopae/authentication/profiles`, preserve the original configuration
+in private memory, and publish `{revision, configuration}` through
+`POST /v1/plugins/hopae/authentication/profiles/publish`. Require a successful
+successor revision and exact configuration/revision/digest readback before issuing
+the public SDK probe. Change both profile realm and Kubernetes connection cluster
+ID together. Restore the original configuration with the current CAS revision and
+verify readback again; do not replay an uncertain mutation or reuse an old revision.
+Do not log the configuration or substitute a probe caller key for administrator
+authority. DB-owned settings correctly survive restart and override bootstrap.
+
+Run1 reached the initial real four-component success and identical-pair replay
+refusal, then failed because its realm fixture changed only bootstrap. Its failure
+record remains authoritative; this is not full Workload qualification. Capture
+running image identities early in the next run: completed node imports alone do
+not prove which images actually ran.

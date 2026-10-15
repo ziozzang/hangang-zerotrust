@@ -5,6 +5,7 @@ Pure tests use fake kube functions; never manufacture native SDK capabilities.
 """
 import base64
 import copy
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -27,6 +28,62 @@ REQUIRED = {'hopae': ['workload_observed_authentication', 'workload_observed_pro
             'sumunjang': ['native_network_check']}
 
 
+PROFILE_PATH = '/v1/plugins/hopae/authentication/profiles'
+
+
+def read_profile_owner(api, admin):
+    code, document, _ = api(admin, PROFILE_PATH)
+    if (code != 200 or not isinstance(document, dict)
+            or type(document.get('revision')) is not int or document['revision'] < 1
+            or not isinstance(document.get('configuration'), dict)
+            or not re.fullmatch(r'[0-9a-f]{64}', document.get('digest', ''))):
+        raise AssertionError('native profile owner readback unavailable')
+    return copy.deepcopy(document)
+
+
+def publish_profile_owner(api, admin, current, configuration):
+    # The existing authenticated plugin transport supplies signed native admin
+    # delegation. This is a durable owning CAS, never a bootstrap-file mutation.
+    code, acknowledged, _ = api(admin, PROFILE_PATH + '/publish', 'POST', {
+        'revision': current['revision'], 'configuration': configuration})
+    if (code != 200 or not isinstance(acknowledged, dict)
+            or type(acknowledged.get('revision')) is not int
+            or acknowledged['revision'] != current['revision'] + 1
+            or not re.fullmatch(r'[0-9a-f]{64}', acknowledged.get('digest', ''))):
+        raise AssertionError('native profile publication refused or mismatched')
+    active = read_profile_owner(api, admin)
+    if (active['revision'] != acknowledged['revision']
+            or active['digest'] != acknowledged['digest']
+            or active['configuration'] != configuration):
+        raise AssertionError('native profile publication activation mismatch')
+    return active
+
+
+@contextmanager
+def temporary_workload_realm(api, admin, *, service, host, original_realm, changed_realm):
+    original = read_profile_owner(api, admin)
+    changed = copy.deepcopy(original['configuration'])
+    profiles = [p for p in changed.get('profiles', [])
+                if p.get('service_id') == service and p.get('host') == host]
+    if (len(profiles) != 1 or profiles[0].get('realm') != original_realm
+            or profiles[0].get('kubernetes_tokenreview', {}).get('connection', {}).get('cluster_id') != original_realm
+            or changed_realm == original_realm):
+        raise AssertionError('native Workload realm owner selection mismatch')
+    profiles[0]['realm'] = changed_realm
+    profiles[0]['kubernetes_tokenreview']['connection']['cluster_id'] = changed_realm
+    try:
+        publish_profile_owner(api, admin, original, changed)
+        yield
+    finally:
+        # Reconcile an uncertain publication with one read; never replay it or
+        # overwrite a third configuration. Restore using the CURRENT revision.
+        current = read_profile_owner(api, admin)
+        if current['configuration'] == changed:
+            publish_profile_owner(api, admin, current, original['configuration'])
+        elif current['configuration'] != original['configuration']:
+            raise AssertionError('native profile restoration owner mismatch')
+
+
 def preflight(args):
     """Check local reviewed provenance before even resolving the kube wrapper."""
     if not args.workload:
@@ -36,6 +93,8 @@ def preflight(args):
     for name in ['workload_capabilities', 'workload_utility_image', 'workload_issuer', 'workload_cluster_id', 'workload_reviewer_audience', 'workload_tap_image', 'workload_held_client', 'workload_backup_evidence']:
         if not getattr(args, name):
             raise ValueError('--workload requires --' + name.replace('_', '-'))
+    if not getattr(args, 'hopae_plugin', None):
+        raise ValueError('--workload requires --hopae-plugin for owning profile CAS qualification')
     document = json.loads(args.workload_capabilities.read_text())
     if document.get('version') != 1:
         raise ValueError('reviewed Workload artifact capability manifest version1 required')
@@ -375,6 +434,9 @@ class Workload:
             raise AssertionError('held public probe completion')
 
     def qualify(self, root, forward, request, api, admin, eventually, receipt_pin):
+        # Fail explicitly if the actual configured plugin/admin route is absent;
+        # a provided package path alone does not establish live authorization.
+        read_profile_owner(api, admin)
         port = forward('hopae', 8703)
         def probe_config(port):
             return {'settings': {'transport': 'grpc', 'address': f'localhost:{port}', 'tls': {
@@ -431,21 +493,17 @@ class Workload:
         # A locally fixed cluster realm is part of native identity association,
         # not a Kubernetes-attested claim. A deliberately different configured
         # realm yields a different verified subject and must lose the old grant.
-        changed = copy.deepcopy(self.hop)
-        profile = changed['authentication_gateway']['profiles'][0]
-        profile['realm'] = 'wrong-owned-cluster'
-        profile['kubernetes_tokenreview']['connection']['cluster_id'] = 'wrong-owned-cluster'
-        for next_hop, expected_status in [(changed, 403), (self.hop, 200)]:
-            self.kube('-n', self.namespace, 'patch', 'configmap', 'world-config', '--type=merge', '-p', json.dumps({'data': {'hopae.json': json.dumps(next_hop)}}))
-            self.kube('-n', self.namespace, 'rollout', 'restart', 'deployment/hopae')
-            self.kube('-n', self.namespace, 'rollout', 'status', 'deployment/hopae', '--timeout=120s', timeout=135)
-            config = probe_config(forward('hopae', 8703))
+        # Durable native profiles own this setting after initial bootstrap.
+        # Publication/readback completes before the public SDK is invoked;
+        # restoration also verifies the acknowledged current owner revision.
+        with temporary_workload_realm(api, admin, service='orders', host='app.example.test',
+                original_realm=self.args.workload_cluster_id, changed_realm='wrong-owned-cluster'):
             verified = self.probe(root, config, self.primary)
-            assert (verified['subject_ref'] == subject) is (expected_status == 200)
-            if expected_status == 200:
-                self.restored_http(request)
-            else:
-                assert request()[0] == expected_status
+            assert verified['subject_ref'] != subject
+            assert request()[0] == 403
+        verified = self.probe(root, config, self.primary)
+        assert verified['subject_ref'] == subject
+        self.restored_http(request)
         publish({}, {subject: ['reader']})
         assert request()[0] == 403, 'Workload borrowed users grant'
         publish({subject: ['reader']})

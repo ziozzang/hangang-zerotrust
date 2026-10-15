@@ -39,3 +39,22 @@ Pum workload_resource_metadata_decision 및 Root workload_typed_http_preliminary
 Hop 복구 뒤에만 30초 orchestration 창에서 HTTP503→200을 기다린다. 모든503은 backend0, 첫200은 backend1과 해당 성공 호출의 새로운 tap replay PASS1개를 요구한다. 401/403/기타 상태·전송 오류·누락 증거·503 부작용은 즉시 실패한다. 서버 재시도·강제 channel 재시작·원래1초 proof/TTL/rate 변경이나 negative 검증 완화는 없다. 이전503의 tap 증거를 성공 증거로 쓰지 않는다.
 
 순수20개/기존 composition3개 통과. 실제 네 코어 K3s 실행은 승인 후 별도 게이트로 남아 있다.
+
+
+## realm 검사와 영속 profile 소유권
+
+realm 변경은 bootstrap ConfigMap 수정·재시작만으로 처리하지 않고 기존 인증된
+호패 profile 소유 API로 게시한다. `GET /v1/plugins/hopae/authentication/profiles`로
+현재 문서를 읽고 원래 설정을 비공개 메모리에 보관한다.
+`POST /v1/plugins/hopae/authentication/profiles/publish`에
+`{revision, configuration}`을 보내고 후속 revision과 설정·revision·digest의 정확한
+읽기 확인 후에만 공개 SDK 검사를 실행한다. profile realm과 Kubernetes connection의
+cluster ID를 함께 바꾼다. 복원도 현재 CAS revision으로 게시하고 다시 읽어 확인한다.
+결과가 불확실한 변경을 재전송하거나 과거 revision을 재사용하지 않는다. 설정 문서를
+로그에 남기거나 SDK caller key를 관리자 권한으로 대신하지 않는다. DB 소유 설정이
+재시작 후 bootstrap보다 우선하는 것은 정상 동작이다.
+
+run1은 최초 실제 네 모듈 요청 성공과 동일 증거쌍 재사용 거절을 확인한 후 bootstrap만
+변경한 realm fixture 때문에 전체 실패했다. 실패 기록은 보존하며 Workload 전체
+통과로 처리하지 않는다. 다음 실행은 초기에 실제 실행 imageID를 수집한다. 노드의
+이미지 import 완료만으로 실제 실행 이미지를 증명하지 않는다.

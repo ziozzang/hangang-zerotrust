@@ -57,3 +57,14 @@ write-safety and style follow-up drafts were never saved and must not be counted
 finished designs. Old queue paragraphs are historical; this audit and linked exact
 release evidence govern the current state. The full private source-by-source audit
 is preserved with the review archive and integrity manifest.
+
+## Subsequent implementation: operation reference
+
+Local Hangang source `f667a1a` retains the admitted mutation operation ID after the
+final parent-authority check replaces a backend response with 403. It still removes
+the protected backend payload and marks the outcome uncertain; the audit preserves
+the actual backend result. A real two-sided HTTP regression commits a fixture
+mutation, withdraws the role before disclosure, verifies redaction and matching
+audit ID/status, then verifies no backend call for the next refused request. All
+seven plugin-module tests pass. This is source validation, not yet a release or
+operating-site replacement, and does not complete all of ADM-03.

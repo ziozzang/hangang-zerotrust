@@ -90,3 +90,24 @@ observations remain distinct from revocation leases.
 
 These stages precede signed rebuild, actual four-Pod Kubernetes/browser and
 operating adoption. Existing strict paths remain separate throughout migration.
+
+## Actual four-process functional result
+
+Pumgye native authority `080e304` and Hopae native replay/projection `274a661`
+are published. Hopae `bc5b2a4` adds the repeatable observed four-process smoke.
+An actual Hangang/Hopae/Pumgye/Sumunjang run over mTLS gRPC passed final credential
+transformation, exact final path/body, wrong issuer/key/audience refusal without
+backend effects, wrong route/plan peer or caller refusal, guest/network/permission
+isolation, durable policy and identity revocation across real restarts, receiver
+key retirement and configuration recovery. This used a development Hangang binary
+before its final transport-fence changes; it is not final artifact qualification.
+
+The first run found a real Hopae configuration-loader allowlist omission; the fix
+and actual file-loader regression are included in the published native commit.
+Further independent Sol review identified two Hangang boundaries still being
+corrected: proof expiry during asynchronous backend connection/write, and the
+route-reference source's original suspend-inclusive lifetime. A timeout around
+Hyper alone cannot fence detached writes; a source lifetime measured only by
+Instant cannot be repaired by a remote BOOTTIME conversion. Final native transport,
+independent-host, restore/clone, Kubernetes/browser and signed release gates remain
+open. No throughput or operating-adoption claim follows from this functional run.

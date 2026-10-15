@@ -92,8 +92,9 @@ PV는 기존 Retain 정책대로 유지했다. 선택된 gRPC 데이터 평면·
 
 ## 서비스 전용 혼합 구성 검증
 
-`--composition --observed --credential-projection`은 네 production owner와 테스트
-백엔드에 독립된 다섯 번째 인증 relay Pod를 추가합니다. 기본은 명시적인 All이며
+`--composition --observed --credential-projection`은 네 decision-service Pod와 테스트
+백엔드에 독립된 HTTPS 인증 relay Pod를 추가합니다(네 서비스+relay+계수 백엔드,
+총 여섯 Pod). 기본은 명시적인 All이며
 `--composition-mode any`로 Any를 선택합니다. 고정 호패 프로필이 로컬 API 키와
 HTTPS relay slot 및 정확한 Service 신원 관계를 선언합니다. Namespace 소유 CA를
 `api_relay.ca_file`로 mount하고 정확한 Service DNS 인증서를 검증합니다. 인증서/

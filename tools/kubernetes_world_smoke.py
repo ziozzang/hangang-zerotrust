@@ -37,7 +37,7 @@ def main():
     parser.add_argument('--native-resource',action='store_true')
     parser.add_argument('--credential-projection',action='store_true')
     parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
-    parser.add_argument('--composition',action='store_true',help='Service-only API key plus HTTPS relay in a fifth owned Pod')
+    parser.add_argument('--composition',action='store_true',help='Service-only API key plus an additional owned HTTPS relay Pod')
     parser.add_argument('--composition-mode',choices=['all','any'],default='all')
     parser.add_argument('--evidence-dir',type=Path,help='Private owned diagnostics directory; never stores credential configuration')
     args=parser.parse_args()

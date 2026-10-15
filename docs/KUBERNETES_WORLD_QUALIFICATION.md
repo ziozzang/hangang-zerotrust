@@ -108,8 +108,9 @@ not production adoption, all native protocol deployment modes or full-stack perf
 
 ## Service-only composition qualification
 
-`--composition --observed --credential-projection` adds an independent fifth
-authentication relay Pod alongside the four production owners and test backend.
+`--composition --observed --credential-projection` adds an independent owned HTTPS
+authentication relay Pod: four decision-service Pods, one relay and one counted
+test-backend Pod (six Pods total).
 `--composition-mode all` is the default; `any` is explicit. The fixed Hopae profile
 declares local API-key and HTTPS-relay slots and exact Service identity relationships.
 A namespace-owned CA is mounted as `api_relay.ca_file`; the relay uses its exact

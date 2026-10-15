@@ -462,3 +462,50 @@ and preserve authoritative replay evidence; arbitrary independently cloned live
 owners/ledgers need external fencing and are unsupported here.
 
 [Source scope binding addendum](2026-10-16-human-source-scope-binding.md): mandatory authenticated scope fingerprint in Human time reports; implementation qualification is pending.
+
+
+## Implementation review: early authorization and destination ownership
+
+Status: agreed implementation constraints; native Root/H4 drafts are not yet a
+released or fully tested Human route. Public Hop prerequisite `0d1d519` passed
+1,205 workspace tests (46 explicitly ignored), strict Clippy/fmt and bounded
+independent source review. That prerequisite does not mount Human projection.
+
+Human resource authorization must retain the existing permission-before-Lua
+boundary. Ordinary authenticated native Verify may return a unique
+`x-hopae-human-policy-subject` plus `x-hopae-human-policy-issuer`, derived by
+Hopae's shared canonical helper from the configured Human receipt issuer, actual
+immutable Store realm and exact verified user ID. These fields are metadata,
+not proof/current capabilities. Root must discard client-supplied values, inspect
+the trusted native response before header filtering, require the pinned issuer,
+canonical subject and AAL1/2, and reject contradictory principal kinds. It calls
+the typed Pum Human resource decision with real Guard evidence before Lua.
+Missing, duplicate, malformed or mismatched coordinates refuse without falling
+back to raw UID, email or legacy `users` permissions.
+
+Later actual SDK issuance must yield exactly the same canonical subject and AAL
+as this preliminary decision. Even if both accounts have grants, A→B substitution
+must stop before permit, output and backend. Preliminary metadata alone cannot
+authorize final forwarding: actual H0 Source observation, Pum permit, same-ledger
+paired projection and Root final-write checks remain mandatory. Both metadata
+headers are reserved and stripped before backend forwarding. Native metadata
+lookup uses the original Verify deadline, without restarting an admission budget.
+
+For Human only, the destination-owner digest binds the actual selected origin
+(scheme, canonical host and effective port) under a separate domain. It is not a
+hash of the outgoing URI authority when route `upstream_host`/preserve-host rules
+make that differ from the connection target. Final path/query is independently
+bound by H1v2. Private preparation also seals the exact forwarding authority and
+headers, actual TLS/server-name choice and original frontend context. Host is a
+reserved SDK field, so header selection must not pretend to bind it as an ordinary
+configured header. Deterministic HTTP framing/Host synthesis and the declared
+credential slot are the only permitted post-preparation changes. Existing
+Service/Workload destination contracts remain unchanged.
+
+Pool membership must be supported by explicit configured destination scopes.
+The Source must refuse duplicate service/audience/route/destination coordinates
+and require exactly one complete scope match, including application, revisions
+and header policy. An H4 activation can retain all matching actual Source scope
+fingerprints for its fixed service/audience/application/route. It must not choose
+a header-policy fallback, accept an unconfigured origin, or adopt a later Source
+publication through an old record.

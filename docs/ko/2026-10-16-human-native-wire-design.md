@@ -334,3 +334,44 @@ capacity를 검토합니다. source-affine topology와 full signed replay retent
 지원되지 않으며 즉시 원격 계정 회수나 cross-host failover를 암묵 주장하지 않습니다.
 
 [원천 scope 보완](2026-10-16-human-source-scope-binding.md): Human 시간 보고의 인증된 scope 지문이 필수이며 구현 검증은 진행 중입니다.
+
+
+## 구현 검토: 사전 권한과 목적지 소유권
+
+상태: 합의한 구현 제약이며 Root/H4 초안은 아직 릴리즈하거나 전체 검증한
+Human 경로가 아니다. 공개 호패 선행 변경 `0d1d519`는 전체 1,205개 통과·
+명시적 제외 46개, 엄격한 Clippy/fmt와 제한된 독립 소스 검토를 통과했다.
+이 선행 변경 자체에는 Human projection mount가 없다.
+
+Human도 Lua 실행 전에 권한을 검사해야 한다. 인증된 네이티브 Verify는
+고유한 `x-hopae-human-policy-subject`와 `x-hopae-human-policy-issuer`를
+반환할 수 있다. 호패 공통 canonical helper로 설정된 Human receipt issuer·
+실제 불변 Store realm·정확히 검증된 사용자 ID에서 도출하며 인증 증명이나
+current capability는 아니다. 한강은 클라이언트 값을 제거하고 header filter
+전에 신뢰한 응답을 검사해 고정 issuer·canonical subject·AAL1/2를 요구하고
+모순되는 principal kind를 거부한다. 실제 수문장 근거로 품계 Human resource
+판정을 Lua 전에 수행한다. 누락·중복·형식 오류·불일치는 raw UID·이메일·기존
+users 권한으로 fallback하지 않고 거부한다.
+
+후속 실제 SDK 발급 결과의 canonical subject와 AAL은 사전 판정과 정확히
+같아야 한다. 두 계정 모두 권한이 있어도 A→B 대체는 permit·output·backend
+전에 차단해야 한다. 사전 메타데이터만으로 전달할 수 없으며 실제 H0 Source
+observation·품계 permit·동일 ledger의 paired projection·한강 최종 write
+검사가 모두 필요하다. 두 헤더는 예약하고 backend 전달 전에 제거한다.
+메타데이터 조회도 원래 Verify deadline을 사용하고 admission을 갱신하지 않는다.
+
+Human 목적지 digest는 별도 domain으로 실제 선택한 origin의 scheme·canonical
+host·effective port를 결속한다. upstream_host/preserve-host 때문에 연결 대상과
+다를 수 있는 outgoing URI authority를 대상으로 삼지 않는다. 최종 path/query는
+H1v2가 별도로 결속한다. 비공개 preparation은 전달 authority·headers·실제
+TLS/server-name·원래 frontend context도 고정한다. Host는 SDK 예약 필드라
+일반 configured header로 결속한 것처럼 취급할 수 없다. 준비 후에는 결정적
+HTTP framing/Host 생성과 선언된 credential slot만 변경할 수 있다. 기존
+Service/Workload 목적지 규약은 유지한다.
+
+Pool의 목적지는 명시적 scope로 지원해야 한다. Source는 같은 service/audience/
+route/destination 중복을 거부하고 application·revision·header policy를 포함해
+정확히 하나의 전체 scope가 맞아야 한다. H4 activation은 고정 service/audience/
+application/route에 대응하는 실제 Source fingerprint 집합을 보존할 수 있다.
+다른 header policy fallback·미설정 origin·기존 record에서 새 Source publication
+채택은 허용하지 않는다.

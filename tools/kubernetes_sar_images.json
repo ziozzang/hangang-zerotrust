@@ -1,0 +1,19 @@
+{
+  "kube-apiserver": {
+    "tag": "v1.37.1",
+    "index_digest": "sha256:e190f914a6cc21cab9268485d1ae7282fdeab1315ac64b668aa42d732fd1061d",
+    "linux_amd64_digest": "sha256:1f207ab66b1ca6579dd5bf1024396015ca2a0f638157a7741d2d88d7b3c82c51",
+    "entrypoint": [
+      "/go-runner"
+    ],
+    "cmd": null,
+    "source_url": "https://registry.k8s.io/v2/kube-apiserver/manifests/v1.37.1"
+  },
+  "etcd": {
+    "tag": "3.7.0-0",
+    "index_digest": "sha256:6ecefbe2510c4a30573a62a4d6dd175acf881ca67003fcd91849a16df7a724d5",
+    "linux_amd64_digest": "sha256:1f445fa5dd06b08f3c0cf9f46e2891e9bc66cbf7e0b9c66627c40658edf4bc98",
+    "source_url": "https://registry.k8s.io/v2/etcd/manifests/3.7.0-0",
+    "selection": "Kubernetes98e9 kubeadm constants default3.7.0-0"
+  }
+}

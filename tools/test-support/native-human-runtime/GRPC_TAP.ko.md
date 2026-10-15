@@ -30,3 +30,7 @@ credential은 출력하지 않는다. 횟수는 권한이나 증명 원천이 �
 schema, 원래 deadline, 실제 Pum Observe와 Root route owner 생존 확인이 필요하다.
 증명이나 별도 Source/nonce ledger를 만들지 않는다. 공개 검증된 H4와 통일된 SDK
 pin 및 실제 전 경로 검증은 별도 필수 단계다.
+
+launcher의 부모 PID 변경도200ms 주기로 감지하여 같은 정리 경로를 실행한다. stdin pipe가 열린 상태로 부모만 종료하는 실제 소유 subprocess 테스트가 listener 정리를 검사한다.
+
+method 상한은 최대32KiB인 검증 부분집합으로 Source의128KiB frame 허용보다 좁다. Source의 모든 요청 크기를 검증했다고 해석하지 않는다.

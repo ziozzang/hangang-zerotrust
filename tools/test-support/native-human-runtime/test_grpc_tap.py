@@ -192,6 +192,46 @@ class Transport(unittest.IsolatedAsyncioTestCase):
                     process.stdin.close()
                     ready.unlink(missing_ok=True)
 
+    async def test_parent_loss_closes_listener_even_with_stdin_pipe_open(self):
+        import os
+        import sys
+        with tempfile.TemporaryDirectory(prefix='owned-tap-parent-') as directory:
+            root=Path(directory)
+            config=json.loads(json.dumps(self.config)); config['listen']=port()
+            config_file=root/'config.json'; config_file.write_text(json.dumps(config)); config_file.chmod(0o600)
+            ready=root/'ready.json'
+            launcher = """import os,subprocess,sys,time
+p=subprocess.Popen([sys.executable,sys.argv[1],'--config',sys.argv[2],'--ready',sys.argv[3]],stdin=sys.stdin,stdout=sys.stdout,stderr=sys.stderr)
+for _ in range(400):
+ if os.path.exists(sys.argv[3]): break
+ time.sleep(.005)
+print(p.pid,flush=True)
+os._exit(0)
+"""
+            process=await asyncio.create_subprocess_exec(sys.executable,'-c',launcher,str(Path(m.__file__)),str(config_file),str(ready),
+                stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
+            pid=None
+            try:
+                pid=int(await asyncio.wait_for(process.stdout.readline(),3))
+                self.assertTrue(ready.exists())
+                # Parent is gone, but the grandparent intentionally keeps stdin
+                # writer open. EOF cannot explain the child's cleanup.
+                for _ in range(400):
+                    state=Path(f'/proc/{pid}/stat')
+                    if not state.exists() or state.read_text().split(') ',1)[1].startswith('Z '): break
+                    await asyncio.sleep(.005)
+                else: self.fail('owned tap remained live after parent loss')
+                with socket.socket() as listener:
+                    listener.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                    host, number=config['listen'].rsplit(':',1); listener.bind((host,int(number)))
+            finally:
+                process.stdin.close()
+                await asyncio.wait_for(process.wait(),2)
+                if pid is not None:
+                    state=Path(f'/proc/{pid}/stat')
+                    if state.exists() and not state.read_text().split(') ',1)[1].startswith('Z '):
+                        os.kill(pid,9)
+
     async def test_file_bounds_permissions_and_nonregular_input_refuse(self):
         import os
         with tempfile.TemporaryDirectory(prefix='owned-tap-input-') as directory:

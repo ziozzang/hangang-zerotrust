@@ -77,3 +77,5 @@ schema, retain original deadlines and correlate actual Pum Observe controls whil
 the original Root request/route owner remains live. Never synthesize proof or
 create a second Source/nonce ledger. Final public H4 and unified SDK pins remain
 prerequisites for that separate full-chain gate.
+
+Parent PID changes are checked every200ms and use the same cleanup path even when inherited stdin remains open. An owned launcher-exit test keeps the pipe open and verifies the child stops and its listener can be rebound. Method caps intentionally cover a test subset (32KiB maximum), narrower than the Source's128KiB frame allowance; this does not qualify all Source request sizes.

@@ -2,6 +2,7 @@
 """Qualification-only authenticated raw unary transport; grants no authority."""
 import argparse
 import asyncio
+import contextlib
 import hmac
 import ipaddress
 import json
@@ -173,6 +174,7 @@ class Tap(grpc.GenericRpcHandler):
 
 
 async def main(args):
+    parent = os.getppid()
     ready_parent = Path(args.ready).parent.stat()
     if ready_parent.st_uid != os.getuid() or ready_parent.st_mode & 0o077 or Path(args.ready).exists():
         raise ValueError('fresh ready path in owned private directory required')
@@ -180,6 +182,13 @@ async def main(args):
     loop = asyncio.get_running_loop()
     task = asyncio.current_task()
     loop.add_signal_handler(signal.SIGTERM, task.cancel)
+    async def parent_watch():
+        while True:
+            await asyncio.sleep(0.2)
+            if os.getppid() != parent:
+                task.cancel()
+                return
+    watcher = asyncio.create_task(parent_watch())
     transport = None
     try:
         reader = asyncio.StreamReader(limit=1024)
@@ -199,6 +208,9 @@ async def main(args):
             else:
                 raise ValueError('invalid control command')
     finally:
+        watcher.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await watcher
         if transport is not None:
             transport.close()
         await tap.close()

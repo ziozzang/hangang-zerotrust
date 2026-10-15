@@ -112,3 +112,34 @@ restart checks. Its new off-host copy is still transferring and is not verified
 complete; the prior verified off-host backup remains available. This is candidate
 functional qualification, not new public release or operating migration, full
 streaming/projection/fleet completion or throughput proof.
+
+## Native final dispatch release and internal adoption — 2026-10-15
+
+[Hangang 0.3.5](https://github.com/ziozzang/hangang/releases/tag/v0.3.5)
+and [Pumgye 0.1.6](https://github.com/ziozzang/pumgye/releases/tag/v0.1.6)
+are public, with five signed Linux amd64 musl assets each. Downloaded assets
+match staged bytes; independent signature, public-pin, exact version/target/URL,
+hash and static ELF checks pass. Hangang's archive contains the eight qualified
+executables. These releases use the exact source revisions qualified above.
+
+Internal Pumgye adoption passes DB-clone preflight, exact policy preservation,
+mTLS management/native missing-service denial and a second durable restart.
+Downloaded executables need their execute bit restored before preflight; this
+initial failure occurred before operational replacement. Gateway adoption passes
+read-only configuration preflight, private SQL/config/image backups, configured
+drain, exact running artifact, unchanged routing/credentials/UID/network and
+unknown-host refusal. Console adoption verifies archive equality, private
+binary/unit/database backups, preflight, unchanged configuration/module discovery
+and delegated Pumgye catalog reads. An initial console precheck ran during the
+gateway drain and refused before replacement; the subsequent sequential attempt
+passed after gateway health recovered.
+
+Actual HTTPS Chromium checks pass all three unified module menus, Pumgye matrix
+and source summary, delegated Hopae status/users, existing ID/PW plus SSO entry,
+provider-portal redirect, logout cleanup, anonymous/cross-origin refusal and no
+configuration mutations. This qualifies SSO entry, not completed external login.
+Existing observe policy, identities and permissions are preserved. Receipt
+issuer/trust/live operating resources remain unconfigured: the new native route's
+positive enforcement is qualified in the owned local/Kubernetes fixtures, not
+activated for existing operating services. Signed permission/projection/replay,
+full provider/fleet/streaming and throughput gates remain open.

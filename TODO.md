@@ -1563,3 +1563,18 @@ passes isolated/full recheck. This is source/local qualification.
   entity assertions, native owners, durable revocation/Pod replacement and refused
   backend non-dispatch. [Evidence](docs/PACKAGING.md). New off-host copy remains
   pending; public release and operating migration are still open.
+
+## Native final dispatch release adoption — 2026-10-15
+
+- [x] Publish signed Hangang 0.3.5/Pumgye 0.1.6 after independent downloaded
+  artifact verification and exact-source Kubernetes qualification.
+- [x] Internally replace gateway, console and Pumgye with private rollback
+  backups; preserve policy/configuration/credentials, verify static artifacts,
+  durable Pumgye restart, live HTTPS module/matrix/source views and SSO entry.
+- [ ] Activate and qualify operating native receipt routes with explicit
+  issuer/trust/live configuration; existing operating resources remain unset.
+- [ ] Finish signed permission/projection/replay, complete provider/fleet and
+  stream semantics, and measure complete authenticated-chain throughput.
+
+See [release and adoption evidence](docs/PACKAGING.md). The latest cold-backup
+off-host transfer remains incomplete; the prior verified copy is preserved.

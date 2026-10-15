@@ -9,8 +9,8 @@ import socket
 import threading
 from supervisor import private, require
 
-TAP_SHA='bd4e7d5baafa5075e5db73ba66386306a99720e3621b364673e6857f1166f0f1'
-HOOK_SHA='6f3d789c83a1507b42b33729ba770debafcee45e2cbe87874323ea6bb423329d'
+TAP_SHA='760488520fbb52f14baba6031b604987a433633eec49f34d5ce3411c6a34f69f'
+HOOK_SHA='a08187491d647b159b2741ea8204017a488687d6abedd9d69d5b8fb9f7d6bbd3'
 METHODS=('/hangang.hopae.v1.Authentication/Verify','/hangang.hopae.v1.HumanAuthenticationReceipts/IssueObserved','/hangang.hopae.v1.HumanAuthenticationReceipts/ObserveTime','/hangang.hopae.v1.HumanObservedCredentialProjection/Project')
 
 PUM_METHODS=('/hangang.pumgye.v1.Authorization/Decide','/hangang.pumgye.v1.HumanResourceAuthorization/Decide','/hangang.pumgye.v1.HumanObservedProjectionPermits/Issue')
@@ -82,8 +82,15 @@ class NativeTap:
             require(set(stage)=={'received','forwarded','ok','refused'} and all(type(n) is int and 0<=n<=100000 for n in stage.values()),'tap_stage_shape')
         if self.qualification is not None:
             q=value['qualification']
-            require(set(q)=={'mode','armed','counts','last_replay','requires_runner_query_budget_check'} and q['mode']==self.qualification['mode'] and type(q['armed']) is bool and q['requires_runner_query_budget_check']==(q['mode']=='exact_pair_replay'),'tap_qualification_shape')
+            require(set(q)=={'mode','armed','counts','last_replay','progress','requires_runner_query_budget_check'} and q['mode']==self.qualification['mode'] and type(q['armed']) is bool and q['requires_runner_query_budget_check']==(q['mode']=='exact_pair_replay'),'tap_qualification_shape')
             require(set(q['counts'])=={'cookie_substitutions','replay_attempts','replay_refused','pum_before','pum_after','control_sequence_complete','failed'} and all(type(n) is int and 0<=n<=100000 for n in q['counts'].values()),'tap_qualification_counts')
+            progress=q['progress']
+            if progress is not None:
+                numeric={'elapsed_boottime_ns','deadline_remaining_ms','first_project_elapsed_boottime_ns','first_output_remaining_ms','pum_before_remaining_ms','through_replay_elapsed_boottime_ns'}
+                require(type(progress) is dict and set(progress)==numeric|{'stage','cancelled','rpc_code','replay_rpc_code','clock_failed'} and progress['stage'] in {'first_project','pum_before','replay','pum_after','complete'},'tap_progress_shape')
+                require(all(progress[n] is None or (type(progress[n]) is int and 0<=progress[n]<=2**63-1) for n in numeric) and type(progress['cancelled']) is bool and type(progress['clock_failed']) is bool,'tap_progress_values')
+                codes={'OK','CANCELLED','UNKNOWN','INVALID_ARGUMENT','DEADLINE_EXCEEDED','NOT_FOUND','ALREADY_EXISTS','PERMISSION_DENIED','RESOURCE_EXHAUSTED','FAILED_PRECONDITION','ABORTED','OUT_OF_RANGE','UNIMPLEMENTED','INTERNAL','UNAVAILABLE','DATA_LOSS','UNAUTHENTICATED'}
+                require(all(progress[n] is None or progress[n] in codes for n in ('rpc_code','replay_rpc_code')),'tap_progress_codes')
             last=q['last_replay']
             require(last is None or (type(last) is dict and set(last)=={'elapsed_boottime_ns','through_replay_elapsed_boottime_ns','pum_before_remaining_ms','pum_after_remaining_ms'} and all(type(n) is int and n>=0 for n in last.values())),'tap_replay_shape')
         return value

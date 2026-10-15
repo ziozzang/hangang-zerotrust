@@ -39,6 +39,8 @@ class Peer(grpc.GenericRpcHandler):
             if details.method == hooks.OBSERVE:
                 query=self.wire.query.FromString(raw)
                 count=sum(name==hooks.OBSERVE for name,_ in self.calls)
+                if count==2 and getattr(self,'after_entered',None) is not None:
+                    self.after_entered.set();await asyncio.sleep(1)
                 report=self.wire.report(request_id=query.request_id,receipt_sha256=hashlib.sha256(query.permit.receipt).digest(),
                     clock_domain=query.permit.binding.authority_epoch,owner_now_ms=count,
                     remaining_ms=800-count,proof_remaining_ms=900-count,
@@ -110,6 +112,27 @@ class Qualification(unittest.IsolatedAsyncioTestCase):
         last=self.tap.snapshot()['qualification']['last_replay']
         self.assertGreaterEqual(last['through_replay_elapsed_boottime_ns'],20_000_000)
         self.assertGreaterEqual(last['through_replay_elapsed_boottime_ns'],last['elapsed_boottime_ns'])
+
+    async def test_actual_transport_cancellation_keeps_partial_progress_without_success(self):
+        await self.configure('exact_pair_replay')
+        self.peer.after_entered=asyncio.Event()
+        raw,_=self.pair()
+        pending=self.channel.unary_unary(hooks.PROJECT)(raw,metadata=self.auth(),timeout=.8)
+        await asyncio.wait_for(self.peer.after_entered.wait(),.5)
+        pending.cancel()
+        with self.assertRaises(asyncio.CancelledError):await pending
+        for _ in range(20):
+            if self.tap.hooks.progress['cancelled']:break
+            await asyncio.sleep(.005)
+        state=self.tap.snapshot()['qualification'];progress=state['progress']
+        self.assertTrue(progress['cancelled']);self.assertEqual(progress['stage'],'pum_after')
+        self.assertEqual(progress['replay_rpc_code'],'UNAVAILABLE')
+        self.assertGreater(progress['first_output_remaining_ms'],0)
+        self.assertGreater(progress['pum_before_remaining_ms'],0)
+        self.assertGreaterEqual(progress['through_replay_elapsed_boottime_ns'],progress['first_project_elapsed_boottime_ns'])
+        self.assertGreaterEqual(progress['elapsed_boottime_ns'],progress['through_replay_elapsed_boottime_ns'])
+        self.assertEqual(state['counts']['control_sequence_complete'],0);self.assertIsNone(state['last_replay'])
+        self.assertEqual(self.tap.snapshot()['stages'][hooks.PROJECT]['ok'],0)
 
     async def test_default_armed_and_invalid_startup_flag(self):
         await self.configure('issue_cookie_b')

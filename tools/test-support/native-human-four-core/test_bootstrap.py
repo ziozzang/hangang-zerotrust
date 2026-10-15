@@ -12,6 +12,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(cfg['projection_receiver']['human_observed_scopes'],[dict(service='orders',audience='orders-api',application='app',route='owned-route')])
         self.assertEqual(cfg['credential_projection']['plans'][0]['minimum_aal'],1)
         self.assertNotIn('authentication_gateway',cfg)
+        self.assertEqual(cfg['gateway']['verify_budget_ms'],400)
         self.assertNotIn('OWNED_SIGNING',str(cfg))
         scope['route']='mutated'
         self.assertEqual(cfg['receipt_issuer']['human_receipts']['scopes'][0]['route'],'owned-route')

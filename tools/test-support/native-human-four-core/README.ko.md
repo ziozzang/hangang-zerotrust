@@ -4,7 +4,7 @@
 
 manifest는 네 컴포넌트별 바이너리 경로·실측 SHA·검토된 전체 소스 commit을 요구한다. 선택 provenance 경로/SHA도 고정할 수 있다. 소스 좌표는 별도 검토 사실이며 버전 문자열로 증명하지 않는다. 바이너리의 이전 base commit을 실제 소스로 표기하지 않는다. 실행 명령과 정확한 필드는 [영문 문서](README.md)에 있다.
 
-새 CA와 컴포넌트별 leaf, 검증된 mTLS 및 고정 caller를 사용한다. Root→tap과 tap→Hop caller는 다르며 Pum은 실제 Hop에 직접 관측한다. 공개 raw tap은 원래 payload/deadline을 전달하고 재시도·증거 갱신을 하지 않는다. 본문·자격 증명·오류 메시지 대신 제한된 method counter만 보존한다.
+새 CA와 컴포넌트별 leaf, 검증된 mTLS 및 고정 caller를 사용한다. Root→tap과 tap→Hop caller는 다르며 Pum은 실제 Hop에 직접 관측한다. 공개 raw tap은 원래 payload/deadline을 전달하고 재시도·증거 갱신을 하지 않는다. 본문·자격 증명·오류 메시지 대신 제한된 method counter만 보존한다. Root의 decision RPC도 같은 inbound caller를 쓰되 실제 Hop/Pum outbound caller는 분리한다. 실제 Pum의 기존 Authorization.Decide health(2048bytes), HumanResourceAuthorization.Decide(2048bytes), Human permit Issue(8192bytes)만 추가 전달한다. 관리 HTTPS는 Pum에 직접 연결하며 첫 authorization에 시작하는 Root watcher의 사전 성공을 꾸미지 않는다.
 
 Hop의 Source/receiver/permit key/plan은 첫 로그인 전부터 설정한다. 실제 origin과 route11/header policy13/x-tenant를 고정하고 Authorization 자격 슬롯은 제외한다. Root/Pum/Hop은 db:orders/select를 동일하게 쓴다. 공개 SDK가 독립 검증한 두 Human subject만 실제 HTTPS CAS로 배정한다. 네트워크 AAL1과 사용자 AAL2 요구를 분리하며 네트워크에 AAL2 역할을 넣어 AAL1 양성을 주장하지 않는다.
 

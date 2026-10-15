@@ -59,9 +59,11 @@ def run(args):
         phase='tap_startup'
         from tap_runtime import NativeTap
         tap_caller=secrets.token_urlsafe(36)
-        tap=NativeTap(supervisor,tls['tap'],hop.metadata,tap_caller,args.tap_python)
+        private(supervisor.root/'pum-caller',pum_caller.encode())
+        pum_transport=dict(tls['pumgye'],endpoint=pum.endpoint,caller_file=str(supervisor.root/'pum-caller'))
+        tap=NativeTap(supervisor,tls['tap'],hop.metadata,tap_caller,args.tap_python,pum=pum_transport)
         phase='root_startup'
-        root=NativeRoot(supervisor,tls['hangang'],backend.origin,tap.metadata,pum,network.ready,tap_caller,pum_caller,route_caller)
+        root=NativeRoot(supervisor,tls['hangang'],backend.origin,tap.metadata,pum,network.ready,tap_caller,tap_caller,route_caller,decision_endpoint=tap.pum_metadata['endpoint'])
         phase='pum_startup'
         pum.start(hop.metadata,network.ready,root.route_transport,hop.metadata['scopes'],dict(tls['hopae'],address=hop.metadata['endpoint']),hop_caller,route_caller)
         phase='root_startup'

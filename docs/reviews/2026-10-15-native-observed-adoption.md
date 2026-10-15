@@ -138,8 +138,24 @@ relay and circuit breaking. Final Hangang browser regression and local console S
 smoke pass; the latter uses a fixture identity peer and does not establish provider
 login qualification. Release publication and operating adoption remain separate.
 
-The first actual K3s run already passed final credential transformation across the
-four Pods and the independent management-host native SDK's issue, independent
-observation and consuming refresh. The remaining console, mutation, revocation and
-restart checks are still under investigation; this is not a complete Kubernetes
-qualification result. Safe observed connection pooling and throughput remain open.
+The final exact-candidate K3s run completed successfully: actual four-Pod final
+credential output, independent management-host SDK issue/observation/consuming
+refresh, real browser administrator bootstrap/login/module menus, profile CAS
+conflict and durable revocation, catalog class/AAL/service withdrawal, policy and
+gateway Pod replacement, credential isolation, refused-request zero backend effects
+and network-authority outage. The owned namespace was removed; existing workloads
+were preserved. The two nodes share one physical host; this is not HA qualification.
+
+Test maintenance corrected two mismatches: use the published Sumunjang plugin
+with its matching published binary; check the current draft status and actual POST
+CAS/revision instead of a static initial revision label. Control-plane port-forward
+setup has a longer bound for the lossy management link, without changing proof
+budgets. After gateway replacement, fresh diagnostic GETs may return 503 while
+dependencies reconnect; each refusal must still have zero backend effects and
+recovery is bounded. No application transport automatic retry was added.
+
+Independent new Sumunjang source `60f19a5` separately passed a real API-server
+CRD/RBAC/projected-token/native mTLS decision/update/withdrawal/restart/UID-pin
+qualification. This is a later source candidate, not the retained published
+Sumunjang binary in the four-service run. Its full-chain and signed release gates
+remain separate. Safe observed connection pooling and throughput remain open.

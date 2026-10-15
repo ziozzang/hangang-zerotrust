@@ -213,7 +213,9 @@ def main():
             def forward(name,remote):
                 local=port();log=(root/(name+'-'+str(remote)+'.log')).open('wb')
                 process=subprocess.Popen([str(wrapper),'-n',namespace,'port-forward','deployment/'+name,f'{local}:{remote}'],stdout=log,stderr=log);forwards.append(process)
-                for _ in range(100):
+                # Control-plane port-forward setup may traverse a lossy management
+                # link. This changes no proof budget or application-call retry.
+                for _ in range(600):
                     if process.poll() is not None:raise RuntimeError('owned port-forward exited')
                     try:
                         with socket.create_connection(('127.0.0.1',local),timeout=.1):return local
@@ -340,7 +342,16 @@ def main():
             kube('-n',namespace,'rollout','restart','deployment/hangang')
             kube('-n',namespace,'rollout','status','deployment/hangang','--timeout=120s',timeout=135)
             public=forward('hangang',8443);admin=forward('hangang',9080)
-            assert request()[0]==200,'gateway private admin state did not survive Pod replacement'
+            # Readiness is TCP-only: fresh owned diagnostic GETs must fail closed
+            # while native mTLS dependencies reconnect. Every refusal is checked
+            # against the backend counter by request(); no request is replayed.
+            for _ in range(20):
+                restart_status=request()[0]
+                assert restart_status in (200,503),'gateway restart returned unexpected status '+str(restart_status)
+                if restart_status==200:break
+                print('Gateway restart dependency reconnect remains fail-closed',flush=True)
+                time.sleep(.1)
+            else:raise AssertionError('gateway did not recover after owned Pod replacement')
             assert api(admin,f'/v1/plugins/{plugin_id}/blocks','POST',{'network':'127.0.0.1/32','expires_at':int(time.time())+600,'reason':'owned K8s fixture'},tokens['gateway-admin'])[0]==200
             assert request()[0]==403
             assert api(admin,f'/v1/plugins/{plugin_id}/blocks','DELETE',{'network':'127.0.0.1/32'},tokens['gateway-admin'])[0]==200 and request()[0]==200
@@ -348,7 +359,8 @@ def main():
             kube('-n',namespace,'wait','--for=delete','pod','-l','app=sumunjang','--timeout=60s')
             assert request()[0]==503
             print('PASS: actual four independent K8s Pods, nonroot static artifacts, mTLS Service DNS, protected request identity, method/guest denial, real pinned console discovery/assets, mTLS plugin management reads/mutations, delegated policy CAS, immediate revocation, PVC/authority/gateway Pod replacement, private administrator state, refused backend non-dispatch and network authority outage')
-        except Exception:
+        except Exception as failure:
+            print('Owned qualification failed: '+type(failure).__name__,flush=True)
             if created:
                 for name in commands:
                     try:

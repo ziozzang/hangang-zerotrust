@@ -1692,3 +1692,9 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [x] Exact signed three new candidates plus retained Sumunjang 0.3.5 pass local
   actual four-server qualification. Initial K3s observed final output and independent
   host SDK issue/observation/refresh pass; console mutation gate remains open.
+
+- [x] Exact-candidate four-Pod Kubernetes and actual browser run now fully pass,
+  including independent observed SDK, CAS, revocation, catalog, durable authority/
+  gateway replacement and network outage; owned namespace cleaned.
+- [x] New Sumunjang `60f19a5` standalone real Kubernetes native CRD authority
+  qualification passes separately; full-chain adoption and new release remain open.

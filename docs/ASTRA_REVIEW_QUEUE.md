@@ -149,3 +149,5 @@ Subsequent implementation: shared unary ingress is committed and tested in runti
 optional native client supports independent initial proof observation, fresh
 per-RPC correlation and per-client retirement. A read-only Sol follow-up maps its
 remaining native consumer gaps; no further Astra review has been requested.
+
+Current next boundary: [native consumer adoption](reviews/2026-10-15-native-observed-adoption.md), a Sol review of the implemented exact SDK and actual production query shapes.

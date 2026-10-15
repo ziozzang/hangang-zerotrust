@@ -378,3 +378,36 @@ consumption. Hopae paired replay/projection and final credential dispatch,
 multi-owner discovery/incarnation/restore fences, static release, Kubernetes/
 operating adoption and throughput remain required. A point-in-time validation
 acknowledgement cannot replace those receiver and final-effect checks.
+
+## Hopae native receiver library source qualification
+
+Hopae 9bc43a5 adds a fixed lazy persistent mTLS Pumgye validation client (128
+admission slots, one-second exchange, 8192/128-byte bounds). Its opaque observation
+retains exact immutable request Arc and configured-client identity, correlation,
+zero cache TTL and conservative signed/owner/elapsed expiry. Input shape checking
+is not receipt verification. No request-controlled address selects an owner.
+
+The `projection_receiver` library independently verifies both receipt signatures
+and canonical chain using Hopae's owning receipt key registry, then passes a
+private admission into the existing paired replay/projection transaction. Native
+plan checks and real local identity/caller guards remain mandatory before/after
+work. Output lifetime is restricted to the live permission deadline. Duplicate
+pairs cannot resolve secrets again; late guard failure rolls back both nonce
+records, and key retirement between verification/consumption prevents resolution.
+Hopae 80605b6 also retains a monotonic elapsed-time anchor in the final projected
+output so holding it after commit cannot extend expiry with a stalled/reversed
+wall clock.
+
+Six receiver/transport tests and one final-output clock test pass; library 529
+passes with one existing ignore, full workspace and strict Clippy pass. The real
+mTLS peer in the client test is an explicit protocol mock, with independently
+signed local chain/transaction fixtures. It is not an actual Pumgye-to-Hopae
+runtime projection qualification. Rebuilt Hopae passes the existing four-server
+permit/route/plan durable-withdrawal/outage regression with the receiver inactive;
+that proves compatibility only.
+
+Native configuration/key bootstrap, actual issuer/profile/application/caller
+local guards, bounded blocking-store execution, receiver gRPC, actual Pumgye
+receiver validation and Hangang final credential delivery remain required. No
+new receiver endpoint is activated by this library increment. Fleet/restore,
+static release, Kubernetes/operating adoption and throughput gates remain open.

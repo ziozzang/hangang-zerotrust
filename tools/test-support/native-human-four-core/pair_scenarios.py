@@ -60,8 +60,10 @@ def run_lineage(tap,root,backend,cookies,observations):
 def query_budget_gate(config_path,expected_startup_sha256,elapsed_ns):
     """Conservative elapsed upper bound; never constructs authority/deadlines.
 
-    Config is the actual immutable Hop startup file. Source and receiver both
-    quantize milliseconds, so charge TWO additional full milliseconds. Refuse
+    Config is the actual immutable Hop startup file. Native admission tick
+    endpoints quantize milliseconds and remaining_at subtracts another one;
+    local elapsed measurement is raw nanoseconds. Charge TWO full milliseconds.
+    Refuse
     near/at the original399ms limit; no caller/proof TTL replaces this budget.
     """
     raw=Path(config_path).read_bytes()

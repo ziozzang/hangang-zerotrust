@@ -3,6 +3,16 @@
 Status: qualified source foundations, **not a Human runtime release or full-chain activation**.
 [한국어](../ko/2026-10-16-human-source-checkpoint.md).
 
+## Local four-core first positive
+
+An owned local run now passes actual native OIDC → Hangang → Hopae Source/SDK → Pum Human permission → Hopae contract4 projection → counted HTTP backend. The first request returned204 with exactly one backend arrival/effect, matching final body SHA256 `105677b049653381c974d1312bb087650075a48682fc6555274735007afd9c02`, a matching projected Bearer credential, and no forwarded cookie/native identity/caller headers. Seven observed RPC methods each succeeded once. Cleanup reported no failures; all12 recorded owned loopback listeners refused connections afterward.
+
+The run used **local, not yet released** Hangang product candidate `ada331c4796681cd4cb6da4d9257a0fba2e946d2` (raw SHA256 `1e2e234bc0842b449ee71339e3b1e4a267a191f59031607b1fcc6c9e8a32bfe4`), public Hopae `e1dd972`, Pumgye `98ecfcd` and Sumunjang runtime source `d6fc1de`, with the actual public-SDK seed observer and owned raw transport tap. The safe result SHA256 is `ae92869c9cc32aba2b726ee06b2f7c1a4e35b8a5b59559291d26d0a5c850ed80`. Runtime credentials, cookies and proof payloads are excluded from this record.
+
+Earlier failed runs isolated two Hangang defects: missing trusted route context on Human Source issuance, and canonical permission-signature input hardcoded to AAL0. The candidate generates Human route/context from the selected runtime after client/static headers and preserves checked actual AAL1/2 in signature reconstruction. Machine AAL0 constraints remain. Earlier fixture failures and successful cleanup are retained separately.
+
+This proves one actual AAL1 HTTP positive on fresh owned databases. It does **not** complete AAL2/provider variants, A/B substitution, replay, live withdrawal, final transport retirement, distributed snapshots, throughput, browser administration, release qualification or operating migration. Follow-up gates and full candidate checks remain active; operating versions are unchanged.
+
 ## Latest publication: native paired Human projection
 
 [Hopae e1dd9728e184eb4975fbe1ce8dae0505571f4ff1](https://github.com/ziozzang/hopae/tree/e1dd9728e184eb4975fbe1ce8dae0505571f4ff1) now publishes contract4 paired Human projection. It shares the actual native Source and receiver clock, independently observes the Pum permit, and consumes both proofs in the canonical cross-class ledger. The original predecode request budget remains effective after RPC, native SQL and output preparation. A final callback-free current/cancellation fence runs before commit. Existing legacy verification omits unavailable optional Human metadata; strict Human issuance still refuses unsupported identities and Store errors still refuse.

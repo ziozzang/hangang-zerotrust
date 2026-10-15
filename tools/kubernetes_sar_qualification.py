@@ -113,13 +113,36 @@ def finalize_evidence(evidence,primary,actions,path):
     path.write_text(json.dumps(evidence,indent=2))
     if primary is None and errors:raise RuntimeError('cleanup/baseline incomplete; private evidence preserved')
 
+def collect_diagnostics(kube,namespace,namespace_uid,pod_uids,output):
+    if namespace_uid is None:return
+    current=json.loads(kube('get','namespace',namespace,'-o','json'))
+    if current['metadata']['uid']!=namespace_uid:raise ValueError('diagnostic namespace owner changed')
+    errors=[];statuses=[]
+    for name,uid in pod_uids.items():
+        try:
+            pod=json.loads(kube('-n',namespace,'get','pod',name,'-o','json'))
+            if pod['metadata']['uid']!=uid:raise ValueError('diagnostic Pod owner changed')
+            statuses.append({'name':name,'uid':uid,'status':pod.get('status',{})})
+            for container in pod['spec']['containers']:
+                try:
+                    raw=kube('-n',namespace,'logs',name,'-c',container['name'],'--tail=200','--limit-bytes=65536','--pod-running-timeout=1s')
+                    # Pod log API has no UID precondition: check before and after,
+                    # discard collected bytes if the named object was replaced.
+                    after=json.loads(kube('-n',namespace,'get','pod',name,'-o','json'))
+                    if after['metadata']['uid']!=uid:raise ValueError('diagnostic Pod replaced during log read')
+                    (output/('pod-'+name+'-'+container['name']+'-private.log')).write_bytes(raw)
+                except Exception as error:errors.append({'pod':name,'container':container['name'],'error_type':type(error).__name__})
+        except Exception as error:errors.append({'pod':name,'error_type':type(error).__name__})
+    (output/'pod-status-private.json').write_text(json.dumps({'pods':statuses,'diagnostic_errors':errors},indent=2))
+    if errors:raise RuntimeError('private diagnostics incomplete')
+
 def execute(a,docs,material):
     candidate=json.loads(a.candidate_evidence.read_text())
     validate_prerequisites(json.loads(a.backup_evidence.read_text()),candidate,a.pum_image)
     pins=json.loads(pathlib.Path(__file__).with_name('kubernetes_sar_images.json').read_text())
     if a.api_image!='registry.k8s.io/kube-apiserver@'+pins['kube-apiserver']['linux_amd64_digest'] or a.etcd_image!='registry.k8s.io/etcd@'+pins['etcd']['linux_amd64_digest']:raise ValueError('execution requires reviewed official platform digests')
     require_runtime_attestation({'api':a.api_image,'etcd':a.etcd_image,'pumgye':a.pum_image},candidate.get('runtime_images',{}))
-    namespace=docs[0]['metadata']['name'];owned_uid=None;forwards=[];evidence={'passed':False,'namespace':namespace,'checks':[],'images':{'api':a.api_image,'etcd':a.etcd_image,'pum':a.pum_image}}
+    namespace=docs[0]['metadata']['name'];owned_uid=None;forwards=[];pod_uids={};evidence={'passed':False,'namespace':namespace,'checks':[],'images':{'api':a.api_image,'etcd':a.etcd_image,'pum':a.pum_image}}
     def kube(*args,body=None):
         raw=None if body is None else json.dumps(body).encode()
         r=subprocess.run([a.kubectl,*args],input=raw,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=150)
@@ -134,7 +157,9 @@ def execute(a,docs,material):
         actual=json.loads(kube('get','namespace',namespace,'-o','json'))
         if actual['metadata']['uid']!=owned_uid:raise ValueError('namespace owner replaced')
     def create(obj):
-        require_owner();return json.loads(kube('create','-f','-','-o','json',body=obj))
+        require_owner();created=json.loads(kube('create','-f','-','-o','json',body=obj))
+        if obj['kind']=='Pod':pod_uids[obj['metadata']['name']]=created['metadata']['uid']
+        return created
     def forward(pod,remote):
         import socket
         with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
@@ -227,7 +252,7 @@ def execute(a,docs,material):
             nodes=json.loads(kube('get','nodes','-o','json'));ready=len(nodes['items'])==2 and all(any(c['type']=='Ready' and c['status']=='True' for c in n['status']['conditions']) for n in nodes['items']);evidence['nodes_ready']=ready
             if not ready:raise RuntimeError('node baseline changed')
         actions=[('forward-stop-'+str(i),lambda process=process,log=log:stop_forward(process,log)) for i,(process,log) in enumerate(forwards)]
-        actions.extend([('owned-cleanup',cleanup),('pod-baseline',pod_baseline),('node-baseline',node_baseline)])
+        actions.extend([('owned-diagnostics',lambda:collect_diagnostics(kube,namespace,owned_uid,pod_uids,a.output)),('owned-cleanup',cleanup),('pod-baseline',pod_baseline),('node-baseline',node_baseline)])
         finalize_evidence(evidence,primary,actions,a.output/'result.json')
 
 if __name__=='__main__':main()

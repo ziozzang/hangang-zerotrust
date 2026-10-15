@@ -30,3 +30,9 @@ Pum 장애/새 Pod 복구를 검사한다. 개인 client key/CA signing key는 �
 부모의 image별 정확한 runtime imageID attestation이 없으면 kubectl 전에 거부하며
 실제 spec/status를 테스트 전과 복구 후 확인한다. 원래 실패와 cleanup/baseline 실패를
 별도로 보존하고 후속 정리 검사를 계속 수행하여 실패를 성공으로 기록하지 않는다.
+
+정리 전에 이 실행이 create한 정확한 PodUID의 상태와 container별 마지막200줄/최대64KiB
+로그만 비공개로 보존한다. 원래 namespace UID와 로그 수집 전후 PodUID를 확인하고
+교체되면 로그를 버린다(로그 API에 원자적 UID precondition은 없다). Secret API는
+읽지 않는다. 진단 실패도 원래 실패와 별도로 기록하며 cleanup/baseline 검사를
+막지 않는다. 기존 시작/port-forward deadline은 확대하지 않았다.

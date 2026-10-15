@@ -110,3 +110,13 @@ fail-closed cache config, namespace-only nonprivileged objects, secret exclusion
 typed same-policy/no-network semantics, immutable references, atomic cleanup
 preconditions/replacement refusal, and missing/stale backup rejection. No cluster
 access occurs. Existing Service/Workload/default runners are unchanged.
+
+Before owned cleanup, the finalizer collects private Pod status and bounded
+per-container logs (last200 lines, at most64KiB) only for PodUIDs returned by this
+run's create operations, after checking the original namespace UID. No Secret
+API is called. Pod log APIs have no atomic UID precondition: the helper verifies
+PodUID before/after log collection and discards bytes on replacement. Diagnostic
+errors remain separate from the primary failure and never skip cleanup/baseline
+checks. A diagnostic error prevents a success result. Startup/port-forward
+budgets are unchanged; a slow startup produces preserved failure evidence rather
+than silently broadening the qualification deadline.

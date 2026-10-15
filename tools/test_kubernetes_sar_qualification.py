@@ -80,4 +80,31 @@ class QualificationTests(unittest.TestCase):
     bad=copy.deepcopy(receipt);bad['remote_verification'][field]=value
     with self.assertRaises(ValueError):q.validate_prerequisites(bad,candidate,candidate['image'])
 
+ def test_private_diagnostics_only_owned_pods_and_no_secret_reads(self):
+  calls=[]
+  def kube(*args):
+   calls.append(args)
+   if args[:2]==('get','namespace'):return json.dumps({'metadata':{'uid':'ns-owned'}}).encode()
+   if 'logs' in args:return b'bounded fixture startup failure'
+   return json.dumps({'metadata':{'uid':'pod-owned'},'spec':{'containers':[{'name':'api'}]},'status':{'phase':'Pending'}}).encode()
+  with tempfile.TemporaryDirectory() as d:
+   out=pathlib.Path(d);q.collect_diagnostics(kube,'owned','ns-owned',{'api':'pod-owned'},out)
+   self.assertTrue((out/'pod-api-api-private.log').exists());self.assertTrue((out/'pod-status-private.json').exists())
+  self.assertFalse(any('secret' in ' '.join(c).lower() for c in calls));self.assertTrue(all('owned' in c for c in calls))
+ def test_diagnostic_failure_does_not_skip_cleanup_or_mask_primary(self):
+  calls=[]
+  def kube(*args):
+   if args[:2]==('get','namespace'):return json.dumps({'metadata':{'uid':'ns-owned'}}).encode()
+   if 'logs' in args:raise RuntimeError('fixture log read failure')
+   return json.dumps({'metadata':{'uid':'pod-owned'},'spec':{'containers':[{'name':'api'}]},'status':{}}).encode()
+  with tempfile.TemporaryDirectory() as d:
+   out=pathlib.Path(d);e={'passed':True}
+   q.finalize_evidence(e,AssertionError(),[('diagnostics',lambda:q.collect_diagnostics(kube,'owned','ns-owned',{'api':'pod-owned'},out)),('cleanup',lambda:calls.append('cleanup')),('baseline',lambda:calls.append('baseline'))],out/'result.json')
+   self.assertEqual(calls,['cleanup','baseline']);self.assertEqual(e['primary_error'],'AssertionError');self.assertFalse(e['passed']);self.assertEqual(e['finalization_errors'][0]['stage'],'diagnostics');self.assertTrue((out/'pod-status-private.json').exists())
+ def test_replaced_namespace_refuses_diagnostics_without_pod_or_logs(self):
+  kube=Mock(return_value=json.dumps({'metadata':{'uid':'replacement'}}).encode())
+  with tempfile.TemporaryDirectory() as d:
+   with self.assertRaises(ValueError):q.collect_diagnostics(kube,'owned','old',{'api':'pod'},pathlib.Path(d))
+  self.assertEqual(kube.call_count,1)
+
 if __name__=='__main__':unittest.main()

@@ -1710,3 +1710,12 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
 - [ ] Complete subsequent Sumunjang native CRD source full-chain qualification,
   separate versioned release and internal adoption. Published Sumunjang 0.3.5 is
   retained unchanged in the completed signed four-service qualification.
+
+## Subsequent classic network lifetime audit — 2026-10-15
+
+- [ ] Review and qualify Hangang's classic network proof/cache original lifetime
+  across suspend and asynchronous dispatch; existing Instant-based boundaries are
+  not upgraded merely by Sumunjang's BOOTTIME source lease. Preserve existing APIs
+  and distinguish unsupported/legacy platform behavior. The qualified observed
+  chain also requires a fresh Pumgye native network RPC and observed permit/output;
+  no observed bypass was established by this source observation.

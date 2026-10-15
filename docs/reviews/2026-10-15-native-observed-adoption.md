@@ -181,3 +181,20 @@ hashes, management/native refusal checks and durable restarts were verified.
 Existing routes retain their configured modes; installing binaries does not
 automatically enable an unconfigured observed projection route or an external
 provider. The new Sumunjang CRD authority remains a separate subsequent candidate.
+
+## Subsequent Sumunjang source candidate
+
+The source/readiness candidate `aa43aa7` passed an actual scratch-image four-service
+run with the independent observed SDK and browser: operator CRD block/unblock
+changes final 403/200, manual mutations refuse, RBAC withdrawal and checkpoint Pod
+replacement produce 503 without backend dispatch, replacement UID/config-only
+repinning refuse, explicit repin/new Pod recovers, and final process outage refuses.
+Created namespace and CRD were removed with UID/resourceVersion delete preconditions.
+The global CRD test assumes no concurrent source operator.
+
+A separate default-DB run of that new candidate found a console input-lock
+regression when initial unknown authority becomes disabled. The canonical dashboard
+and generated plugin are being fixed. Because the dashboard is embedded, this
+requires a new exact static binary and both source/default qualification again.
+The previous staged 0.3.6 candidate is explicitly not for publication. Existing
+published/operating Sumunjang 0.3.5 remains unchanged.

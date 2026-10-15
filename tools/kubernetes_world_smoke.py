@@ -349,8 +349,10 @@ def main():
                 before=backend_count()
                 begun=time.monotonic();request_at_ms=round(time.time()*1000)
                 c.request(method,'/secure',body=b'owned final entity' if args.native_resource else None,headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
+                from world_http_facts import response_facts
+                request.last=response_facts(status,data,request_at_ms,round((time.monotonic()-begun)*1000))
                 after=backend_count()
-                request.last={'at_unix_ms':request_at_ms,'status':status,'elapsed_ms':round((time.monotonic()-begun)*1000),'backend_delta':after-before}
+                request.last['backend_delta']=after-before
                 assert after==before+(1 if status==200 else 0),'refused Kubernetes request reached application backend'
                 if status==200 and args.credential_projection:
                     projected={k.lower():v for k,v in json.loads(data)['headers'].items()}

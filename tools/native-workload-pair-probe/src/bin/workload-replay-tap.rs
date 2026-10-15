@@ -18,6 +18,120 @@ use tonic::{
     },
 };
 use zeroize::Zeroize as _;
+// Diagnostic counters are not proof or request identifiers. Output is capped for
+// this owned qualification process; payloads and Status messages never enter it.
+static VERIFY_INGRESS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static VERIFY_ADMITTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static VERIFY_UPSTREAM: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static VERIFY_CANCELLED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static VERIFY_LOGS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+fn increment(counter: &std::sync::atomic::AtomicU64) -> u64 {
+    counter
+        .fetch_update(
+            std::sync::atomic::Ordering::Relaxed,
+            std::sync::atomic::Ordering::Relaxed,
+            |value| Some(value.saturating_add(1)),
+        )
+        .expect("infallible saturating counter")
+}
+struct VerifyDiagnostic {
+    begun: Instant,
+    stage: &'static str,
+    code: &'static str,
+    reply: &'static str,
+    completed: bool,
+}
+impl VerifyDiagnostic {
+    fn ingress() -> Self {
+        increment(&VERIFY_INGRESS);
+        Self {
+            begun: Instant::now(),
+            stage: "ingress",
+            code: "cancelled",
+            reply: "none",
+            completed: false,
+        }
+    }
+    fn admitted(&mut self) {
+        increment(&VERIFY_ADMITTED);
+        self.stage = "upstream_pending";
+    }
+    fn admission_refused(&mut self, code: tonic::Code) {
+        self.stage = "admission_refused";
+        self.code = code_name(code);
+        self.completed = true;
+    }
+    fn upstream(&mut self, result: &Result<Response<h::VerifyReply>, Status>) {
+        increment(&VERIFY_UPSTREAM);
+        self.stage = "upstream_completed";
+        self.code = result
+            .as_ref()
+            .map_or_else(|e| code_name(e.code()), |_| "ok");
+        self.reply = result
+            .as_ref()
+            .map_or("none", |r| reply_status(r.get_ref().status));
+        self.completed = true;
+    }
+    fn facts(&self) -> serde_json::Value {
+        use std::sync::atomic::Ordering::Relaxed;
+        serde_json::json!({"event":"workload_verify_stage", "stage":self.stage,
+            "tonic_code":self.code, "reply_status":self.reply,
+            "elapsed_ms":self.begun.elapsed().as_millis().min(60_000) as u64,
+            "ingress_count":VERIFY_INGRESS.load(Relaxed),"admitted_count":VERIFY_ADMITTED.load(Relaxed),
+            "upstream_completed_count":VERIFY_UPSTREAM.load(Relaxed),"cancelled_count":VERIFY_CANCELLED.load(Relaxed)})
+    }
+}
+impl Drop for VerifyDiagnostic {
+    fn drop(&mut self) {
+        if !self.completed {
+            increment(&VERIFY_CANCELLED);
+        }
+        if increment(&VERIFY_LOGS) < 4096 {
+            write_diagnostic(&mut std::io::stdout().lock(), &self.facts());
+        }
+    }
+}
+fn write_diagnostic(writer: &mut impl std::io::Write, facts: &serde_json::Value) {
+    if let Ok(mut bytes) = serde_json::to_vec(facts)
+        && bytes.len() < 4096
+    {
+        bytes.push(b'\n');
+        // Drop must not panic or alter the RPC result when stdout is closed.
+        let _ = writer.write_all(&bytes);
+    }
+}
+fn reply_status(status: u32) -> &'static str {
+    match status {
+        200 => "200",
+        400 => "400",
+        401 => "401",
+        403 => "403",
+        429 => "429",
+        503 => "503",
+        _ => "other",
+    }
+}
+fn code_name(code: tonic::Code) -> &'static str {
+    match code {
+        tonic::Code::Ok => "ok",
+        tonic::Code::Cancelled => "cancelled",
+        tonic::Code::Unknown => "unknown",
+        tonic::Code::InvalidArgument => "invalid_argument",
+        tonic::Code::DeadlineExceeded => "deadline_exceeded",
+        tonic::Code::NotFound => "not_found",
+        tonic::Code::AlreadyExists => "already_exists",
+        tonic::Code::PermissionDenied => "permission_denied",
+        tonic::Code::ResourceExhausted => "resource_exhausted",
+        tonic::Code::FailedPrecondition => "failed_precondition",
+        tonic::Code::Aborted => "aborted",
+        tonic::Code::OutOfRange => "out_of_range",
+        tonic::Code::Unimplemented => "unimplemented",
+        tonic::Code::Internal => "internal",
+        tonic::Code::Unavailable => "unavailable",
+        tonic::Code::DataLoss => "data_loss",
+        tonic::Code::Unauthenticated => "unauthenticated",
+    }
+}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Peer {
@@ -236,12 +350,22 @@ impl h::authentication_server::Authentication for Tap {
         &self,
         r: Request<h::VerifyRequest>,
     ) -> Result<Response<h::VerifyReply>, Status> {
-        let _permit = self.admit(&r)?;
-        h::authentication_client::AuthenticationClient::new(self.hop.clone())
+        let mut diagnostic = VerifyDiagnostic::ingress();
+        let _permit = match self.admit(&r) {
+            Ok(permit) => permit,
+            Err(error) => {
+                diagnostic.admission_refused(error.code());
+                return Err(error);
+            }
+        };
+        diagnostic.admitted();
+        let result = h::authentication_client::AuthenticationClient::new(self.hop.clone())
             .max_encoding_message_size(16384)
             .max_decoding_message_size(8192)
             .verify(request(r.into_inner(), &self.hop_caller))
-            .await
+            .await;
+        diagnostic.upstream(&result);
+        result
     }
 }
 #[tonic::async_trait]
@@ -593,5 +717,80 @@ mod rpc_tests {
         let (r, c, _) = scenario(false, 0).await;
         assert!(r.is_err());
         assert_eq!(c.load(Ordering::SeqCst), 1);
+    }
+}
+
+#[cfg(test)]
+mod verify_diagnostic_tests {
+    use super::*;
+    #[test]
+    fn upstream_diagnostic_never_serializes_status_message_details_or_body() {
+        let mut d = VerifyDiagnostic::ingress();
+        d.admitted();
+        d.upstream(&Err(Status::with_details(
+            tonic::Code::Unavailable,
+            "reserved-secret",
+            vec![1, 2, 3].into(),
+        )));
+        let text = d.facts().to_string();
+        assert!(!text.contains("reserved-secret"));
+        assert!(!text.contains("details"));
+        assert_eq!(d.facts()["tonic_code"], "unavailable");
+        d.upstream(&Ok(Response::new(h::VerifyReply {
+            status: 987654,
+            body: b"reserved-secret".to_vec(),
+            ..Default::default()
+        })));
+        assert_eq!(d.facts()["reply_status"], "other");
+        assert!(!d.facts().to_string().contains("987654"));
+        assert!(!d.facts().to_string().contains("reserved-secret"));
+    }
+    #[test]
+    fn broken_writer_is_ignored_and_records_are_bounded() {
+        struct Broken;
+        impl std::io::Write for Broken {
+            fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+                Err(std::io::ErrorKind::BrokenPipe.into())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let d = VerifyDiagnostic::ingress();
+        write_diagnostic(&mut Broken, &d.facts());
+        let mut bytes = Vec::new();
+        write_diagnostic(&mut bytes, &d.facts());
+        assert!(bytes.len() < 4096 && bytes.ends_with(b"\n"));
+        let before = bytes.len();
+        write_diagnostic(
+            &mut bytes,
+            &serde_json::json!({"oversize": "x".repeat(5000)}),
+        );
+        assert_eq!(bytes.len(), before);
+    }
+    #[test]
+    fn admission_refusal_has_no_upstream_reply() {
+        let mut d = VerifyDiagnostic::ingress();
+        d.admission_refused(tonic::Code::Unauthenticated);
+        assert_eq!(d.facts()["stage"], "admission_refused");
+        assert_eq!(d.facts()["reply_status"], "none");
+        assert_eq!(d.facts()["tonic_code"], "unauthenticated");
+    }
+    #[tokio::test]
+    async fn aborted_pending_verify_future_is_observable() {
+        use std::sync::atomic::Ordering::Relaxed;
+        let before = VERIFY_CANCELLED.load(Relaxed);
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(async move {
+            let mut d = VerifyDiagnostic::ingress();
+            d.admitted();
+            tx.send(()).unwrap();
+            std::future::pending::<()>().await;
+            drop(d);
+        });
+        rx.await.unwrap();
+        task.abort();
+        assert!(task.await.unwrap_err().is_cancelled());
+        assert!(VERIFY_CANCELLED.load(Relaxed) > before);
     }
 }

@@ -27,6 +27,7 @@ class Peer(grpc.GenericRpcHandler):
             self.calls.append((details.method,raw))
             if details.method == hooks.PROJECT:
                 number=sum(name==hooks.PROJECT for name,_ in self.calls)
+                if number==1 and getattr(self,'first_delay',0):await asyncio.sleep(self.first_delay)
                 if number>1:
                     if self.delay: await asyncio.sleep(self.delay)
                     if self.replay_code is not None:
@@ -70,13 +71,15 @@ class Qualification(unittest.IsolatedAsyncioTestCase):
     auth=base.Transport.auth
     refused=base.Transport.refused
 
-    async def configure(self,mode):
+    async def configure(self,mode,initially_armed=None):
         await self.channel.close()
         await self.tap.close()
         spec=next(iter(self.config['upstreams'].values()))
         names=[hooks.ISSUE,base.METHOD] if mode=='issue_cookie_b' else [hooks.PROJECT,hooks.OBSERVE]
         self.config['upstreams']={name:dict(spec) for name in names}
         self.config['qualification']={'mode':mode,'schemas':self.schemas}
+        if initially_armed is not None:
+            self.config['qualification']['initially_armed']=initially_armed
         if mode=='issue_cookie_b':
             cookie=self.root/'cookie-b';cookie.write_bytes(b'actual-native-cookie-B-fixture');cookie.chmod(0o600)
             self.config['qualification']['cookie_b_file']=str(cookie)
@@ -85,6 +88,51 @@ class Qualification(unittest.IsolatedAsyncioTestCase):
         self.channel=grpc.aio.secure_channel(self.config['listen'],grpc.ssl_channel_credentials(
             (self.root/'ca.pem').read_bytes(),(self.root/'peer.key').read_bytes(),(self.root/'peer.pem').read_bytes()),
             options=(('grpc.ssl_target_name_override','localhost'),('grpc.enable_retries',0)))
+
+    async def test_unarmed_actual_tls_controls_then_oneway_arm(self):
+        await self.configure('issue_cookie_b',False)
+        raw=self.issue().SerializeToString()
+        call=self.channel.unary_unary(hooks.ISSUE)
+        self.assertEqual(await call(raw,metadata=self.auth(),timeout=.8),raw)
+        self.assertFalse(self.tap.snapshot()['qualification']['armed'])
+        self.assertEqual(self.tap.arm(),{'ok':True,'op':'arm','armed':True})
+        changed=await call(raw,metadata=self.auth(),timeout=.8)
+        self.assertNotEqual(changed,raw)
+        self.assertEqual(self.tap.arm(),{'ok':False,'op':'arm','stage':'already_armed'})
+        self.assertTrue(self.tap.snapshot()['qualification']['armed'])
+        self.assertEqual(self.tap.snapshot()['qualification']['counts']['cookie_substitutions'],1)
+
+    async def test_through_replay_duration_includes_first_projection(self):
+        await self.configure('exact_pair_replay')
+        self.peer.first_delay=.025
+        raw,_=self.pair()
+        await self.channel.unary_unary(hooks.PROJECT)(raw,metadata=self.auth(),timeout=.8)
+        last=self.tap.snapshot()['qualification']['last_replay']
+        self.assertGreaterEqual(last['through_replay_elapsed_boottime_ns'],20_000_000)
+        self.assertGreaterEqual(last['through_replay_elapsed_boottime_ns'],last['elapsed_boottime_ns'])
+
+    async def test_default_armed_and_invalid_startup_flag(self):
+        await self.configure('issue_cookie_b')
+        self.assertTrue(self.tap.hooks.armed)
+        self.assertFalse(self.tap.hooks.arm())
+        for bad in (0,1,'false',None):
+            config=dict(self.config['qualification'],initially_armed=bad)
+            with self.assertRaises(ValueError):hooks.Hooks(config,self.config['upstreams'],base.m.read_private)
+
+    async def test_unarmed_inflight_project_not_changed_by_later_arm(self):
+        await self.configure('exact_pair_replay',False)
+        original=self.tap.call
+        entered=asyncio.Event();release=asyncio.Event()
+        async def delayed(name,raw,context):
+            if name==hooks.PROJECT:
+                entered.set();await release.wait()
+            return await original(name,raw,context)
+        self.tap.call=delayed
+        raw,_=self.pair()
+        pending=self.channel.unary_unary(hooks.PROJECT)(raw,metadata=self.auth(),timeout=.8)
+        await asyncio.wait_for(entered.wait(),.5)
+        self.assertTrue(self.tap.arm()['ok']);release.set();await pending
+        self.assertEqual(self.tap.snapshot()['qualification']['counts']['replay_attempts'],0)
 
     def issue(self):
         request=self.wire.issue(service='orders',audience='orders-api')

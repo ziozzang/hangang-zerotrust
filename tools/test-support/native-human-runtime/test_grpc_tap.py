@@ -125,6 +125,13 @@ class Transport(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(await self.channel.unary_unary(path)(b'exact-raw',metadata=self.auth(),timeout=.8),b'exact-raw')
             self.assertEqual((self.echo.calls,other.calls),(1,1))
         finally:await peer.stop(0)
+    async def test_control_cannot_create_hooks_or_change_routes(self):
+        routes=dict(self.tap.routes)
+        self.assertEqual(self.tap.control({'op':'arm'}),{'ok':False,'op':'arm','stage':'not_configured'})
+        for command in ({'op':'disarm'},{'op':'arm','mode':'issue_cookie_b'},{'op':'unknown'}):
+            with self.assertRaises(ValueError):self.tap.control(command)
+        self.assertIsNone(self.tap.hooks);self.assertEqual(self.tap.routes,routes)
+
     async def test_absent_duplicate_wrong_caller_never_forward(self):
         for auth in [(), self.auth()*2, (('authorization','Bearer wrong'),)]:
             await self.refused(self.rpc(b'x',metadata=auth,timeout=.5), {grpc.StatusCode.UNAUTHENTICATED})
@@ -205,6 +212,8 @@ class Transport(unittest.IsolatedAsyncioTestCase):
                         await asyncio.sleep(.005)
                     self.assertEqual(json.loads(ready.read_text())['endpoint'],config['listen'])
                     self.assertEqual(ready.stat().st_mode & 0o777,0o600)
+                    process.stdin.write(b'{"op":"arm"}\n'); await process.stdin.drain()
+                    self.assertEqual(json.loads(await asyncio.wait_for(process.stdout.readline(),1)),{'ok':False,'op':'arm','stage':'not_configured'})
                     process.stdin.write(b'{"op":"snapshot"}\n'); await process.stdin.drain()
                     snapshot=json.loads(await asyncio.wait_for(process.stdout.readline(),1))
                     self.assertEqual(snapshot['contract'],'qualification-grpc-tap-v1')

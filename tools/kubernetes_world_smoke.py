@@ -34,7 +34,10 @@ def main():
     parser.add_argument('--authenticated-client',type=Path)
     parser.add_argument('--native-resource',action='store_true')
     parser.add_argument('--credential-projection',action='store_true')
+    parser.add_argument('--observed',action='store_true',help='Require native observed authentication, permit and credential output owners')
     args=parser.parse_args()
+    if args.observed and not args.credential_projection:
+        parser.error('--observed requires --credential-projection and an observed SDK receipt client')
     if args.credential_projection and not args.native_resource:
         parser.error('credential projection requires native resource qualification')
     if args.credential_projection and (not args.receipt_client or not args.resource_catalog or args.authenticated_client):
@@ -112,6 +115,14 @@ def main():
             hop['receipt_permit_keys']=[permit_pin]
             hop['credential_projection']={'revision':1,'plans':[{'service':'orders','audience':'orders-api','resource':'db:orders','action':'select','minimum_aal':0,'credential':{'type':'bearer_reference','secret_ref':'fixture:origin'}}]}
             hop['projection_receiver']={'authority':dict(tls('pumgye'),address=f'https://pumgye.{namespace}.svc:9087',token_env='PUMGYE_DECISION_TOKEN'),'secrets':[{'reference':'fixture:origin','token_env':'OWNED_ORIGIN_BEARER'}]}
+        if args.observed:
+            gateway['http'][0]['auth']['native_resource']['observed']={
+                'identity_authority':'world1','minimum_profile_revision':1,
+                'minimum_application_generation':1,'minimum_key_registry_revision':1,
+                'source_error_ppm':500,'receiver_error_ppm':500,
+                'maximum_final_header_bytes':32768,
+            }
+            hop['projection_receiver']['observed_clock_rates']={'source_ppm':500,'receiver_ppm':500}
         items=[]
         def resource(kind,name,**fields):
             obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
@@ -121,6 +132,10 @@ def main():
             native_tls={'ca':'/tls/ca.crt','certificate':'/tls/client.crt','key':'/tls/client.key'}
             config_map['data']['authentication-live.json']=json.dumps(dict(native_tls,issuer_ref='owned-world',address=f'https://hopae.{namespace}.svc:8703',server_name=f'hopae.{namespace}.svc',token_env='HOPAE_TEST_GATEWAY_KEY'))
             config_map['data']['network-live.json']=json.dumps(dict(native_tls,address=f'https://sumunjang.{namespace}.svc:9082',server_name=f'sumunjang.{namespace}.svc',token_env='HANGANG_GUARD_COLLECTOR_TOKEN'))
+        if args.observed:
+            live=json.loads(config_map['data']['authentication-live.json'])
+            live['observed_clock_rates']={'source_ppm':500,'receiver_ppm':500}
+            config_map['data']['authentication-live.json']=json.dumps(live)
         if args.credential_projection:
             config_map['data']['permit-key.json']=json.dumps(dict(permit_pin,seed_env='OWNED_PERMIT_SEED'))
             config_map['data']['route-owner.json']=json.dumps({'listen':'0.0.0.0:8444','certificate':'/tls/tls.crt','key':'/tls/tls.key','client_ca':'/tls/ca.crt','token_env':'OWNED_ROUTE_CALLER'})
@@ -168,6 +183,8 @@ def main():
             environments['hangang'].append(env('OWNED_ROUTE_CALLER','route-caller'))
             environments['pumgye']+=[env('OWNED_ROUTE_CALLER','route-caller'),env('OWNED_PERMIT_SEED','permit-seed')]
             environments['hopae']+=[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('OWNED_ORIGIN_BEARER','origin-bearer')]
+        if args.observed:
+            commands['pumgye']+=['--observed-permits','--observed-authority','owned-world']
         for name in commands:
             resource('PersistentVolumeClaim',name+'-state',spec={'accessModes':['ReadWriteOnce'],'resources':{'requests':{'storage':'1Gi'}}})
             container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
@@ -246,6 +263,7 @@ def main():
             if args.receipt_client:
                 receipt_port=forward('hopae',8703)
                 receipt_config={'settings':{'transport':'grpc','address':f'localhost:{receipt_port}','tls':{'server_name':f'hopae.{namespace}.svc','ca':str(root/'ca.pem'),'certificate':str(root/'client.pem'),'key':str(root/'client.key')}},'issuer_ref':'owned-world','key_epoch':1,'public_key':receipt_pin,'service':'orders','audience':'orders-api','method':'GET','target':'/secure','body':'','headers':[['x-hopae-contract','1'],['x-forwarded-host','app.example.test'],['x-forwarded-proto','https'],['x-forwarded-port','8443'],['x-forwarded-for','127.0.0.1'],['x-original-method','GET'],['x-original-url','https://app.example.test:8443/secure']]}
+                if args.observed:receipt_config.update(identity_authority='world1',source_ppm=500,receiver_ppm=500)
                 receipt_path=root/'receipt-client.json';receipt_path.write_text(json.dumps(receipt_config))
                 receipt_environment=dict(os.environ,OWNED_RECEIPT_CALLER=tokens['caller'],OWNED_RECEIPT_CREDENTIAL=tokens['api'])
                 with (root/'receipt-client.log').open('w') as log:
@@ -258,8 +276,13 @@ def main():
                         assert set(facts)==allowed and facts['diagnostic_only'] is True
                         print('Receipt clock diagnostic: '+json.dumps(facts,sort_keys=True),flush=True)
                     else:print('Receipt clock diagnostic transport refused',flush=True)
-                assert result.returncode==0 and json.loads(result.stdout)['allowed'] is True,'Kubernetes native receipt refused'
-                print('PASS: actual Hopae Pod native issuer and Hangang client verify a request-bound service receipt over mTLS Service DNS')
+                receipt_result=json.loads(result.stdout) if result.returncode==0 else {}
+                assert result.returncode==0 and receipt_result.get('allowed') is True,'Kubernetes native receipt refused'
+                if args.observed:
+                    assert receipt_result.get('contract')=='hopae-observed-sdk-v1' and all(
+                        receipt_result.get(step) is True for step in ['issued','independently_observed','refreshed']
+                    ),'observed qualification requires actual SDK issue/independent observation/consuming refresh client'
+                print('PASS: actual Hopae Pod native issuer and independent management-host client verify request-bound authentication over mTLS Service DNS'+(' using observed issue, independent observation and consuming refresh' if args.observed else ''))
                 if args.authenticated_client:
                     pum=forward('pumgye',9084)
                     authenticated_config=json.loads(json.dumps(receipt_config))
@@ -280,7 +303,9 @@ def main():
             c=http.client.HTTPConnection('127.0.0.1',admin,timeout=3)
             c.request('GET',f'/ui/plugins/{plugin_id}/'+manifest['entry'],headers={'Authorization':'Bearer '+tokens['gateway-admin']});asset_response=c.getresponse();asset_bytes=asset_response.read();c.close()
             assert asset_response.status==200 and hashlib.sha256(asset_bytes).hexdigest()==manifest['assets'][manifest['entry']]
-            assert api(admin,f'/v1/plugins/{plugin_id}/policy')[0]==200
+            policy_route=next((route['path'] for route in manifest['routes'] if route['method']=='GET' and route['path'] in ['policy/document','policy']),None)
+            assert policy_route is not None,'owned plugin has no declared policy read route'
+            assert api(admin,f'/v1/plugins/{plugin_id}/{policy_route}')[0]==200
             if args.browser_probe:
                 browser_config=root/'browser.json'
                 browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':tokens['api']},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace}}))

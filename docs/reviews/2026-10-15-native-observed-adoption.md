@@ -1,7 +1,8 @@
 # Native observed consumer adoption
 
-Status: Sol 6.1 source review and implementation handoff; not implemented consumer
-behavior. Current source: Hopae `2a96303`, Pumgye `34d74b6`, Hangang `b41b492`.
+Status: implemented native consumers with final local signed-artifact qualification;
+independent-host Kubernetes qualification is in progress. Current source: Hangang
+`97419f3`, Hopae `bc5b2a4`, Pumgye runtime `4724962` (packaging `d207266`).
 [한국어](../ko/2026-10-15-native-observed-adoption.md)
 
 ## Implementation update
@@ -111,3 +112,34 @@ Hyper alone cannot fence detached writes; a source lifetime measured only by
 Instant cannot be repaired by a remote BOOTTIME conversion. Final native transport,
 independent-host, restore/clone, Kubernetes/browser and signed release gates remain
 open. No throughput or operating-adoption claim follows from this functional run.
+
+## Final native source and signed local qualification
+
+Hangang `97419f3` fences actual backend transport writes below TLS, including
+vectored writes, flush and shutdown, with irreversible refusal. Observed requests
+disable canceled-request retry. Original route lifetime uses suspend-inclusive
+BOOTTIME; native owner/configuration retirement is checked at the actual transport.
+The complete workspace passed 1,309 tests (58 ignored), strict Clippy and focused
+late transport/route tests. A delayed real TLS connection emitted zero HTTP bytes
+after expiry or route retirement. Already accepted kernel bytes cannot be recalled.
+
+Pumgye `4724962` applies the same BOOTTIME source lifetime to every Kubernetes
+decision path and readiness/status. Each authenticated completed source capture
+seals its lifetime once; rereading cannot renew it. Failed/backward clocks latch
+refusal, and delayed concurrent reads cannot spuriously retire a healthy source.
+Default 68 and observed-feature 73 tests plus strict Clippy pass.
+
+All eight Hangang executables and the Hopae/Pumgye native servers were rebuilt as
+static musl binaries. Pinned Ed25519 manifests, exact sizes/SHA-256, archive contents
+and absence of ELF interpreter were independently verified. The exact signed three
+new candidates plus retained published Sumunjang 0.3.5 passed the real four-process
+observed chain. A separate final-source run also passed external authentication API
+relay and circuit breaking. Final Hangang browser regression and local console SSO
+smoke pass; the latter uses a fixture identity peer and does not establish provider
+login qualification. Release publication and operating adoption remain separate.
+
+The first actual K3s run already passed final credential transformation across the
+four Pods and the independent management-host native SDK's issue, independent
+observation and consuming refresh. The remaining console, mutation, revocation and
+restart checks are still under investigation; this is not a complete Kubernetes
+qualification result. Safe observed connection pooling and throughput remain open.

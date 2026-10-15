@@ -35,6 +35,14 @@ if 'rollout' in args:sys.exit(23)
             document=json.loads(output.read_text())
             return document['items']
 
+    def test_responsive_flag_refuses_without_actual_browser_probe(self):
+        argv=[sys.executable,str(Path(__file__).with_name('kubernetes_world_smoke.py')),'--kubectl','/unused','--hopae-fixture','/unused','--sumunjang-plugin','/unused','--echo-image','node:fixture','--pumgye-responsive']
+        for name in ['hangang','hopae','pumgye','sumunjang']:
+            argv+=['--'+name+'-image',name+':fixture']
+        result=subprocess.run(argv,capture_output=True,text=True,timeout=5)
+        self.assertEqual(result.returncode,2)
+        self.assertIn('--pumgye-responsive requires --browser-probe',result.stderr)
+
     def test_default_has_no_composition_resources_or_credentials(self):
         items=self.render(False)
         self.assertNotIn('relay',[item['metadata']['name'] for item in items])

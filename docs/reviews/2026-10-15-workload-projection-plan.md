@@ -37,3 +37,22 @@ source withdrawal, original-age expiry, restart, replay and final-write retireme
 must refuse without backend effects. Service regressions must continue to pass.
 Protocol canonicalization, record retention/capacity and source mapping compatibility
 remain under independent review before activation. No new release is claimed here.
+
+## Review clarifications before protocol activation
+
+The observation clock domain must equal the epoch's 32-character process nonce,
+not the full epoch string or an independently generated domain. The canonical
+parser must re-encode byte-for-byte, including colon-bearing authority values.
+Missing original-proof records refuse; signature validity, UTC expiry, profile
+currency or incoming remaining-time fields cannot reconstruct a lost capability.
+Capacity exhaustion refuses issuance rather than evicting a still-admissible owner.
+
+Original-proof admission records and durable paired replay evidence have separate
+lifetimes. Expiring the one-second original capability must not shorten retention
+of a consumed signed authentication/permission nonce. Replay retention follows the
+full signed proof bounds; source observation never extends them. Signed receipt
+expiry and initial original-budget limits must be reviewed together before coding.
+
+Mapping v2 candidates explicitly report their mapping version and each outcome's
+principal class. V1 serialization remains unchanged. Neither a v1 candidate nor a
+legacy subject assignment may silently acquire typed Workload authority.

@@ -27,3 +27,17 @@ nonce를 재사용할 수 없다. Human은 실제 세션·핸들·사용자·팩
 최종 쓰기 철회가 모두 백엔드 영향 없이 거부되어야 한다. Service 회귀도 유지한다.
 프로토콜 canonicalization·기록 보존/용량·매핑 호환성은 활성화 전 독립 검토 중이며
 아직 새 릴리즈 완료를 주장하지 않는다.
+
+## 프로토콜 활성화 전 검토 보강
+
+관측 clock domain은 epoch의 32자리 프로세스 nonce와 같아야 한다. 전체 epoch나 별도
+생성 domain으로 혼동하지 않는다. 콜론을 포함한 authority도 재인코딩 byte 일치로 검사한다.
+원래 증명 기록이 없으면 거부한다. 서명·UTC 만료·현재 프로필·수신한 남은 시간으로 잃은
+capability를 재생성하지 않는다. 용량이 차면 아직 유효한 owner를 지우지 않고 발급을 거부한다.
+
+최대 1초의 원래 허용 기록과 영속 paired replay 증거의 보존 수명은 다르다. 원래 허용이
+끝났다고 소비한 인증·권한 nonce 기록을 조기 삭제해서는 안 된다. replay는 전체 서명 증명의
+상한까지 보존한다. receipt 만료와 최초 원래 예산의 관계도 구현 전에 함께 검토한다.
+
+mapping v2 candidate는 버전과 outcome별 principal class를 명시한다. v1 직렬화는 그대로
+유지한다. 기존 v1 candidate나 legacy subject 할당을 typed Workload 권한으로 승격하지 않는다.

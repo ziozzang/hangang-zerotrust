@@ -223,3 +223,5 @@ and [canonical request binding v2](docs/reviews/2026-10-16-request-binding-v2.md
 track the next implementation; design/reference vectors do not activate Human RPCs.
 
 [Owned native Human runtime fixture](tools/test-support/native-human-runtime/README.md) provides reproducible actual portal/provider/TOTP setup for separate public SDK/Pum gates; it does not activate Human output or qualify the full chain.
+
+[Native request-path accounting and snapshot milestones](docs/reviews/2026-10-16-native-hotpath-snapshot-design.md) separates actual SQL/RPC work from proposed source snapshots and durable replay obligations; no performance or activation claim.

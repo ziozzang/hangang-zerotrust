@@ -32,3 +32,5 @@ Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 - [Public-SDK Workload qualification probe](../tools/native-workload-probe/README.md) — authentication only; real full-chain gates remain.
 
 [Workload K3s qualification preparation](WORKLOAD_WORLD_QUALIFICATION.md) — opt-in native orchestration and pure tests; live execution remains unqualified and requires reviewed exact artifacts.
+
+[Native request-path accounting and snapshots](reviews/2026-10-16-native-hotpath-snapshot-design.md) — proposed source ownership, durable replay and measurement gates.

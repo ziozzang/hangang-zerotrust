@@ -189,3 +189,5 @@ workspace/Clippy/브라우저를 통과했으며 정확한 static/K3s/내부 반
 진행한다. 설계·기준값만으로 Human RPC를 활성화하지 않는다.
 
 [소유한 네이티브 Human 런타임 fixture](tools/test-support/native-human-runtime/README.ko.md)는 별도 공개 SDK/Pum 검증용 실제 포털·원천·TOTP 설정을 재현합니다. Human 출력 활성화나 전체 연결 완료 주장은 하지 않습니다.
+
+[네이티브 요청 경로 계측·snapshot 후속 단계](docs/ko/2026-10-16-native-hotpath-snapshot-design.md)는 실제 SQL/RPC와 제안 snapshot·durable replay 의무를 구분하며 성능·활성화 주장이 아닙니다.

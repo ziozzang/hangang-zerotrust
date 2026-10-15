@@ -30,3 +30,5 @@
 - [공개 SDK Workload 검증 도구](../../tools/native-workload-probe/README.ko.md) — 인증 경계 검증용이며 실제 전체 경로는 별도 검증.
 
 [Workload K3s 검증 준비](WORKLOAD_WORLD_QUALIFICATION.md) — 선택적 네이티브 실행 소스와 순수 테스트이며 실제 실행은 미검증·최종 artifact 승인 대기입니다.
+
+[네이티브 요청 경로 계측·snapshot](2026-10-16-native-hotpath-snapshot-design.md) — 원천 소유권·durable replay·계측의 후속 설계.

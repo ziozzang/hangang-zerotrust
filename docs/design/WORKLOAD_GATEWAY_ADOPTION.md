@@ -50,10 +50,20 @@ application retry after consumption or authority refusal.
   without renewal or fallback. Same pair cannot replay across classes/endpoints.
 - Frozen four-service K3s chain uses actual audience-bound ServiceAccount JWT and
   TokenReview through permission/output to a counted backend. Test UID/audience/
-  cluster/Pod mismatches and withdrawal within the original one-second bound.
+  cluster/Pod mismatches. Measure Kubernetes deletion/TokenReview propagation
+  separately from the original one-second lifetime of already captured Hopae
+  evidence. The latter is not a deletion-to-denial guarantee.
   Independent server instances in one OS process do not prove an OS restart.
 - Preserve failed logs, qualify exact source/static artifacts, verify public assets,
   then adopt with private backup/preflight/rollback. Human, throughput, safe pooling,
   multi-host HA and restore fencing remain separate unfinished requirements.
 
 [Korean companion](../ko/design/WORKLOAD_GATEWAY_ADOPTION.md).
+
+
+Kubernetes documents a distinct pending-deletion token rule: authentication fails
+at or after 60 seconds beyond deletionTimestamp; missing referenced objects or UID
+mismatches also refuse. Test the actual cluster response rather than assuming its
+latency. Fresh successful TokenReviews create fresh evidence, so limiting each
+Hopae record to one second cannot bound upstream acceptance propagation.
+Source: [Kubernetes ServiceAccount administration](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#bound-service-account-tokens).

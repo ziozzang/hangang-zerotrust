@@ -24,5 +24,13 @@ AAL0이며 품계의 전용 RPC와 동일 compiled policy의 workload_users만 �
 최초 지연·만료·레코드 누락·정책/라우트/plan/secret 회수·동시 refresh·교차 endpoint replay를
 검증한다. 이후 실제 K3s audience-bound ServiceAccount JWT·TokenReview부터 품계·출력·
 카운터 백엔드까지 동결 정적 파일로 검증한다. 동일 OS 프로세스의 새 서버 instance는
-OS 재시작 검증이 아니다. Pod/토큰 회수는 문서화한 최초 최대 1초 원천 한계로 설명한다.
+OS 재시작 검증이 아니다. Pod/토큰 회수의 Kubernetes API 전파와 이미 성공한 Hopae 관측의 최초 최대 1초
+재사용 한계는 별도로 측정·설명한다. 삭제 후 1초 안에 새 인증도 거부된다는 보장은 아니다.
 공개 파일 검증·백업·rollback 후 내부 반영하며 처리량·pooling·HA·복원 fence는 별도다.
+
+
+[Kubernetes 공식 문서](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#bound-service-account-tokens)는
+삭제 대기 중인 객체의 deletionTimestamp로부터 60초 이상 뒤에는 인증을 거부하며,
+참조 객체 부재나 UID 불일치도 거부한다고 설명한다. 실제 클러스터의 거부 전파 시간을
+별도로 측정해야 한다. 새 TokenReview가 계속 성공하면 새 관측이 생기므로 각 관측의
+1초 수명만으로 상위 API의 회수 전파 시간을 제한할 수 없다.

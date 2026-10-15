@@ -7,7 +7,7 @@ import https from 'node:https';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 const execute=promisify(execFile);
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHash } from 'node:crypto';
 import { chromium, expect } from '@playwright/test';
 const config=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const password=randomBytes(24).toString('hex');
@@ -31,20 +31,40 @@ async function protectedStatus(expected){
 const browser=await chromium.launch({headless:true});
 let phase='initial-navigation';
 const browserEvents=[];
+const requestStarts=new WeakMap();
+let page,phaseBegan=performance.now();
+function setPhase(value){phase=value;phaseBegan=performance.now();}
 const diagnosticStart=performance.now();
 function diagnosticPath(url){
   const path=new URL(url).pathname;
+  if(/^\/ui\/plugins\/(hopae|guard)\/(index\.js|style\.css|panel\.html)$/.test(path))return path;
+  if(/^\/v1\/plugins\/(hopae|guard)\/(me|status|candidates|blocks|allow|policy|policy\/document|kubernetes\/authority|authentication\/profiles|authentication\/projections|users\/query|sessions\/query|events\/query)$/.test(path))return path;
   return ['/v1/auth/sso/config','/v1/auth/setup','/v1/auth/me','/v1/auth/login','/v1/auth/logout','/v1/status','/ui/'].includes(path)||/^\/ui\/[a-z0-9_-]+\.js$/.test(path)?path:null;
 }
-function recordBrowser(kind,request,status){const path=diagnosticPath(request.url());if(path){browserEvents.push({kind,path,status,atMs:Math.round(performance.now()-diagnosticStart)});if(browserEvents.length>40)browserEvents.shift();}}
+function recordBrowser(kind,request,status){
+  const path=diagnosticPath(request.url());if(!path)return;
+  const now=performance.now();if(kind==='request')requestStarts.set(request,now);
+  const started=requestStarts.get(request);
+  browserEvents.push({kind,path,status,owner:path.startsWith('/v1/plugins/')?path.split('/')[3]:path.startsWith('/ui/plugins/')?path.split('/')[3]:'host',phase,atMs:Math.round(now-diagnosticStart),elapsedMs:started===undefined?null:Math.round(now-started)});
+  if(browserEvents.length>120)browserEvents.shift();
+}
+async function safeFailureMetadata(){
+  if(!page)return {unavailable:true};
+  try{
+    const value=await Promise.race([page.evaluate(()=>{const alert=document.querySelector('#global-alert');return {alert:alert?.textContent||'',globalAlertVisible:!!alert&&!alert.hidden,roots:['guard','hopae'].map(id=>{const root=document.querySelector('#view-plugin-'+id+' .plugin-root');return {id,present:!!root,childCount:root?.childElementCount??0};})};}),new Promise((_,reject)=>{const timer=setTimeout(()=>reject(new Error('safe metadata deadline')),1500);timer.unref();})]);
+    const alertHash=createHash('sha256').update(value.alert).digest('hex');
+    return {globalAlertVisible:value.globalAlertVisible,globalAlertBytes:Buffer.byteLength(value.alert),globalAlertSHA256:alertHash,roots:value.roots,phaseElapsedMs:Math.round(performance.now()-phaseBegan)};
+  }catch{return {unavailable:true};}
+}
+
 try {
-  const page=await browser.newPage();
+  page=await browser.newPage();
   page.on('request',request=>recordBrowser('request',request,null));
   page.on('response',response=>recordBrowser('response',response.request(),response.status()));
   page.on('requestfailed',request=>recordBrowser('requestfailed',request,null));
   page.on('pageerror',error=>{browserEvents.push({kind:'pageerror',name:error.name,atMs:Math.round(performance.now()-diagnosticStart)});if(browserEvents.length>40)browserEvents.shift();});
   await page.goto(config.base+'/ui/');
-  phase='initial-login-dialog';
+  setPhase('initial-login-dialog');
   await expect(page.locator('#login-dialog')).toBeVisible();
   await expect(page.locator('#login-description')).not.toHaveText('Checking administrator access…');
   await expect(page.locator('#setup-login-fields')).toBeVisible();
@@ -52,10 +72,10 @@ try {
   await page.locator('#setup-username').fill('browser-owner');
   await page.locator('#setup-password').fill(password);
   await page.locator('#setup-confirm').fill(password);
-  phase='first-administrator-bootstrap';
+  setPhase('first-administrator-bootstrap');
   await page.locator('#login-submit').click();
   await expect(page.locator('#login-dialog')).toBeHidden();
-  phase='pumgye-console';
+  setPhase('pumgye-console');
   await page.locator('.sidebar a[data-view="pumgye"]').click();
   await expect(page.locator('#pumgye-authority-panel')).toBeVisible();
   await expect(page.locator('#pumgye-matrix tr')).toHaveCount(2);
@@ -70,7 +90,7 @@ try {
   await page.locator('#pumgye-publish').click();
   await expect(page.locator('#pumgye-message')).toHaveText('Authorization policy published.');
   if(config.hostNavigation){
-    phase='host-owned-navigation';
+    setPhase('host-owned-navigation');
     const authorities=['plugin-hopae','plugin-guard','pumgye'];
     expect(await page.locator('.sidebar .nav-link').evaluateAll(links=>links.filter(a=>['plugin-hopae','plugin-guard','pumgye'].includes(a.dataset.view)).map(a=>a.dataset.view))).toEqual(authorities);
     for(const [id,label] of [['plugin-hopae','Identity · Hopae'],['plugin-guard','Network trust · Sumunjang'],['pumgye','Authorization · Pumgye']])await expect(page.locator(`.sidebar [data-view="${id}"]`)).toContainText(label);
@@ -93,7 +113,7 @@ try {
     console.log('PASS: actual compiled host owns authority order and EN/KO labels; three Pumgye section addresses, Back/Forward, account refresh, localized search and uninstalled destination refusal');
   }
   if(config.pumgyeResponsive){
-    phase='pumgye-responsive-390';
+    setPhase('pumgye-responsive-390');
     try {
       await page.setViewportSize({width:390,height:900});
       await expect(page.locator('#pumgye-source-summary')).toBeVisible();
@@ -115,12 +135,14 @@ try {
       await table.evaluate(el=>el.scrollLeft=0);
       console.log('PASS: actual embedded Pumgye UI at390px has no document overflow, padded panels, bounded form/table wrappers and keyboard-scrollable authorization region');
     } finally {await page.setViewportSize({width:1280,height:900});}
-    phase='pumgye-responsive-desktop-restored';
+    setPhase('pumgye-responsive-desktop-restored');
   }
+  setPhase('network-plugin-navigation');
   await page.locator('.sidebar a[data-view="plugin-'+config.plugin+'"]').click();
   const root=page.locator('#view-plugin-'+config.plugin+' .plugin-root');
+  setPhase('network-plugin-mount');
   await expect(root.locator('#tab-blocks')).toBeVisible();
-  phase='network-console';
+  setPhase('network-console');
   if(config.pluginLocale)await qualifyLivePluginLocale({page,expect,root,plugin:config.plugin,nativeSource:!!config.nativeSource});
   if(config.nativeSource){
     await expect(root.locator('#native-authority-status')).toContainText('Kubernetes native IP policy source');
@@ -148,7 +170,7 @@ try {
     await root.locator('#blocks-rows tr').filter({hasText:'127.0.0.1/32'}).locator('button').click();
     await expect(root.locator('#blocks-rows')).not.toContainText('127.0.0.1/32');
   }
-  phase='hopae-console';
+  setPhase('hopae-console');
   if(config.hopae){
     await page.locator('.sidebar a[data-view="plugin-hopae"]').click();
     const hop=page.locator('#view-plugin-hopae .plugin-root');
@@ -243,9 +265,9 @@ try {
     }
     console.log('PASS: actual remote Hopae administrator mTLS delegation and profile view under the Hangang login');
   }
-  phase='final-logout';
+  setPhase('final-logout');
   await page.locator('#logout-button').click();
   await expect(page.locator('#login-dialog')).toBeVisible();
   await expect(page.locator('#pumgye-document')).toHaveValue('');
   console.log('PASS: actual browser first-administrator bootstrap and ID/password login, owning Pumgye guest publication, real Sumunjang menu and owning policy block/unblock, and logout clearing');
-} catch(error) { console.error('Owned browser diagnostic '+JSON.stringify({phase,events:browserEvents}));console.error(redact(error.stack??String(error),sensitive)); process.exitCode=1; } finally {await browser.close();}
+} catch(error) { console.error('Owned browser diagnostic '+JSON.stringify({phase,metadata:await safeFailureMetadata(),events:browserEvents}));console.error(redact(error.stack??String(error),sensitive)); process.exitCode=1; } finally {await browser.close();}

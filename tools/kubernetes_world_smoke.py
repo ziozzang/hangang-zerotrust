@@ -505,7 +505,7 @@ def main():
                 print('PASS: actual HTTPS relay outage opens circuit, suppresses calls after peer recovery, explicit Hopae Pod replacement preserves durable configuration and recovers fresh observed composition')
             if args.browser_probe:
                 browser_config=root/'browser.json'
-                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':default_key},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
+                browser_config.write_text(json.dumps({'base':f'http://127.0.0.1:{admin}','token':tokens['gateway-admin'],'redactionSecrets':list(tokens.values()),'plugin':plugin_id,'hopae':bool(args.hopae_plugin),'resourceCatalog':args.resource_catalog,'application':{'gatewayPort':public,'backendPort':backend,'ca':str(root/'ca.pem'),'key':default_key},'hopaeRestart':{'kubectl':str(wrapper),'namespace':namespace},'nativeSource':({'kubectl':str(wrapper),'namespace':namespace,'name':'native','uid':native_policy_uid} if args.sumunjang_native_source else None)}))
                 if args.composition or args.pumgye_responsive or args.host_navigation or args.plugin_locale:
                     browser_document=json.loads(browser_config.read_text())
                     if args.composition:

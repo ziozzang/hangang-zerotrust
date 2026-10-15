@@ -2,12 +2,18 @@
 export function assertLocaleEvidence({sameNode,draft,expectedDraft,callsBefore,callsAfter,readOnlyBefore,readOnlyAfter}){
   if(!sameNode||draft!==expectedDraft||callsBefore!==callsAfter||JSON.stringify(readOnlyBefore)!==JSON.stringify(readOnlyAfter))throw new Error('owned live locale evidence mismatch');
 }
+export async function preservePrimaryFailure(primary,cleanup){
+  try{await cleanup();}catch{
+    if(!primary)throw new Error('owned locale local cleanup failed');
+    console.error(JSON.stringify({event:'owned_locale_cleanup_failed',primaryFailurePreserved:true}));
+  }
+}
 export async function qualifyLivePluginLocale({page,expect,root,plugin,nativeSource}){
   if(!['hopae','guard'].includes(plugin))throw new Error('fixed reviewed locale plugin required');
   const calls=[];
   const observer=request=>{const path=new URL(request.url()).pathname;if(path.startsWith(`/v1/plugins/${plugin}/`))calls.push({path,method:request.method()});};
   page.on('request',observer);
-  let field,original,handle;
+  let field,original,handle,primaryError;
   try{
     if(plugin==='hopae'){
       field=root.locator('textarea');
@@ -40,11 +46,12 @@ export async function qualifyLivePluginLocale({page,expect,root,plugin,nativeSou
       assertLocaleEvidence({sameNode:await field.evaluate((node,previous)=>node===previous,handle),draft:await field.inputValue(),expectedDraft:draft,callsBefore,callsAfter:calls.length,readOnlyBefore,readOnlyAfter:await locks()});
     }
     console.log(`PASS: actual installed ${plugin} locale EN/KO preserves draft/DOM, makes no extra owner requests, and retains read-only controls`);
-  }finally{
+  }catch(error){primaryError=error;throw error;}finally{
+    try{await preservePrimaryFailure(primaryError,async()=>{
     if(plugin==='guard')await page.locator('.sidebar [data-view="plugin-guard"]').click();
     if(original!==undefined&&field)await field.fill(original);
     if(handle)await handle.dispose();
     if(plugin==='guard')await root.locator('#tab-blocks').click();
-    page.off('request',observer);
+    });}finally{page.off('request',observer);}
   }
 }

@@ -1727,10 +1727,24 @@ Astra is stopped by user instruction. Continue with Sol 6.1 and the retained
   workspace 1,312 passed/58 ignored and strict Clippy. Release candidate 0.3.7
   static/local chain passes; exact Kubernetes gate and publication remain pending.
 
-- [ ] Typed Workload projection: [implementation proposal](docs/reviews/2026-10-15-workload-projection-plan.md); same-compiler workload policy started, additive native chain and real TokenReview gates pending.
+- [x] Typed Workload projection (completed by the final 0.3.10 gate below; original stage note retained): [implementation proposal](docs/reviews/2026-10-15-workload-projection-plan.md); same-compiler workload policy started, additive native chain and real TokenReview gates pending.
 
 - [x] Hangang 0.3.7: exact-artifact K3s run2 exit0 and owned cleanup; five signed assets/public round-trip, internal gateway and console adopted. Preserve initial 503 failure and unconfirmed cause; restoration test is bounded availability, not increased proof lifetime.
 
 - [x] Pumgye native Workload policy stage C `a45b37b` merged: same compiler, typed-only map, v1 byte compatibility, explicit v2 metadata and source-owner withdrawal tests; workspace 90/95 and strict Clippy. RPC/full-chain activation remains pending.
 
 - [x] Hopae 0.0.9 published and internally adopted: 1,017 tests/strict Clippy, exact static local chains, actual K3s All/default Bearer plus SDK/browser/circuit counters, signed/public five-asset verification, protected owner data and restart. Root0.3.8/Any remains a separate next gate.
+
+## Current integrated qualification and next authority gates — 2026-10-15
+
+This section supersedes earlier pending stage notes without discarding their failed runs.
+
+- [x] Publish and internally adopt signed Hangang 0.3.10, Hopae 0.0.10 and Pumgye 0.1.8 with rollback backups and exact running binary checks. Sumunjang remains 0.3.6.
+- [x] Exact final Hangang source `e3fdd60` passes actual K3s Workload and Service Any/native-source/browser chains; original 12 Pod UIDs preserved and both nodes Ready after owned cleanup. See [final security and integration evidence](docs/reviews/2026-10-15-hangang-0310-final-security-qualification.md).
+- [x] Domain HSTS hardening covers HTTP/1 and HTTP/2 errors; compiled TLS 16+4, actual Sacho visibility 24 and operating TLS/redirect 16 checks pass.
+- [x] Hopae source `bc64e41` joins actual TOTP elevation to exact original factor/enrollment/session credential generation atomically. Full workspace 1,071 passed/42 existing ignores and strict Clippy; independently reviewed. This is source-only schema8 groundwork, not adopted 0.0.10 runtime or full Human observed authentication.
+- [x] Pumgye source `f65ea23` provides explicit Kubernetes API context and bounded exact SubjectAccessReview metadata mapping within the same compiled view. This is source-only; no inbound authenticated API-server webhook listener is enabled.
+- [ ] Publish and internally install separately versioned Hopae 0.1.6 / Sumunjang 0.1.4 console packages with unchanged backend bindings and actual browser acceptance.
+- [ ] Join real native Engine Allow, HandleView and current provider/session/user/factor/application owners to original Human admission lifetime; then qualify public Human wire/SDK, typed grants and Hangang enforcement end to end.
+- [ ] Implement authenticated bounded Kubernetes SubjectAccessReview server transport and exact-view final response fencing; qualify a backed-up isolated API-server integration before activation.
+- [ ] Complete remaining external/self-owned/mixed-provider lifecycle, recovery, account management, long-lived revocation, fleet/source continuity, DBMS adapters and measured throughput. Current functional gates do not complete these requirements.

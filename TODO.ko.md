@@ -997,10 +997,24 @@ permit/투영·분산 복구/다중 노드 검증은 남아 있습니다.
   통과·58개 제외와 strict Clippy. 0.3.7 static·로컬 체인은 통과했으며 정확한 K8s
   게이트·공개는 진행 중이다.
 
-- [ ] Workload 신원 전달 [구현 제안](docs/ko/2026-10-15-workload-projection-plan.md): 같은 컴파일러의 typed 정책 구현 시작, 추가 native 연결·실제 TokenReview 검증 대기.
+- [x] Workload 신원 전달(최종 0.3.10 검증으로 완료, 당시 단계 기록 보존) [구현 제안](docs/ko/2026-10-15-workload-projection-plan.md): 같은 컴파일러의 typed 정책 구현 시작, 추가 native 연결·실제 TokenReview 검증 대기.
 
 - [x] 한강 0.3.7: 동일 산출물 K3s 두 번째 실행 exit0·소유 자원 정리, 서명 파일 5개 공개 재검증·내부 게이트웨이/콘솔 반영 완료. 첫 503 실패·원인 미확정 보존, 복원 검사만 제한된 회복 허용하며 증명 수명 유지.
 
 - [x] 품계 네이티브 Workload 정책 C단계 a45b37b 머지: 같은 컴파일러·typed map·v1 byte호환·v2 타입 표시·원천 철회 검사, workspace 90/95와 strict Clippy 통과. RPC·전체 연결 활성화는 대기.
 
 - [x] 호패 0.0.9 공개·내부 반영: 테스트 1,017/strict Clippy·고정 static 로컬 연결·실제 K3s All/기존 Bearer/SDK/브라우저/circuit 호출 수·서명/공개 파일5개·원천 데이터/재시작 보존 통과. 한강0.3.8/Any는 후속 게이트.
+
+## 현재 통합 검증과 다음 권한 경계 — 2026-10-15
+
+이 절은 앞선 단계의 대기 상태를 갱신하며 기존 실패 기록은 보존한다.
+
+- [x] 서명된 한강 0.3.10·호패 0.0.10·품계 0.1.8 공개와 내부 반영, 롤백 백업·실행 파일 일치 검사 완료. 수문장은 0.3.6 유지.
+- [x] 최종 한강 `e3fdd60`으로 실제 K3s Workload·Service Any·수문장 원천·브라우저 연결 통과. 소유 자원 정리 후 기존 Pod UID 12개 보존·노드 2개 Ready 확인. [최종 근거](docs/ko/2026-10-15-hangang-0310-final-security-qualification.md).
+- [x] HTTP/1·HTTP/2 오류 응답 HSTS 보강. 실제 TLS 고정 검사 16+4, 사초 가시성 24개, 운영 TLS/리다이렉트 16개 통과.
+- [x] 호패 `bc64e41`: 실제 OTP 성공 트랜잭션에 원래 factor·등록 정보·세션 credential 세대를 함께 기록. 전체 1,071 통과·기존 42개 제외·strict Clippy·독립 검토 완료. 소스의 schema8 기반이며 운영 0.0.10·전체 Human 인증 완료를 뜻하지 않는다.
+- [x] 품계 `f65ea23`: 같은 컴파일 뷰의 명시적 Kubernetes API context·제한된 정확한 SAR 메타 매핑 제공. 소스 구현이며 인증된 외부 API-server webhook 리스너는 아직 활성화하지 않았다.
+- [ ] 별도 버전 호패 0.1.6·수문장 0.1.4 콘솔 패키지 공개·내부 설치, 기존 백엔드 연결 보존·실제 브라우저 검증.
+- [ ] 실제 Engine Allow·HandleView와 현재 provider/session/user/factor/application 원천을 원래 Human 요청 수명에 연결하고, 공개 wire/SDK·typed 권한·한강 집행의 전체 경로 검증.
+- [ ] 인증·용량 제한을 갖춘 Kubernetes SAR 서버 전송과 같은 뷰의 최종 응답 경계 구현. 백업한 격리 API-server 환경에서 검증한 후 활성화.
+- [ ] 나머지 외부·자체·혼합 인증의 수명주기·복구·계정 관리·장기 연결 회수·분산 원천 연속성·DBMS 아답터·실측 성능 완료. 현재 기능 검증만으로 완료하지 않는다.

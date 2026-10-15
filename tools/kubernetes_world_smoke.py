@@ -30,10 +30,16 @@ def main():
     parser.add_argument('--node-binary',type=Path)
     parser.add_argument('--resource-catalog',action='store_true')
     parser.add_argument('--receipt-client',type=Path)
+    parser.add_argument('--receipt-clock-diagnostic',type=Path)
     parser.add_argument('--authenticated-client',type=Path)
     parser.add_argument('--native-resource',action='store_true')
+    parser.add_argument('--credential-projection',action='store_true')
     args=parser.parse_args()
-    if args.native_resource and not args.authenticated_client:
+    if args.credential_projection and not args.native_resource:
+        parser.error('credential projection requires native resource qualification')
+    if args.credential_projection and (not args.receipt_client or not args.resource_catalog or args.authenticated_client):
+        parser.error('credential projection requires receipt client and resource catalog; qualify the direct authenticated client separately without native route ownership')
+    if args.native_resource and not (args.authenticated_client or args.credential_projection):
         parser.error('native resource requires authenticated client qualification')
     if args.authenticated_client and not (args.receipt_client and args.resource_catalog):
         parser.error('authenticated client requires receipt client and resource catalog')
@@ -92,15 +98,34 @@ def main():
         if args.native_resource:
             gateway['http'][0]['auth']['native_resource']={'issuer_ref':'owned-world','key_epoch':1,'public_key':receipt_pin,'audience':'orders-api'}
             gateway['http'][0]['backends'][0]+='/api'
+        if args.credential_projection:
+            openssl('genpkey','-algorithm','ED25519','-out',root/'permit.pem')
+            permit_seed=subprocess.check_output(['openssl','pkey','-in',str(root/'permit.pem'),'-outform','DER'],stderr=subprocess.DEVNULL)
+            permit_public=subprocess.check_output(['openssl','pkey','-in',str(root/'permit.pem'),'-pubout','-outform','DER'],stderr=subprocess.DEVNULL)
+            assert len(permit_seed)==48 and len(permit_public)==44
+            tokens['permit-seed']=base64.b64encode(permit_seed[-32:]).decode()
+            tokens['origin-bearer']=secrets.token_urlsafe(32)
+            tokens['route-caller']=secrets.token_hex(32)
+            permit_pin={'issuer_ref':'owned-permit','key_epoch':1,'public_key':base64.b64encode(permit_public[-32:]).decode()}
+            gateway['revision']=1
+            gateway['http'][0]['auth']['native_resource'].update(permission_permit=permit_pin,project_credentials=True)
+            hop['receipt_permit_keys']=[permit_pin]
+            hop['credential_projection']={'revision':1,'plans':[{'service':'orders','audience':'orders-api','resource':'db:orders','action':'select','minimum_aal':0,'credential':{'type':'bearer_reference','secret_ref':'fixture:origin'}}]}
+            hop['projection_receiver']={'authority':dict(tls('pumgye'),address=f'https://pumgye.{namespace}.svc:9087',token_env='PUMGYE_DECISION_TOKEN'),'secrets':[{'reference':'fixture:origin','token_env':'OWNED_ORIGIN_BEARER'}]}
         items=[]
         def resource(kind,name,**fields):
             obj={'apiVersion':'v1','kind':kind,'metadata':{'name':name,'namespace':namespace,'labels':{'app.kubernetes.io/part-of':'owned-hangang-world'}},**fields};items.append(obj);return obj
         config_map=resource('ConfigMap','world-config',data={'hopae.json':json.dumps(hop),'hangang.json':json.dumps(gateway),'pumgye.json':json.dumps({'revision':0,'policy':policy}),'sumunjang.json':json.dumps({'mode':'enforce','allow':[]})})
-        if args.authenticated_client:
+        if args.authenticated_client or args.credential_projection:
             config_map['data']['authentication-trust.json']=json.dumps({'entries':[{'issuer_ref':'owned-world','key_epoch':1,'identity_epoch':'world1','service':'orders','audience':'orders-api','minimum_revision':1,'public_key':receipt_pin}]})
             native_tls={'ca':'/tls/ca.crt','certificate':'/tls/client.crt','key':'/tls/client.key'}
             config_map['data']['authentication-live.json']=json.dumps(dict(native_tls,issuer_ref='owned-world',address=f'https://hopae.{namespace}.svc:8703',server_name=f'hopae.{namespace}.svc',token_env='HOPAE_TEST_GATEWAY_KEY'))
             config_map['data']['network-live.json']=json.dumps(dict(native_tls,address=f'https://sumunjang.{namespace}.svc:9082',server_name=f'sumunjang.{namespace}.svc',token_env='HANGANG_GUARD_COLLECTOR_TOKEN'))
+        if args.credential_projection:
+            config_map['data']['permit-key.json']=json.dumps(dict(permit_pin,seed_env='OWNED_PERMIT_SEED'))
+            config_map['data']['route-owner.json']=json.dumps({'listen':'0.0.0.0:8444','certificate':'/tls/tls.crt','key':'/tls/tls.key','client_ca':'/tls/ca.crt','token_env':'OWNED_ROUTE_CALLER'})
+            config_map['data']['route-live.json']=json.dumps(dict(tls('hangang'),address=f'https://hangang.{namespace}.svc:8444',token_env='OWNED_ROUTE_CALLER'))
+            config_map['data']['projection-live.json']=json.dumps(dict(tls('hopae'),address=f'https://hopae.{namespace}.svc:8703',token_env='HOPAE_TEST_GATEWAY_KEY'))
         manifest_bytes=(args.sumunjang_plugin/'manifest.json').read_bytes()
         manifest=json.loads(manifest_bytes);plugin_id=manifest['id']
         config_map['data']['plugin.manifest.json']=manifest_bytes.decode()
@@ -134,9 +159,15 @@ def main():
             'hangang':['--config','/config/hangang.json','--database','sqlite:/state/hangang.sqlite3','--docker-connection-state','/state/docker-connections.json','--admin-users-db','/state/admin/admin-users.sqlite3','--admin-plugins','/state/plugins.json','--listen','0.0.0.0:8443','--admin','127.0.0.1:9080','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--threads','2','--lua-workers','1','--drain-seconds','1','--guard-url','http://127.0.0.1:9','--guard-decision-tcp',f'sumunjang.{namespace}.svc:9082','--guard-decision-grpc','--guard-decision-server-name',f'sumunjang.{namespace}.svc','--guard-decision-ca','/tls/ca.crt','--guard-decision-cert','/tls/client.crt','--guard-decision-key','/tls/client.key','--guard-timeout-ms','1000']}
         environments={'hopae':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('OWNED_API_KEY','api'),env('HOPAE_TEST_GATEWAY_KEY','caller')],'sumunjang':[env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin')],'pumgye':[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')],'hangang':[env('HOPAE_CONSOLE_DELEGATION_KEY','hopae-delegation'),env('HANGANG_GUARD_ADMIN_TOKEN','guard-admin'),env('FIXTURE_KEY','caller'),env('HANGANG_ADMIN_TOKEN','gateway-admin'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector'),env('PUMGYE_DECISION_TOKEN','pum-decision'),env('PUMGYE_ADMIN_TOKEN','pum-admin')]}
         if args.receipt_client:environments['hopae'].append(env('OWNED_RECEIPT_SEED','receipt-seed'))
-        if args.authenticated_client:
+        if args.authenticated_client or args.credential_projection:
             commands['pumgye']+=['--authentication-trust','/config/authentication-trust.json','--authentication-live','/config/authentication-live.json','--network-live','/config/network-live.json']
             environments['pumgye']+=[env('HOPAE_TEST_GATEWAY_KEY','caller'),env('HANGANG_GUARD_COLLECTOR_TOKEN','guard-collector')]
+        if args.credential_projection:
+            commands['hangang']+=['--route-owner-config','/config/route-owner.json']
+            commands['pumgye']+=['--permit-key','/config/permit-key.json','--route-live','/config/route-live.json','--projection-live','/config/projection-live.json']
+            environments['hangang'].append(env('OWNED_ROUTE_CALLER','route-caller'))
+            environments['pumgye']+=[env('OWNED_ROUTE_CALLER','route-caller'),env('OWNED_PERMIT_SEED','permit-seed')]
+            environments['hopae']+=[env('PUMGYE_DECISION_TOKEN','pum-decision'),env('OWNED_ORIGIN_BEARER','origin-bearer')]
         for name in commands:
             resource('PersistentVolumeClaim',name+'-state',spec={'accessModes':['ReadWriteOnce'],'resources':{'requests':{'storage':'1Gi'}}})
             container={'name':name,'image':getattr(args,name+'_image'),'imagePullPolicy':'Never','args':commands[name],'env':environments[name],'securityContext':{'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}},'resources':{'requests':{'cpu':'100m','memory':'64Mi'},'limits':{'cpu':'2','memory':'512Mi'}},'volumeMounts':[{'name':'config','mountPath':'/config','readOnly':True},{'name':'tls','mountPath':'/tls','readOnly':True},{'name':'state','mountPath':'/state'}]}
@@ -152,6 +183,7 @@ def main():
                 if args.hopae_plugin:
                     init['command'][2]+='; mkdir -p /state/hopae-plugin; chmod 0700 /state/hopae-plugin; cp /config/hopae.manifest.json /state/hopae-plugin/manifest.json; '+ '; '.join(hop_copies)+'; chmod 0600 /state/hopae-plugin/*'
             ports={'hangang':[8443],'hopae':([8702,8703] if args.hopae_plugin else [8703]),'pumgye':[9084,9087],'sumunjang':[9080,9082]}[name]
+            if name=='hangang' and args.credential_projection:ports.append(8444)
             resource('Service',name,spec={'selector':{'app':name},'ports':[{'name':'p'+str(p),'port':p,'targetPort':p} for p in ports]})
         echo=resource('Deployment','echo',spec={'replicas':1,'selector':{'matchLabels':{'app':'echo'}},'template':{'metadata':{'labels':{'app':'echo'}},'spec':{'automountServiceAccountToken':False,'containers':[{'name':'echo','image':args.echo_image,'imagePullPolicy':'IfNotPresent','command':['node','-e',"let count=0;require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');if(q.url==='/__count'){r.end(JSON.stringify({count}));return;}count++;let chunks=[];q.on('data',c=>chunks.push(c));q.on('end',()=>r.end(JSON.stringify({headers:q.headers,method:q.method,path:q.url,body:Buffer.concat(chunks).toString('utf8')})));}).listen(8080,'0.0.0.0');"],'args':['--']}]}}});echo['apiVersion']='apps/v1'
         resource('Service','echo',spec={'selector':{'app':'echo'},'ports':[{'port':8080,'targetPort':8080}]})
@@ -195,6 +227,10 @@ def main():
                 before=backend_count()
                 c.request(method,'/secure',body=b'owned final entity' if args.native_resource else None,headers=headers);r=c.getresponse();data=r.read();status=r.status;c.close()
                 assert backend_count()==before+(1 if status==200 else 0),'refused Kubernetes request reached application backend'
+                if status==200 and args.credential_projection:
+                    projected={k.lower():v for k,v in json.loads(data)['headers'].items()}
+                    assert projected.get('authorization')=='Bearer '+tokens['origin-bearer'],'owned origin credential mismatch'
+                    assert projected.get('authorization')!='Bearer '+tokens['api'],'incoming credential leaked'
                 return status,data
             def api(local,path,method='GET',body=None,token=None,extra=None):
                 c=http.client.HTTPConnection('127.0.0.1',local,timeout=3);headers={'Authorization':'Bearer '+(token or tokens['gateway-admin']),'Content-Type':'application/json'}
@@ -203,7 +239,9 @@ def main():
             status,body=request();assert status==200,'initial protected request status '+str(status)
             echoed=json.loads(body);headers={k.lower():v for k,v in echoed['headers'].items()}
             if args.native_resource:assert echoed['path']=='/api/secure' and echoed['body']=='owned final entity','native final target/entity was not preserved'
-            assert headers['x-forwarded-user']==subject and headers['x-hopae-aal']=='0' and 'authorization' not in headers
+            assert headers['x-forwarded-user']==subject and headers['x-hopae-aal']=='0'
+            if not args.credential_projection:assert 'authorization' not in headers
+            else:print('PASS: actual four-Pod native permission and paired credential projection delivers only the separate origin bearer over mTLS Service DNS')
             assert request('POST')[0]==403 and request(key=None)[0]==401
             if args.receipt_client:
                 receipt_port=forward('hopae',8703)
@@ -212,6 +250,14 @@ def main():
                 receipt_environment=dict(os.environ,OWNED_RECEIPT_CALLER=tokens['caller'],OWNED_RECEIPT_CREDENTIAL=tokens['api'])
                 with (root/'receipt-client.log').open('w') as log:
                     result=subprocess.run([str(args.receipt_client.resolve()),str(receipt_path)],input='allow\n',env=receipt_environment,text=True,stdout=subprocess.PIPE,stderr=log,timeout=10)
+                if result.returncode!=0 and args.receipt_clock_diagnostic:
+                    diagnostic=subprocess.run([str(args.receipt_clock_diagnostic.resolve()),str(receipt_path)],env=receipt_environment,text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=10)
+                    if diagnostic.returncode==0:
+                        facts=json.loads(diagnostic.stdout)
+                        allowed={'diagnostic_only','signature_and_binding_valid','ordinary_local_time_accepts','issued_minus_local_received_ms','rpc_elapsed_ms'}
+                        assert set(facts)==allowed and facts['diagnostic_only'] is True
+                        print('Receipt clock diagnostic: '+json.dumps(facts,sort_keys=True),flush=True)
+                    else:print('Receipt clock diagnostic transport refused',flush=True)
                 assert result.returncode==0 and json.loads(result.stdout)['allowed'] is True,'Kubernetes native receipt refused'
                 print('PASS: actual Hopae Pod native issuer and Hangang client verify a request-bound service receipt over mTLS Service DNS')
                 if args.authenticated_client:

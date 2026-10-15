@@ -24,3 +24,5 @@
 [Kubernetes·IAM 원천 설계](0015-kubernetes-iam-authority.md) — 네 모듈 원천 연동·RBAC·워크로드 신원.
 
 [판정 코어·메타데이터 어댑터](0016-decision-core-metadata-adapters.md) — 타입 자원·DB 백본·선택적 플러그인.
+
+[권한 소유자 기준 시간 관측 초안](0018-authority-time-observations.md) — 교차 호스트 시계·집행 하한·replay 보존 상한.

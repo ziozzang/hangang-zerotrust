@@ -143,3 +143,36 @@ issuer/trust/live operating resources remain unconfigured: the new native route'
 positive enforcement is qualified in the owned local/Kubernetes fixtures, not
 activated for existing operating services. Signed permission/projection/replay,
 full provider/fleet/streaming and throughput gates remain open.
+
+
+## Native credential projection candidates — 2026-10-15
+
+Hangang 0.3.6 (`87f11fe`), Hopae 0.0.8 (`25aca97`) and Pumgye 0.1.7
+(`28f0c1a`) have independently verified Linux amd64 static signed assets in
+GitHub draft releases. Every downloaded asset matches its prepared bytes; all
+eight Hangang archive executables are static and match the build. Exact static
+four-server final credential delivery and durable withdrawal/restart checks pass.
+The retained Sumunjang 0.3.5 image also matches its pinned signed executable.
+
+The extended `--credential-projection` Kubernetes fixture adds the native Hangang
+route-owner Service, independent permit signing, live owner queries and declared
+Hopae origin capability over mTLS Service DNS. It requires `--native-resource`,
+`--resource-catalog` and `--receipt-client`. The separate `--authenticated-client`
+fixture has no native route reference and must be qualified in its existing mode,
+not silently substituted for a route-bound call.
+
+A fresh cold backup and complete independently matching off-host SHA-256 were
+verified, and all prior cluster workloads recovered. Both candidate Kubernetes
+runs passed initial real four-Pod origin credential delivery, then failed the
+independent management-host receipt client before browser/policy/restart gates.
+Diagnostic-only verification found a valid signature and scope but issued time
+4 ms after local arrival. No clock grace or access-policy widening was added.
+See [draft ADR 0018](adr/0018-authority-time-observations.md) for admission lower
+bounds and replay-retention upper bounds across clock domains.
+
+These are failed overall Kubernetes qualifications. Drafts remain unpublished and
+operating versions unchanged. Cross-host temporal admission, complete Kubernetes/
+browser regression, fleet restore and throughput remain open. Owned namespaces
+were removed; both nodes, DNS, prior Ingress 100/100 and existing operating
+services remain available. A source diagnostic example (`d04b8bd`) emits only
+booleans and timing deltas and never releases a receipt or credential.

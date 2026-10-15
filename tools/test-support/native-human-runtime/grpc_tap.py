@@ -22,6 +22,9 @@ METHODS = {
     '/hangang.hopae.v1.HumanAuthenticationReceipts/ObserveTime': 4096,
     '/hangang.hopae.v1.HumanObservedCredentialProjection/Project': 8448,
     '/hangang.pumgye.v1.HumanObservedProjectionPermits/Observe': 8192,
+    '/hangang.pumgye.v1.Authorization/Decide': 2048,
+    '/hangang.pumgye.v1.HumanResourceAuthorization/Decide': 2048,
+    '/hangang.pumgye.v1.HumanObservedProjectionPermits/Issue': 8192,
 }
 MAX_REPLY = 32768
 MAX_RECEIVE = 65536  # Transport allocation bound; exact method caps remain lower.

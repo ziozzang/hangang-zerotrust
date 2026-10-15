@@ -32,3 +32,7 @@ pin 및 실제 전 경로 검증은 별도 필수 단계다.
 launcher의 부모 PID 변경도200ms 주기로 감지하여 같은 정리 경로를 실행한다. stdin pipe가 열린 상태로 부모만 종료하는 실제 소유 subprocess 테스트가 listener 정리를 검사한다.
 
 method 상한은 최대32KiB인 검증 부분집합으로 Source의128KiB frame 허용보다 좁다. Source의 모든 요청 크기를 검증했다고 해석하지 않는다.
+
+Pum Human 진단용 고정 method 두 개를 추가했다: `HumanResourceAuthorization/Decide`2048바이트, `HumanObservedProjectionPermits/Issue`8192바이트. 실제 native 상한과 같으며 payload를 해석하거나 수정하지 않는다. Root→tap caller는 공통이어도 실제 Hop/Pum outbound caller 파일은 서로 달라야 한다. Pum 관리 HTTPS는 tap을 거치지 않는다. TLS 두 upstream의 독립 caller·raw 전달·정확한 크기 상한/초과 거부는 transport 시험이며 native grant 증거가 아니다. 기존 original deadline·무재시도·ok/refused 집계만 유지하고 gRPC 세부 상태 histogram을 만들었다고 주장하지 않는다.
+
+기존 Root health watcher가 실제 `hangang.pumgye.v1.Authorization/Decide`를 호출하므로 이 고정 method2048바이트도 실제 Pum으로 전달한다. 가짜 health 응답이나 lease 우회가 아니다.

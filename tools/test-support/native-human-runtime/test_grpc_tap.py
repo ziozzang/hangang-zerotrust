@@ -29,7 +29,7 @@ class Echo(grpc.GenericRpcHandler):
         self.last = None
     def service(self, details):
         async def call(raw, context):
-            if list(context.invocation_metadata()).count(('authorization', 'Bearer ' + 'b' * 48)) != 1:
+            if list(context.invocation_metadata()).count(('authorization', 'Bearer ' + getattr(self,'caller','b'*48))) != 1:
                 await context.abort(grpc.StatusCode.UNAUTHENTICATED, 'caller')
             self.calls += 1
             self.last = raw
@@ -92,6 +92,39 @@ class Transport(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(stats['stages'][METHOD], {'received':1,'forwarded':1,'ok':1,'refused':0})
         self.assertNotIn('opaque', json.dumps(stats))
         self.assertNotIn('Bearer', json.dumps(stats))
+    async def test_new_pum_fixed_methods_exact_caps_and_raw_bytes_over_actual_tls(self):
+        # Actual transport echo only: not a permission or native proof fixture.
+        await self.tap.close()
+        new_methods={'/hangang.pumgye.v1.Authorization/Decide':2048,'/hangang.pumgye.v1.HumanResourceAuthorization/Decide':2048,'/hangang.pumgye.v1.HumanObservedProjectionPermits/Issue':8192}
+        spec=self.config['upstreams'][METHOD]
+        self.config['upstreams']={name:dict(spec) for name in new_methods}
+        self.config['listen']=port();self.tap=m.Tap(self.config);await self.tap.start()
+        await self.channel.close()
+        ca=(self.root/'ca.pem').read_bytes();key=(self.root/'peer.key').read_bytes();cert=(self.root/'peer.pem').read_bytes()
+        self.channel=grpc.aio.secure_channel(self.config['listen'],grpc.ssl_channel_credentials(ca,key,cert),options=(('grpc.ssl_target_name_override','localhost'),('grpc.enable_retries',0)))
+        for name,limit in new_methods.items():
+            call=self.channel.unary_unary(name);raw=b'opaque\x00'+b'x'*(limit-7)
+            self.assertEqual(await call(raw,metadata=self.auth(),timeout=.8),raw)
+            calls=self.echo.calls
+            await self.refused(call(raw+b'x',metadata=self.auth(),timeout=.8),{grpc.StatusCode.RESOURCE_EXHAUSTED})
+            self.assertEqual(self.echo.calls,calls)
+            self.assertEqual(self.tap.snapshot()['stages'][name],{'received':2,'forwarded':1,'ok':1,'refused':1})
+    async def test_hop_and_pum_use_distinct_fixed_upstreams_and_callers(self):
+        other=Echo();other.caller='c'*48
+        peer=grpc.aio.server();peer.add_generic_rpc_handlers((other,));address=port()
+        ca=(self.root/'ca.pem').read_bytes();key=(self.root/'peer.key').read_bytes();cert=(self.root/'peer.pem').read_bytes()
+        peer.add_secure_port(address,grpc.ssl_server_credentials([(key,cert)],root_certificates=ca,require_client_auth=True));await peer.start()
+        caller=self.root/'pum-outbound';caller.write_text('c'*48);caller.chmod(0o600)
+        try:
+            await self.tap.close();self.config['listen']=port()
+            name='/hangang.pumgye.v1.HumanObservedProjectionPermits/Issue'
+            spec=dict(self.config['upstreams'][METHOD],endpoint=address,caller_file=str(caller));self.config['upstreams'][name]=spec
+            self.tap=m.Tap(self.config);await self.tap.start();await self.channel.close()
+            self.channel=grpc.aio.secure_channel(self.config['listen'],grpc.ssl_channel_credentials(ca,key,cert),options=(('grpc.ssl_target_name_override','localhost'),('grpc.enable_retries',0)))
+            for path in (METHOD,name):
+                self.assertEqual(await self.channel.unary_unary(path)(b'exact-raw',metadata=self.auth(),timeout=.8),b'exact-raw')
+            self.assertEqual((self.echo.calls,other.calls),(1,1))
+        finally:await peer.stop(0)
     async def test_absent_duplicate_wrong_caller_never_forward(self):
         for auth in [(), self.auth()*2, (('authorization','Bearer wrong'),)]:
             await self.refused(self.rpc(b'x',metadata=auth,timeout=.5), {grpc.StatusCode.UNAUTHENTICATED})

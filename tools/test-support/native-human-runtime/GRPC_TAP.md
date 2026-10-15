@@ -46,6 +46,9 @@ Allowed fixed methods and maximum decoded raw payload bytes:
 - `hangang.hopae.v1.HumanAuthenticationReceipts/ObserveTime`: 4096.
 - `hangang.hopae.v1.HumanObservedCredentialProjection/Project`: 8448.
 - `hangang.pumgye.v1.HumanObservedProjectionPermits/Observe`: 8192.
+- `hangang.pumgye.v1.Authorization/Decide`: 2048 (existing actual Root health probe; forwarded, never synthesized).
+- `hangang.pumgye.v1.HumanResourceAuthorization/Decide`: 2048 (exact native bound).
+- `hangang.pumgye.v1.HumanObservedProjectionPermits/Issue`: 8192 (exact native bound).
 
 Only configured members mount. The transport receive allocation ceiling is64KiB;
 exact lower method caps are checked before any upstream call. This is bounded raw
@@ -78,3 +81,5 @@ create a second Source/nonce ledger. Final public H4 and unified SDK pins remain
 prerequisites for that separate full-chain gate.
 
 Parent PID changes are checked every200ms and use the same cleanup path even when inherited stdin remains open. An owned launcher-exit test keeps the pipe open and verifies the child stops and its listener can be rebound. Method caps intentionally cover a test subset (32KiB maximum), narrower than the Source's128KiB frame allowance; this does not qualify all Source request sizes.
+
+The four-core wrapper may mount both Hop and Pum methods on one inbound caller while preserving separate fixed outbound Hop/Pum caller files and endpoints. Pum management HTTPS and direct Pum/Hop owner observations remain outside that Root diagnostic leg. TLS transport tests cover distinct upstream/caller routing, exact raw bytes and method cap/+1 refusal; they create no native proof or permission. Counters remain per-method success/refusal totals, not a specific gRPC status histogram.

@@ -134,3 +134,28 @@ Domain authorization, CAS and audit remain mandatory for every actual change.
 Qualification requires deterministic fixtures, malformed/unavailable results,
 calibration evidence and tenant/privacy isolation. No per-request inference
 dependency is introduced into ordinary enforcement.
+
+
+## Concrete finding ownership: missing HSTS
+
+A missing-HSTS finding on a status page belongs to Hangang's domain-scoped final
+TLS response policy, not an IP reputation block or an application-only header.
+Record the scanned origin and aliases privately, distinguish verified TLS from
+plain HTTP, and retain separate findings for observed defects and conditional
+identity-header risks. A report alone is not permission to classify the scanner
+or every client as hostile.
+
+The bounded remediation is an owning configuration CAS: exact selected hosts,
+reviewed max-age/subdomain scope, backup, dry-run, publish and readback. Revalidate
+public, authentication-denied, redirect and error responses, including malformed
+forwarding with a valid authority. Never infer TLS from attacker-provided forwarded
+headers. Verify that protected identity output names are stripped on public routes
+and that restricted fixture data stays hidden from forged identities. A dataset
+containing only public items cannot prove the latter.
+
+Keep the initial failed verifier, any canonicalization differences and additional
+edge-case reproductions. A deployed normal-response configuration fix and an
+unreleased parser/error-boundary fix must have distinct states. Source tests,
+staged signatures and public releases are separate from operating adoption.
+This is a remediation acceptance example, not a claim that automated pentest
+ingestion or Sillok/Jikji mutation orchestration is already implemented.

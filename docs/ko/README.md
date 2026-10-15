@@ -26,3 +26,5 @@
 [판정 코어·메타데이터 어댑터](0016-decision-core-metadata-adapters.md) — 타입 자원·DB 백본·선택적 플러그인.
 
 [권한 소유자 기준 시간 관측 초안](0018-authority-time-observations.md) — 교차 호스트 시계·집행 하한·replay 보존 상한.
+
+- [공개 SDK Workload 검증 도구](../../tools/native-workload-probe/README.ko.md) — 인증 경계 검증용이며 실제 전체 경로는 별도 검증.

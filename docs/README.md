@@ -28,3 +28,5 @@ Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 [Kubernetes and IAM authority](adr/0015-kubernetes-iam-authority.md) — all four components, source-of-truth modes, RBAC and workload identity.
 
 [Decision cores and metadata adapters](adr/0016-decision-core-metadata-adapters.md) — typed resources, DB backbones and optional plugins.
+
+- [Public-SDK Workload qualification probe](../tools/native-workload-probe/README.md) — authentication only; real full-chain gates remain.

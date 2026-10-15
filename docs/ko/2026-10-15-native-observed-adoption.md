@@ -272,3 +272,35 @@ gateway drain, 실제 실행 해시와 자격/UID/network/route 보존 검사 �
 세 페이지 모두 390px 화면 안에 들어오며, 이전 품계는 619px이었다. 넓은 표의 영역 내
 스크롤은 유지한다. 이번 레이아웃·완료 작업 참조 수정은 ADM-03/04/06/07/08/09 전체
 수용 기준 완료를 의미하지 않는다.
+
+
+## 한강 0.3.9 호스트 메뉴 공개와 내부 반영
+
+[한강 0.3.9](https://github.com/ziozzang/hangang/releases/tag/v0.3.9)을
+34708286cb8a7810940fa1ea027c4cb2dccf46ec에서 공개했다. gateway SHA-256은
+`418dd62f19e6c8e2aecfe87ac4b659db49c14679c5c5e048d41f8c92d076ba89`이다.
+초안·비인증 공개 다운로드 5개가 동결 서명본과 같고, 고정 gateway manifest와 아카이브
+실행 파일 8개 해시를 독립 검증했다. 전체 1,312개·기존 제외 58개, strict Clippy와
+브라우저 132개를 통과했고 정적 실행 파일 8개의 버전은 모두 0.3.9다. 로컬 observed/
+strict 조합·기존 Bearer 회귀와 실제 K3s Any/native 수문장 원천에서 호스트 메뉴 순서/
+ENKO·품계 하위 주소·뒤로/앞으로/새로고침/검색·390px·기존 CAS/회수·원천 RBAC/UID
+재고정/장애·백엔드 미도달 검증이 통과했다. 두 노드 Ready·기존 Pod UID 12개 보존과
+소유 namespace/생성 CRD 정리를 확인했다. 새 0.3.9 DB 원천 K3s나 Human/Workload
+검증 완료는 아니다.
+
+최초 이미지 조회 SSH timeout 후 읽기 전용으로 기존 import 둘을 확인했다. 첫 K3s는
+새 메뉴를 통과했지만 호스트 언어 왕복 후 plugin 복합 상태가 한국어로 남아 영문 기대가
+실패했다. helper는 첫 plugin mount 전에 영문을 복원하며 이후 검증은 모두 유지한다.
+운영 plugin 복합 상태의 실시간 언어 전환은 미완이다. 실패와 정리 기록을 보존했고
+시간 제한이나 판정 예산을 완화하지 않았다.
+
+게이트웨이·콘솔은 비공개 rollback 백업·읽기 전용 사전 검사·설정된 drain·실행 해시·
+자격/UID/network/route/정책 보존 검사 후 내부 반영했다. 최초 콘솔 사전 조회를 gateway
+drain 중 시작해 콘솔 변경 전에 거부됐고, 게이트웨이 검증 완료 뒤 순차 재검사·반영은
+통과했다. 실제 주소의 새 desktop/mobile 관리자에서 호패→수문장→품계 순서와 세 모듈
+오류 없음·390px 폭을 확인했다. 설치 릴리즈는 Service 전용이다.
+
+후속 Workload 소스 4f3e721도 한강 main에 push했다. 전체 1,315개·기존 제외 58개를
+통과했고 디스크 절약을 위해 debug symbol/incremental만 비활성화했다. 호패 8b1a3be도
+전체 1,054개·기존 제외 42개, SDK 기본 53개와 strict Clippy 통과 후 push했다. 이것이
+Workload 전체 경로의 릴리즈·운영 반영 완료를 뜻하지는 않는다.

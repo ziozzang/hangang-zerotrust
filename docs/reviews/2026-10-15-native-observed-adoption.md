@@ -326,3 +326,41 @@ system-administrator browser opens Pumgye, Sumunjang and Hopae without page/modu
 global errors. All three pages fit a 390px viewport; Pumgye previously expanded to
 619px. Wide tables retain scoped scrolling. The focused layout and completed-operation
 reference fixes do not complete the broader ADM-03/04/06/07/08/09 acceptance work.
+
+
+## Hangang 0.3.9 host navigation publication and adoption
+
+[Hangang 0.3.9](https://github.com/ziozzang/hangang/releases/tag/v0.3.9) is published
+at `34708286cb8a7810940fa1ea027c4cb2dccf46ec`, gateway SHA-256
+`418dd62f19e6c8e2aecfe87ac4b659db49c14679c5c5e048d41f8c92d076ba89`.
+All five draft and anonymous public downloads equal the frozen signed stage.
+Independent verification covers the pinned gateway manifest and all eight archive
+executable hashes. Source tests passed 1,312 cases with 58 existing exclusions,
+strict Clippy and 132 distinct browser cases; all eight static versions are 0.3.9.
+Local observed/strict composition and legacy Bearer regression pass. Actual K3s
+Any composition/native Sumunjang source passed compiled host menu order/EN-KO,
+Pumgye section URLs, Back/Forward/refresh/search, 390px layout, existing CAS and
+revocation, source RBAC/UID repin/outage and backend non-dispatch. Both nodes remain
+Ready, all 12 original Pod UIDs are preserved and owned namespaces/created CRD
+are removed. No new 0.3.9 DB-source K3s run or Human/Workload qualification is claimed.
+
+The initial image-inventory SSH timeout recovered with read-only verification of
+both original imports. First K3s execution passed new menus but a later English
+assertion found a Korean composite plugin status after a host locale round-trip.
+The test helper restores English before the first plugin mount; every subsequent
+gate is retained. Production plugin composite-locale lifecycle remains unfinished.
+Failure logs and cleanup are retained; no timeout or authority budget was relaxed.
+
+Internal gateway and console replacement passed private rollback backups, read-only
+preflight, configured gateway drain, exact running hashes and unchanged credentials,
+UID/network/routes/policy. The initial console preflight was started during gateway
+drain and refused before console mutation; after gateway acceptance, sequential
+console preflight/adoption passed. Fresh actual-site desktop/mobile administrator
+browsers open all three modules without errors in host-owned Hopae, Sumunjang,
+Pumgye order; all mobile pages fit 390px. The installed release is Service-only.
+
+Subsequent source-only Workload integration `4f3e721` is pushed to Hangang main
+with 1,315 workspace tests passing and 58 existing exclusions (debug symbols and
+incremental compilation disabled only to reduce disk use). Hopae source `8b1a3be`
+is also pushed after 1,054 tests/42 existing exclusions, default SDK 53 tests and
+strict Clippy. These stages do not claim a released/operating Workload full chain.

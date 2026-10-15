@@ -1,0 +1,13 @@
+[package]
+name = "observed-workload-cross-host-probe"
+version = "0.0.0"
+edition = "2024"
+[dependencies]
+hopae-grpc = { git = "https://github.com/ziozzang/hopae", rev = "4ea3e1473de61d6b46f5420efe481c126790d800", features = ["native-client"] }
+hangang-runtime = { git = "https://github.com/ziozzang/hangang-runtime", rev = "bf3ba2c0ccfb8603a34b14a30bc52d5112f0677a" }
+ed25519-dalek = "2.2.0"
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

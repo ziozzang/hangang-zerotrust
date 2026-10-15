@@ -12,7 +12,7 @@ stopped. This audit does not start a new Astra review or qualify the whole produ
 | T6 information architecture; T7 visual/accessibility; T8 authority UX | Partial implementation | The remaining ADM acceptance criteria below are not delivered |
 | T9 native client/permit/output/replay/final transport | Current Service path passed actual four-service, independent SDK, K3s/browser, non-dispatch and signed/internal adoption gates | Operating routes remain opt-in; Human/Workload, safe pooling, fleet/streaming and throughput remain unfinished |
 
-## Administrator acceptance: 3 complete, 3 partial, 3 incomplete
+## Administrator acceptance: 3 complete, 4 partial, 2 incomplete
 
 | Criteria | State | Evidence or remaining work |
 | --- | --- | --- |
@@ -22,7 +22,7 @@ stopped. This audit does not start a new Astra review or qualify the whole produ
 | ADM-03 truthful mutation outcome/correlation | Partial | Completed-operation references now survive final revocation in the internal console candidate; native denial/recovery remain incomplete |
 | ADM-07 authority freshness/source/errors | Partial | Source ownership/read-only controls exist; a failed audit can block policy refresh and stale states are inconsistent |
 | ADM-08 identity/console/service recovery | Partial | Explicit account mappings and server authorization exist; role/error/recovery UX is inconsistent |
-| ADM-04 host-owned menus/subpage routes | Incomplete | Discovery-order menu, ambiguous labels, durable subpages/history/search remain |
+| ADM-04 host-owned menus/subpage routes | Partial | 0.3.9 host-owned order/functional labels and bounded Pumgye section/history/search routes are operating; plugin-internal durable tabs and broader navigation remain |
 | ADM-06 shared forms/tables/locale/keyboard | Incomplete | Form hierarchy, scoped overflow, locale lifecycle, tab keys and full responsive/theme/accessibility acceptance remain |
 | ADM-09 contextual cross-module navigation | Incomplete | Validated service links, destination reauthorization and installed-capability slots remain |
 
@@ -105,3 +105,6 @@ underway. The ADM totals remain 3 complete, 3 partial and 3 incomplete.
 
 
 Latest: Hangang 0.3.8 is now publicly released and both internal console/gateway are adopted. Both K3s matrices passed; see the [release record](2026-10-15-native-observed-adoption.md). Earlier pending statements retain their chronology.
+
+
+0.3.9 is publicly released and internally adopted; actual K3s and live-site evidence is in the [release record](2026-10-15-native-observed-adoption.md). ADM-04 moves from incomplete to partial; current totals are 3/4/2. Plugin live-locale composites remain unfinished. Earlier 3/3/3 totals record the prior audit state.

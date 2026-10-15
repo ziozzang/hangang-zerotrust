@@ -615,7 +615,7 @@ def main():
             print('Owned safe failure facts: '+json.dumps(facts,sort_keys=True),flush=True)
             if args.evidence_dir:(args.evidence_dir/'failure-facts.json').write_text(json.dumps(facts,indent=2)+'\n')
             if created:
-                for name in commands:
+                for name in [*commands,*(['workload-tap'] if workload else [])]:
                     try:
                         diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=200').decode(errors='replace')
                         for value in [*tokens.values(),*([composition_key] if args.composition else [])]:diagnostic=diagnostic.replace(value,'[redacted]')

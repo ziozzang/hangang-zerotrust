@@ -298,3 +298,26 @@ outages. The existing route-only mode passes separately. This closes local
 source plan-owner observation and resource-decision integration. Signed permit
 issuance, paired replay/projection/final secret delivery, multi-owner epochs and
 discovery, static/Kubernetes/operating adoption and throughput remain required.
+
+## Permit RPC source implementation; positive delivery still open
+
+Pumgye 1d15196 adds separate `ProjectionPermits/Issue` on the existing mandatory
+mTLS decision listener. Only native checked authentication, live identity/network
+observations, native route reference and Hopae plan owner, exact policy snapshot
+and Allow can reach the configured signer. Input contains no permit revisions,
+deadlines, decision reference, authority incarnation or key. A fresh random
+process incarnation and per-decision reference are server-owned; process
+incarnation is not distributed membership or restore protection.
+
+The candidate includes canonical permit context/binding, lifetime bounded by all
+observations/policy source and one second, and zero cache TTL. It stays private
+through fresh post-sign route/plan queries and final local policy/caller/evidence
+time checks. Ordinary Decide and HTTP do not return permits. Zero owner revisions
+are refused by the canonical signature binding rather than invented or promoted.
+
+Workspace 71 tests, strict Clippy, actual mTLS caller/missing-resource refusals
+and the existing actual four-server route+plan decision regression pass. This is
+a source issuance implementation with negative transport qualification. Actual
+Hangang positive issuance, receiver verification and paired replay, projection
+and final credential dispatch remain unqualified; no new release or operating
+activation is justified by these checks alone.

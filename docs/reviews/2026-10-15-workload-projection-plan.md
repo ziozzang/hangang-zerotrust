@@ -96,3 +96,20 @@ Pumgye may now pin this exact SDK source for its dedicated Workload permission
 RPC. Permission, output and final gateway dispatch remain unqualified until their
 actual integration gates pass. Authentication alone is not resource authorization.
 See the [gateway adoption contract](../design/WORKLOAD_GATEWAY_ADOPTION.md).
+
+
+## Native permission RPC milestone
+
+Pumgye `dd62d6559613923f421cb76f0e65aea48224ea76` is now public main. It adds
+WorkloadObservedProjectionPermits Issue/Observe, private typed Workload SDK owner
+and the same compiled policy/source bridge. Default 90 and feature 99 workspace
+tests pass with no exclusions, as do both strict Clippy configurations. Authenticated
+peer fixtures cover native Pumgye policy, class separation, grant deletion for new
+Issue and old-permit Observe, source-owner replacement and final expiry. They do
+not establish actual Hopae TokenReview or the full output/dispatch chain.
+
+Hangang's isolated integration now pins both this protocol and Hopae `4ea3e147`;
+the lockfile has one Hopae SDK revision. Typed dispatch, dedicated permission RPC
+and contract3 output are implemented but await compilation and actual integration
+qualification. Separately, ADM04 console navigation source passed 132 browser tests
+and is merged into the 0.3.9 candidate; static/K3s/adoption gates remain pending.

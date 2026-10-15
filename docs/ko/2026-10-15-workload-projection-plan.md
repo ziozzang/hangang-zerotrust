@@ -72,3 +72,17 @@ TokenReview 원천 owner·서명 permit·paired 출력 연결 후에야 전체 W
 Kubernetes JWT 검증이 아니다. 품계는 이제 정확한 SDK source를 고정해 전용 Workload
 판정 RPC를 구현한다. 권한·출력·최종 게이트웨이 전달은 아직 검증 완료가 아니다.
 [게이트웨이 반영 계약](design/WORKLOAD_GATEWAY_ADOPTION.md)을 따른다.
+
+
+## 네이티브 판정 RPC 반영
+
+품계 dd62d6559613923f421cb76f0e65aea48224ea76을 공개 main에 반영했다. 전용 Workload
+Issue/Observe·비공개 typed SDK owner·동일 정책/source bridge를 연결했다. default90,
+feature99 전체 테스트는 제외 없이 통과했고 양쪽 strict Clippy도 통과했다. 인증된 peer
+fixture에서 실제 품계 정책·종류 분리·grant 삭제 후 신규 Issue/기존 Observe 거부·owner
+교체·최종 만료를 검증했다. 실제 호패 TokenReview나 전체 출력/전달 체인 완료는 아니다.
+
+한강 별도 통합 작업은 이 프로토콜과 호패 4ea3e147을 고정했고 lock의 SDK 버전도 통일했다.
+typed 전달·전용 판정 RPC·contract3 출력을 구현했으나 컴파일·실제 통합 검증은 대기 중이다.
+별도 ADM04 메뉴 소스는 브라우저 132개 통과 후 0.3.9 후보에 머지했으며 정적/K3s/운영
+반영 검증은 아직 진행 중이다.

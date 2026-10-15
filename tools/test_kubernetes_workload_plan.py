@@ -24,6 +24,15 @@ class WorkloadPlan(unittest.TestCase):
         binding = next(x for x in items if x['kind'] == 'ClusterRoleBinding')
         self.assertEqual(binding['roleRef']['name'], role['metadata']['name'])
         self.assertEqual(binding['subjects'], [{'kind': 'ServiceAccount', 'name': 'workload-reviewer', 'namespace': 'owned-world-example'}])
+        local = next(x for x in items if x['kind'] == 'Role')
+        self.assertEqual(local['metadata']['namespace'],'owned-world-example')
+        self.assertEqual(local['rules'],[
+            {'apiGroups':[''],'resources':['serviceaccounts'],'resourceNames':['workload-client'],'verbs':['get']},
+            {'apiGroups':[''],'resources':['pods'],'resourceNames':['workload-bound'],'verbs':['get']}])
+        local_binding=next(x for x in items if x['kind']=='RoleBinding')
+        self.assertEqual(local_binding['roleRef'],{'apiGroup':'rbac.authorization.k8s.io','kind':'Role','name':local['metadata']['name']})
+        self.assertEqual(local_binding['subjects'],binding['subjects'])
+        self.assertEqual(local_binding['metadata']['namespace'],'owned-world-example')
         pod = next(x for x in items if x['kind'] == 'Pod')
         self.assertFalse(pod['spec']['automountServiceAccountToken'])
         self.assertEqual(pod['spec']['serviceAccountName'], 'workload-client')

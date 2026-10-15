@@ -248,20 +248,56 @@ class Workload:
             (self.args.evidence_dir/'workload-pair-replay.json').write_text(json.dumps(added, indent=2)+'\n')
 
     def check_rbac(self):
-        for account, group, resource, verb, allowed in [
-                ('workload-reviewer', 'authentication.k8s.io', 'tokenreviews', 'create', True),
-                ('workload-reviewer', '', 'secrets', 'list', False),
-                ('workload-reviewer', '', 'serviceaccounts', 'create', False),
-                ('workload-client', 'authentication.k8s.io', 'tokenreviews', 'create', False),
-                ('workload-client', '', 'secrets', 'list', False)]:
+        checks = [
+            ('workload-reviewer', 'authentication.k8s.io', 'tokenreviews', 'create', None, None, True),
+            ('workload-reviewer', '', 'serviceaccounts', 'get', 'workload-client', None, True),
+            ('workload-reviewer', '', 'pods', 'get', 'workload-bound', None, True),
+            ('workload-reviewer', '', 'serviceaccounts', 'get', 'workload-reviewer', None, False),
+            ('workload-reviewer', '', 'pods', 'get', 'unrelated-owned-negative', None, False),
+            ('workload-reviewer', '', 'pods', 'list', None, None, False),
+            ('workload-reviewer', '', 'pods', 'watch', None, None, False),
+            ('workload-reviewer', '', 'pods', 'delete', 'workload-bound', None, False),
+            ('workload-reviewer', '', 'secrets', 'list', None, None, False),
+            ('workload-reviewer', '', 'serviceaccounts', 'create', 'workload-client', 'token', False),
+            ('workload-client', '', 'serviceaccounts', 'create', 'workload-reviewer', 'token', False),
+            ('workload-client', '', 'serviceaccounts', 'create', 'workload-client', 'token', False),
+            ('workload-client', '', 'serviceaccounts', 'get', 'workload-client', None, False),
+            ('workload-client', '', 'pods', 'get', 'workload-bound', None, False),
+            ('workload-client', 'authentication.k8s.io', 'tokenreviews', 'create', None, None, False),
+            ('workload-client', '', 'secrets', 'list', None, None, False),
+        ]
+        for account, group, resource, verb, name, subresource, allowed in checks:
             attributes = {'group': group, 'resource': resource, 'verb': verb}
             if resource != 'tokenreviews': attributes['namespace'] = self.namespace
-            if resource == 'serviceaccounts': attributes.update(subresource='token', name='workload-client')
+            if name is not None: attributes['name'] = name
+            if subresource is not None: attributes['subresource'] = subresource
             review = {'apiVersion': 'authorization.k8s.io/v1', 'kind': 'SelfSubjectAccessReview', 'spec': {'resourceAttributes': attributes}}
             result = json.loads(self.kube('create', '--raw', '/apis/authorization.k8s.io/v1/selfsubjectaccessreviews',
                 '--as', f'system:serviceaccount:{self.namespace}:{account}', '-f', '-', body=json.dumps(review).encode()))
             if result.get('status', {}).get('allowed') is not allowed:
                 raise AssertionError('owned reviewer/client RBAC exceeds or misses declared scope')
+
+    def restored_http(self, request, seconds=30):
+        """Only restoration probes may retry503. Every call keeps its own budget."""
+        deadline = time.monotonic() + seconds
+        refusals = 0
+        while time.monotonic() < deadline:
+            replay_before = self.replay_facts()
+            code, body = request()
+            # The actual request helper independently counts before/after EVERY
+            # response. Recheck its safe result so future refactors cannot skip it.
+            delta = getattr(request, 'last', {}).get('backend_delta')
+            if code == 200:
+                if delta != 1:
+                    raise AssertionError('restored success did not reach backend exactly once')
+                self.check_replay_increment(replay_before)
+                print('PASS: bounded restored HTTP200 after ' + str(refusals) + ' HTTP503/backend0 observations; perrequest budgets unchanged', flush=True)
+                return code, body
+            if code != 503 or delta != 0:
+                raise AssertionError('restoration allows only HTTP503/backend0 before HTTP200/backend1')
+            refusals += 1
+            time.sleep(min(.1, max(0, deadline - time.monotonic())))
+        raise AssertionError('owned HTTP restoration deadline')
 
     def api_authenticates(self, credential):
         result = json.loads(self.kube('create', '--raw', '/apis/authentication.k8s.io/v1/tokenreviews', '-f', '-', body=json.dumps({
@@ -406,7 +442,10 @@ class Workload:
             config = probe_config(forward('hopae', 8703))
             verified = self.probe(root, config, self.primary)
             assert (verified['subject_ref'] == subject) is (expected_status == 200)
-            assert request()[0] == expected_status
+            if expected_status == 200:
+                self.restored_http(request)
+            else:
+                assert request()[0] == expected_status
         publish({}, {subject: ['reader']})
         assert request()[0] == 403, 'Workload borrowed users grant'
         publish({subject: ['reader']})
@@ -418,7 +457,7 @@ class Workload:
         self.kube('-n', self.namespace, 'rollout', 'status', 'deployment/hopae', '--timeout=120s', timeout=135)
         config = probe_config(forward('hopae', 8703))
         self.probe(root, config, self.primary)
-        eventually(lambda: request()[0] == 200)
+        self.restored_http(request)
         self.finish_held(held)
         # Minimal reviewer role withdrawal, then explicit newly owned restoration.
         path, uid = self.globals[-1]
@@ -434,7 +473,7 @@ class Workload:
         self.kube('-n', self.namespace, 'rollout', 'status', 'deployment/hopae', '--timeout=120s', timeout=135)
         config = probe_config(forward('hopae', 8703))
         self.probe(root, config, self.primary)
-        eventually(lambda: request()[0] == 200)
+        self.restored_http(request)
         # API deletion propagation is measured separately from Hop's original1s source record.
         pod = json.loads(self.kube('-n', self.namespace, 'get', 'pod', 'workload-bound', '-o', 'json'))
         delete_owned(self.kube, f'/api/v1/namespaces/{self.namespace}/pods/workload-bound', pod['metadata']['uid'])

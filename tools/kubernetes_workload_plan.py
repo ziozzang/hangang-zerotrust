@@ -91,6 +91,12 @@ def bootstrap(namespace, utility_image):
                                     'capabilities': {'drop': ['ALL']}},
                 'resources': {'requests': {'cpu': '5m', 'memory': '16Mi'},
                               'limits': {'cpu': '100m', 'memory': '64Mi'}}}]}),
+        obj('Role', 'workload-object-reader', 'rbac.authorization.k8s.io/v1', rules=[
+            {'apiGroups': [''], 'resources': ['serviceaccounts'], 'resourceNames': ['workload-client'], 'verbs': ['get']},
+            {'apiGroups': [''], 'resources': ['pods'], 'resourceNames': ['workload-bound'], 'verbs': ['get']}]),
+        obj('RoleBinding', 'workload-object-reader', 'rbac.authorization.k8s.io/v1',
+            roleRef={'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'Role', 'name': 'workload-object-reader'},
+            subjects=[{'kind': 'ServiceAccount', 'name': 'workload-reviewer', 'namespace': namespace}]),
         obj('ClusterRole', reviewer_role, 'rbac.authorization.k8s.io/v1', rules=[
             {'apiGroups': ['authentication.k8s.io'], 'resources': ['tokenreviews'], 'verbs': ['create']}]),
         obj('ClusterRoleBinding', reviewer_role, 'rbac.authorization.k8s.io/v1',

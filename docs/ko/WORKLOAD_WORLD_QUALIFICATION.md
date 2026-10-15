@@ -2,7 +2,7 @@
 
 현재 상태는 **선택적 실제 실행 orchestration 소스 구현, 실제 K3s 실행 미검증**이다. `--workload`는 composition(All/Any) 혼용과 미지원 browser/direct-client/통합 Sum source를 거부한다. 정확한 이미지 digest/소스/바이너리 SHA/capability 승인 파일과 고정 공개 Workload SDK probe SHA 검사를 변경 전에 통과해야 실행한다. 영구 preparation-only 차단은 제거했지만 parent의 최종 artifact 승인과 클러스터 lease 없이는 실행하면 안 된다. 기존 Service/default/All/Any 모드는 유지한다. helper로 실행 권한이나 인증 증명을 만들지 않는다.
 
-실행 전 parent의 독점 클러스터 lease, 백업 전체 SHA/tar 확인, 최종 immutable 소스/바이너리 SHA/image 및 독립 Workload SDK probe가 필요하다. 새 owned-world namespace와 두 SA(리뷰어/클라이언트), 실제 bound Pod를 원자적으로 create한다. 리뷰어는 tokenreviews create만 허용하는 고유 ClusterRole/Binding을 사용하며 cluster-admin이나 wildcard를 금지한다. 클라이언트에는 API 권한/자동 token mount를 주지 않는다. Node utility 이미지가 필요한 bound Pod이며 scratch 호환을 주장하지 않는다.
+실행 전 parent의 독점 클러스터 lease, 백업 전체 SHA/tar 확인, 최종 immutable 소스/바이너리 SHA/image 및 독립 Workload SDK probe가 필요하다. 새 owned-world namespace와 두 SA(리뷰어/클라이언트), 실제 bound Pod를 원자적으로 create한다. 리뷰어의 고유 전역 ClusterRole/Binding은 tokenreviews create만 허용한다. 별도 소유 namespaced Role/Binding은 serviceaccounts의 workload-client와 pods의 workload-bound라는 정확한 두 이름에 get만 허용한다. 실제 Hop848은 TokenReview 뒤 해당 metadata/UID/삭제 상태를 GET하므로 이 권한이 없으면 첫 검증부터403으로 실패한다. 다른 이름·list/watch/write/secrets·cluster-admin·wildcard는 허용하지 않는다. 클라이언트에는 API 권한/자동 token mount를 주지 않는다. Node utility 이미지가 필요한 bound Pod이며 scratch 호환을 주장하지 않는다.
 
 실제 SA/Pod UID와 고정 API/CA/issuer/cluster/audience에서 Pod-bound TokenRequest를 만든다. JWT payload가 API/CA/원천을 선택하면 안 된다. 공개 Workload SDK Issue/Observe가 검증한 kind3/AAL0 subject와 helper의 documented hash 예상값을 교차검사한 뒤에만 Pum workload_users grant를 게시한다. private Observation 생성이나 숫자 budget 재구성은 금지한다. 기존 users fallback은 없고 단일 compiler/View가 권한을 판단한다. Root 고정 Workload class→전용 Pum RPC→Hop contract3 및 동일 paired ledger→실제 backend counter를 검증해야 한다. Human 세션은 별도 owner가 필요하다.
 
@@ -30,3 +30,12 @@ runner는 실제 namespace/SA/Pod UID, 최소 리뷰어 권한, 고정 CA/issuer
 순수16개/기존 composition renderer3개 테스트 통과. 클러스터·SSH·Cargo 실행 없음. 최종 승인 바이너리로 실제 네 코어 전체 Workload 게이트는 반드시 별도 수행해야 한다. Human·Workload 관리자/browser UX 완료를 주장하지 않는다. 정리는 원래 UID precondition을 유지하고 한 객체 충돌 시에도 나머지 소유 객체 정리를 시도한다.
 
 Pum workload_resource_metadata_decision 및 Root workload_typed_http_preliminary_gate capability도 필수다. 이전 일반 Workload flag만으로 사전 검사를 통과하지 못한다. 여전히 검토된 주장이지 바이너리 자동 증명은 아니다. 기존 선택적 Sum CRD 경로는 create 응답에서 원래 UID를 직접 보존해 create→GET 교체 간격을 없앴다. Workload와 CRD 결합은 계속 거부한다.
+
+
+## 실행 전 harness 수정
+
+소유 namespaced Role의 이름 두 개만 GET한다. 같은 이름의 새 UID는 현재 객체 확인을 위해 읽을 수 있지만 예전 subject/grant를 승계하지 않는다. 새 공개 SDK subject 검증과 명시적 새 grant가 필요하다. SSAR는 두 정확한 GET 허용·무관한 이름 GET 거부·client/reviewer의 serviceaccounts/token 생성 거부를 직접 확인한다. 새 Role/Binding은 namespace UID 정리 범위이며 전역 TokenReview 권한은 바뀌지 않는다.
+
+Hop 복구 뒤에만 30초 orchestration 창에서 HTTP503→200을 기다린다. 모든503은 backend0, 첫200은 backend1과 해당 성공 호출의 새로운 tap replay PASS1개를 요구한다. 401/403/기타 상태·전송 오류·누락 증거·503 부작용은 즉시 실패한다. 서버 재시도·강제 channel 재시작·원래1초 proof/TTL/rate 변경이나 negative 검증 완화는 없다. 이전503의 tap 증거를 성공 증거로 쓰지 않는다.
+
+순수20개/기존 composition3개 통과. 실제 네 코어 K3s 실행은 승인 후 별도 게이트로 남아 있다.

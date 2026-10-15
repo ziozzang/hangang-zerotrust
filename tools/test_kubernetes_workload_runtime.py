@@ -186,4 +186,65 @@ class ProbeRefusalClassification(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError,'probe failed'):owner.probe(root,{},'fixture',False)
                 self.assertTrue(owner.probe(root,{},'fixture',False,startup_refusal=True)['startup_trust_refused'])
 
+class FinalPrerequisites(unittest.TestCase):
+    def test_rbac_measures_exact_metadata_gets_and_client_tokenrequest_denial(self):
+        calls=[]
+        def kube(*args,**kw):
+            attrs=json.loads(kw['body'])['spec']['resourceAttributes']
+            account=args[args.index('--as')+1].split(':')[-1]
+            calls.append((account,attrs))
+            allowed=(account=='workload-reviewer' and ((attrs['resource']=='tokenreviews' and attrs['verb']=='create')
+                or (attrs['verb']=='get' and attrs.get('subresource') is None and
+                    (attrs['resource'],attrs.get('name')) in [('serviceaccounts','workload-client'),('pods','workload-bound')])))
+            return json.dumps({'status':{'allowed':allowed}}).encode()
+        owner=runtime.Workload(SimpleNamespace(),'owned-world-test',kube,{})
+        owner.check_rbac()
+        for account,resource,name,subresource in [('workload-reviewer','serviceaccounts','workload-client',None),
+            ('workload-reviewer','pods','workload-bound',None),('workload-reviewer','serviceaccounts','workload-reviewer',None),
+            ('workload-reviewer','pods','unrelated-owned-negative',None),
+            ('workload-client','serviceaccounts','workload-reviewer','token'),('workload-client','serviceaccounts','workload-client','token')]:
+            self.assertTrue(any(a==account and r['resource']==resource and r.get('name')==name and r.get('subresource')==subresource for a,r in calls))
+        def escalated(*args,**kw):return b'{"status":{"allowed":true}}'
+        owner.kube=escalated
+        with self.assertRaisesRegex(AssertionError,'RBAC'):owner.check_rbac()
+
+    def recovery_owner(self):
+        entries=[]
+        def kube(*args,**kw):return '\n'.join(json.dumps(x) for x in entries).encode()
+        return runtime.Workload(SimpleNamespace(evidence_dir=None),'owned-world-test',kube,{}),entries
+
+    def test_restoration_503_zeroeffects_then_200_oneeffect_and_new_safe_replay(self):
+        owner,entries=self.recovery_owner();calls=[]
+        def request():
+            code,delta=(503,0) if not calls else (200,1)
+            calls.append(code);request.last={'backend_delta':delta}
+            entries.append({'event':'workload_pair_replay','passed':code==200,'elapsed_ms':5,
+                'replay_status':'Unavailable','auth_and_permit_owner_checks':'before_and_after_replay',
+                'original_first_reply_returned_unchanged':True})
+            return code,b'owned-body'
+        with patch.object(runtime.time,'sleep'):
+            self.assertEqual(owner.restored_http(request),(200,b'owned-body'))
+        self.assertEqual(calls,[503,200])
+        self.assertFalse(entries[0]['passed']);self.assertTrue(entries[1]['passed'])
+
+    def test_restoration_rejects_other_statuses_sideeffects_or_transport_immediately(self):
+        for code,delta in [(403,0),(401,0),(500,0),(503,1),(200,0),(200,2)]:
+            owner,_=self.recovery_owner();calls=[]
+            def request():calls.append(code);request.last={'backend_delta':delta};return code,b''
+            with self.assertRaises(AssertionError):owner.restored_http(request)
+            self.assertEqual(calls,[code])
+        owner,_=self.recovery_owner()
+        def unavailable():raise OSError('owned fixture unavailable')
+        with self.assertRaises(OSError):owner.restored_http(unavailable)
+
+    def test_restoration_deadline_and_missing_success_replay_refuse(self):
+        owner,_=self.recovery_owner();calls=[]
+        def request():calls.append(503);request.last={'backend_delta':0};return 503,b''
+        with patch.object(runtime.time,'monotonic',side_effect=[0,0,1,2]),patch.object(runtime.time,'sleep'):
+            with self.assertRaisesRegex(AssertionError,'deadline'):owner.restored_http(request,seconds=1)
+        self.assertEqual(calls,[503])
+        def success():success.last={'backend_delta':1};return 200,b''
+        with self.assertRaisesRegex(AssertionError,'replay'):owner.restored_http(success)
+
+
 if __name__=='__main__': unittest.main()

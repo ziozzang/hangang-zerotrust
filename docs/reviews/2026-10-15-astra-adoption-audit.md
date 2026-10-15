@@ -139,3 +139,10 @@ The administrator tally remains **3 complete / 4 partial / 2 incomplete**.
 Locale lifecycle, shared forms/accessibility, consistent recovery and contextual
 cross-module links remain open. Astra remains stopped; the checks above use Sol
 and retained review evidence.
+
+
+A subsequent read-only account/mapping check found the configured SSO destination
+account enabled with administrator role; no viewer accounts were returned. Thus the
+configured mapping itself does not establish a missing-role explanation. The
+operator's actual existing browser/session is still unverified. No credentials,
+account identifiers or policy data are included in this report.

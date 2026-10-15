@@ -1744,7 +1744,9 @@ This section supersedes earlier pending stage notes without discarding their fai
 - [x] Domain HSTS hardening covers HTTP/1 and HTTP/2 errors; compiled TLS 16+4, actual Sacho visibility 24 and operating TLS/redirect 16 checks pass.
 - [x] Hopae source `bc64e41` joins actual TOTP elevation to exact original factor/enrollment/session credential generation atomically. Full workspace 1,071 passed/42 existing ignores and strict Clippy; independently reviewed. This is source-only schema8 groundwork, not adopted 0.0.10 runtime or full Human observed authentication.
 - [x] Pumgye source `f65ea23` provides explicit Kubernetes API context and bounded exact SubjectAccessReview metadata mapping within the same compiled view. This is source-only; no inbound authenticated API-server webhook listener is enabled.
-- [ ] Publish and internally install separately versioned Hopae 0.1.6 / Sumunjang 0.1.4 console packages with unchanged backend bindings and actual browser acceptance.
+- [x] Publish and internally install separately versioned Hopae 0.1.6 / Sumunjang 0.1.4 console packages with unchanged backend bindings and actual browser acceptance ([evidence](docs/reviews/2026-10-15-native-authority-followup.md)).
 - [ ] Join real native Engine Allow, HandleView and current provider/session/user/factor/application owners to original Human admission lifetime; then qualify public Human wire/SDK, typed grants and Hangang enforcement end to end.
 - [ ] Implement authenticated bounded Kubernetes SubjectAccessReview server transport and exact-view final response fencing; qualify a backed-up isolated API-server integration before activation.
 - [ ] Complete remaining external/self-owned/mixed-provider lifecycle, recovery, account management, long-lived revocation, fleet/source continuity, DBMS adapters and measured throughput. Current functional gates do not complete these requirements.
+
+- [x] Pumgye `e28d483`: private duplicate-sensitive, bounded v1 SAR wire decoder and fixed nonreflecting response buffers; default116/all-features125 and both strict Clippy pass. No authenticated listener or API-server activation yet.

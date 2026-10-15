@@ -3,6 +3,12 @@
 Status: qualified source foundations, **not a Human runtime release or full-chain activation**.
 [한국어](../ko/2026-10-16-human-source-checkpoint.md).
 
+## Published Hangang source and fresh-request matrix
+
+[Hangang d6cb223dea5f24f79fe54e01e75b6c1f48a6ea4d](https://github.com/ziozzang/hangang/tree/d6cb223dea5f24f79fe54e01e75b6c1f48a6ea4d) now publishes the native Human path and both fixes. The exact final workspace passed1332/0 with58 explicit ignores, plus strict all-target/all-feature Clippy and focused native/permit checks. Actual runtime gates used the production-equivalent `ada331c` binary; the subsequent commit adds only tests. No operating release/adoption follows from publication.
+
+A separate owned run passed nine fresh HTTP gates: network AAL2 rejects AAL1 and restoration allows it; a user AAL2 role rejects AAL1; actual portal TOTP and independent SDK observation establish AAL2 and allow the request; network AAL2 permits that AAL2 identity; Human policy CAS withdrawal/restoration and actual Sum block/restoration deny/allow as expected. Every denial was403 with zero backend arrival/effect; every positive was204 with exactly one arrival/effect, body SHA and credential match. All12 recorded listeners closed. Safe result SHA256: `cea4863e2b0bf979007af4872cf2bffd48757ef5c44b8155ac2260c92bea03a3`. These requests acquire fresh proofs; this does not establish atomic withdrawal of an in-flight request. A/B substitution, exact-pair replay, other provider variants, distributed/performance gates, browser acceptance and signed release/operating migration remain pending.
+
 ## Local four-core first positive
 
 An owned local run now passes actual native OIDC → Hangang → Hopae Source/SDK → Pum Human permission → Hopae contract4 projection → counted HTTP backend. The first request returned204 with exactly one backend arrival/effect, matching final body SHA256 `105677b049653381c974d1312bb087650075a48682fc6555274735007afd9c02`, a matching projected Bearer credential, and no forwarded cookie/native identity/caller headers. Seven observed RPC methods each succeeded once. Cleanup reported no failures; all12 recorded owned loopback listeners refused connections afterward.

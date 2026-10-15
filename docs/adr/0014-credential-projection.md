@@ -347,3 +347,34 @@ This closes selected local source positive issuance and gateway verification.
 It does not close Hopae receiver verification, paired replay consumption or final
 upstream credential projection. Multi-owner incarnation retirement, fleet/restore
 fences, static/Kubernetes/operating adoption and throughput remain required.
+
+## Native permit current-owner validation qualification
+
+Pumgye b4b7f18 adds `ProjectionPermits/Validate` for the original native request
+and signed proof. Decision-role admission precedes parsing/crypto. It checks the
+permit-purpose signature, authentication receipt link, scope and exact process
+incarnation, then reruns native identity/network/route/plan/policy evaluation.
+The four owner revisions must exactly match the signed binding; an exact policy
+snapshot fence rejects same-number replacement, and final readiness/source/time
+checks prevent an expired source from validating. It returns only correlation,
+shortened expiry and zero cache TTL. It neither consumes replay nor grants a lease.
+
+Hangang b326f03 requires this RPC in permit mode after local signature checking,
+using the same bounded persistent mTLS channel/admission and the remaining
+original timeout budget. Missing validation or failed checks refuse without
+fallback. The acknowledgement must match correlation, zero TTL and a deadline
+no later than the signed permit; final evidence adopts the shorter deadline.
+
+Pumgye workspace 72 tests and strict Clippy pass, including canonical proof
+binding/incarnation/tamper tests and actual mTLS admission refusals. Hangang
+workspace 1,301 tests (58 existing explicit ignores), strict Clippy and 942
+links pass. The actual four-server route+plan+permit fixture and no-permit mode
+both pass final dispatch, trust refusal/restoration, durable permission/profile
+withdrawal and authority outages with current binaries. Pumgye 555008f records
+this positive source integration.
+
+This closes selected source current-owner validation needed before receiver
+consumption. Hopae paired replay/projection and final credential dispatch,
+multi-owner discovery/incarnation/restore fences, static release, Kubernetes/
+operating adoption and throughput remain required. A point-in-time validation
+acknowledgement cannot replace those receiver and final-effect checks.

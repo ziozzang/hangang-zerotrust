@@ -506,3 +506,27 @@ measured an unexpected authority-phase 503 at 122 ms, so whole-request one-secon
 expiry alone does not explain the discrepancy. No new release or operating/Kubernetes adoption is claimed. Human/
 workload projection, coordinated rotation, fleet/restore fences, and throughput
 gates remain open.
+
+
+### Live-deadline intersection correction
+
+The restoration discrepancy above was reproduced with numeric-only diagnostics:
+the receiver's valid response ended one millisecond after Hangang's earlier live
+observation. Pumgye derives route deadlines by adding server-reported remaining
+time to the client timestamp before its RPC. Independent observations therefore
+can produce different conservative bounds without any permission change.
+
+Hangang now retains both the cryptographically verified original expiry and its
+shorter accepted live expiry. A receiver response must remain within the signed
+upper bound; the private credential expires at the minimum of the response and
+the already accepted bound. This does not renew permission. The regression uses
+a signed 800 deadline, an earlier accepted 650 deadline and a receiver reply of
+700: conversion succeeds before 650 and refuses at 650. Signature overflow,
+retirement, scope/header injection and expiry rejection remain covered.
+
+Four focused permit/projection tests and strict workspace Clippy pass. The fixed
+actual four-server credential fixture passes twice consecutively; existing
+no-permit/no-projection compatibility passes too. Hopae's fixture/docs are main
+`3f08499`. Hangang's corrected full workspace regression is running; its source
+is not yet pushed. Static releases, operating/Kubernetes adoption, fleet/restore
+and throughput gates remain open.

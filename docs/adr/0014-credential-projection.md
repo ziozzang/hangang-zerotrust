@@ -411,3 +411,35 @@ local guards, bounded blocking-store execution, receiver gRPC, actual Pumgye
 receiver validation and Hangang final credential delivery remain required. No
 new receiver endpoint is activated by this library increment. Fleet/restore,
 static release, Kubernetes/operating adoption and throughput gates remain open.
+
+## Hopae native receiver key startup qualification
+
+Hopae 7af778a declares public-only `receipt_permit_keys` descriptors (issuer,
+epoch, canonical Base64 public material; fixed permit purpose) alongside its own
+native receipt issuer. A native issuer is required and at most 63 permit keys
+plus its authentication key are compiled together before persistence/listeners.
+Weak/duplicate/cross-purpose material and inline signing resources refuse.
+
+After store open and before provider/application imports or listeners, startup
+reconciles receiver trust and retains its owner in `Services.receipt_authority`.
+An unchanged set preserves revision, audit count and the exact in-process reader;
+actor guards and the full persisted document are checked twice in one transaction.
+Malformed or valid same-revision replacement and stale owners refuse. Changed
+sets retain audited irreversible retirement history: old material cannot return
+under a larger epoch, and fresh higher-epoch material can be registered. This is
+native startup configuration ownership, not a request-supplied allow decision.
+
+Library 532 tests (one existing ignore), workspace, SDK active-set matching tests
+and strict Clippy pass. Additional targeted tests prove valid same-revision key
+replacement rollback. The actual four-server permit/route/plan fixture verifies
+initial import, unchanged restart without new revision/audit, permit-key removal,
+stale startup refusal with unchanged history and fresh material/epoch registration.
+The no-permit mode passes separately. Key changes occur after the owned identity/
+permission tombstones; these prove receiver trust startup, not coordinated signer
+rotation or runtime projection.
+
+This closes native receiver key bootstrap. Actual local issuer/profile/application/
+caller guards, fixed peer resource configuration, bounded blocking execution,
+receiver RPC and Hangang final credential delivery remain required. Receiver
+projection stays inactive. Fleet/restore fences, static release, Kubernetes/
+operating adoption and throughput remain open.

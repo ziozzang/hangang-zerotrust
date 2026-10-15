@@ -93,3 +93,6 @@ refusal, then failed because its realm fixture changed only bootstrap. Its failu
 record remains authoritative; this is not full Workload qualification. Capture
 running image identities early in the next run: completed node imports alone do
 not prove which images actually ran.
+
+
+Latest actual run2 completed successfully; scope and remaining gates: [qualification record](reviews/2026-10-15-workload-native-qualification.md).

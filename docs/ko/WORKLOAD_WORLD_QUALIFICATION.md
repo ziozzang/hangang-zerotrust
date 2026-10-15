@@ -58,3 +58,6 @@ run1은 최초 실제 네 모듈 요청 성공과 동일 증거쌍 재사용 거
 변경한 realm fixture 때문에 전체 실패했다. 실패 기록은 보존하며 Workload 전체
 통과로 처리하지 않는다. 다음 실행은 초기에 실제 실행 imageID를 수집한다. 노드의
 이미지 import 완료만으로 실제 실행 이미지를 증명하지 않는다.
+
+
+Latest actual run2 completed successfully; scope and remaining gates: [실제 검증 기록](2026-10-15-workload-native-qualification.md).

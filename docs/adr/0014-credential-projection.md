@@ -321,3 +321,29 @@ a source issuance implementation with negative transport qualification. Actual
 Hangang positive issuance, receiver verification and paired replay, projection
 and final credential dispatch remain unqualified; no new release or operating
 activation is justified by these checks alone.
+
+## Actual Hangang permit issuance and verification qualification
+
+Hangang 6faf9ce adds optional `auth.native_resource.permission_permit`, a separate
+public permit-purpose issuer/key pin. It rejects using the authentication key
+for this purpose. The native route requests `ProjectionPermits/Issue` on the
+existing bounded persistent mTLS channel without falling back to Decide. The
+private checked result verifies exact identity/generation/service/audience/final
+request hash, authentication receipt hash, resource/action, revision floors,
+canonical owner revisions, permit purpose/signature, zero cache TTL and expiry
+bounded by authentication. It retains monotonic elapsed-time and final dispatch
+checks; native permission denial returns 403 and unavailable/invalid evidence
+503. Permits are not forwarded as application headers.
+
+Hopae fixture 9fb5cdd adds `--permit-issuance` with independent generated keys
+and explicit native gateway configuration revision 1. The actual four-server
+case passes issuance, gateway signature/binding checks, wrong public key/issuer/
+key epoch refusal without origin effects, recovery, route/plan trust failures,
+durable permission/profile withdrawal and authority outages. Existing no-permit
+plan-owner mode passes separately. Hangang workspace 1,300 tests (58 existing
+explicit ignores), strict Clippy and 942 documentation links pass.
+
+This closes selected local source positive issuance and gateway verification.
+It does not close Hopae receiver verification, paired replay consumption or final
+upstream credential projection. Multi-owner incarnation retirement, fleet/restore
+fences, static/Kubernetes/operating adoption and throughput remain required.

@@ -1765,3 +1765,5 @@ This section supersedes earlier pending stage notes without discarding their fai
 - [x] Publish EN/KO [Human chain design](docs/reviews/2026-10-16-human-native-wire-design.md) and [v2 reference contract/vectors](docs/reviews/2026-10-16-request-binding-v2.md), eight Python contract tests and existing7-schema/42-case validation.
 - [x] Hopae `eefc358`: additive body-owned Rust v2 codec independently reviewed and merged, v1 unchanged. Final SDK default60/native62, focused binding9 and strict all-target/all-feature Clippy/fmt pass; seven independent Python vectors match. Pure codec only; Human RPC/source activation remains pending.
 - [ ] Implement predecode Human admission, source-backed receipt/SDK, typed Pumgye grants and paired output; qualify actual native provider/MFA → Hangang → backend, revocation/replay and browser administration before release/activation.
+
+- [x] Hopae b317120 durable identity storage/H0 source and Pumgye9c3d69a typed Human core independently reviewed, fully tested and merged. [Exact source checkpoint and remaining full chain](docs/reviews/2026-10-16-human-source-checkpoint.md).

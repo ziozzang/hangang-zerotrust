@@ -1035,3 +1035,5 @@ permit/투영·분산 복구/다중 노드 검증은 남아 있습니다.
 - [x] 한영 [Human 연결 설계](docs/ko/2026-10-16-human-native-wire-design.md)·[v2 기준 계약/벡터](docs/ko/2026-10-16-request-binding-v2.md) 공개, Python 계약8개·기존7스키마/42사례 검증.
 - [x] 호패 `eefc358`: 실제 body 바이트 기반 Rust v2 codec 독립 검토·병합, v1 유지. 최종 SDK 기본60/native62·바인딩9·전체 target/feature strict Clippy/fmt 통과, 독립 Python 기준값7개 일치. 순수 codec이며 Human RPC/원천 활성화는 남아 있다.
 - [ ] 디코딩 전 Human admission·원천 기반 receipt/SDK·typed 품계 권한·쌍 출력 구현. 실제 공급자/MFA→한강→백엔드·철회/재전송·관리자 브라우저 검증 후 릴리스/활성화.
+
+- [x] 호패b317120의 영구 신원 저장/H0 원천·품계9c3d69a의 typed Human 코어 독립 검토·전체 검사·병합. [정확한 근거와 남은 전체 경로](docs/ko/2026-10-16-human-source-checkpoint.md).

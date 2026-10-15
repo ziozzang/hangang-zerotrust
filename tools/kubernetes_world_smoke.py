@@ -40,6 +40,9 @@ def main():
     parser.add_argument('--pumgye-responsive',action='store_true',help='Opt-in actual embedded Pumgye UI390px bounds and keyboard gate')
     parser.add_argument('--workload',action='store_true',help='Actual native Workload chain; requires reviewed immutable capability manifest and public Workload SDK probe')
     parser.add_argument('--workload-capabilities',type=Path)
+    parser.add_argument('--workload-backup-evidence',type=Path)
+    parser.add_argument('--workload-held-client',type=Path)
+    parser.add_argument('--workload-tap-image')
     parser.add_argument('--workload-utility-image')
     parser.add_argument('--workload-issuer')
     parser.add_argument('--workload-cluster-id')
@@ -98,9 +101,10 @@ def main():
         root=Path(temporary)
         def openssl(*argv):subprocess.run(['openssl',*map(str,argv)],check=True,capture_output=True)
         openssl('req','-x509','-newkey','rsa:2048','-nodes','-keyout',root/'ca.key','-out',root/'ca.pem','-days','1','-subj','/CN=Owned world CA','-addext','basicConstraints=critical,CA:TRUE')
-        for name,usage in [('server','serverAuth'),('client','clientAuth')]:
+        for name,usage in [('server','serverAuth'),('client','clientAuth'),*([('tap-server','serverAuth'),('tap-client','clientAuth')] if args.workload else [])]:
             openssl('req','-new','-newkey','rsa:2048','-nodes','-keyout',root/f'{name}.key','-out',root/f'{name}.csr','-subj',f'/CN={name}')
-            ext=root/f'{name}.ext';ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage='+usage+'\nsubjectAltName='+','.join('DNS:'+c+'.'+namespace+'.svc' for c in (['hangang','hopae','sumunjang','pumgye','relay'] if args.composition else ['hangang','hopae','sumunjang','pumgye']))+',DNS:app.example.test,IP:127.0.0.1\n')
+            ext=root/f'{name}.ext';ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage='+usage+'\nsubjectAltName='+','.join('DNS:'+c+'.'+namespace+'.svc' for c in (['hangang','hopae','sumunjang','pumgye','relay'] if args.composition else ['hangang','hopae','sumunjang','pumgye',*(['workload-tap'] if args.workload else [])]))+',DNS:app.example.test,IP:127.0.0.1\n')
+            if name=='tap-server':ext.write_text('basicConstraints=CA:FALSE\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:workload-tap.'+namespace+'.svc\n')
             openssl('x509','-req','-in',root/f'{name}.csr','-CA',root/'ca.pem','-CAkey',root/'ca.key','-CAcreateserial','-days','1','-extfile',ext,'-out',root/f'{name}.pem')
         tokens={name:secrets.token_hex(32) for name in ['api','caller','gateway-admin','guard-collector','guard-admin','pum-decision','pum-admin','hopae-delegation']}
         if args.composition:
@@ -213,6 +217,8 @@ def main():
         resource('Secret','world-credentials',stringData=tokens)
         resource('Secret','world-tls',stringData={'tls.crt':(root/'server.pem').read_text(),'tls.key':(root/'server.key').read_text(),'ca.crt':(root/'ca.pem').read_text(),'client.crt':(root/'client.pem').read_text(),'client.key':(root/'client.key').read_text()})
         def env(name,key):return {'name':name,'valueFrom':{'secretKeyRef':{'name':'world-credentials','key':key}}}
+        if args.workload:
+            resource('Secret','world-tap-tls',stringData={'tls.crt':(root/'tap-server.pem').read_text(),'tls.key':(root/'tap-server.key').read_text(),'ca.crt':(root/'ca.pem').read_text(),'client.crt':(root/'tap-client.pem').read_text(),'client.key':(root/'tap-client.key').read_text()})
         commands={
             'hopae':['run','--config','/config/hopae.json'],
             'pumgye':['--listen','0.0.0.0:9084','--decision-listen','0.0.0.0:9085','--grpc-listen','0.0.0.0:9087','--readiness-listen','0.0.0.0:9086','--database','/state/pumgye.sqlite3','--policy','/config/pumgye.json','--tls-cert','/tls/tls.crt','--tls-key','/tls/tls.key','--client-ca','/tls/ca.crt'],
@@ -273,8 +279,8 @@ def main():
                 assert crd['metadata']['name']==crd_name and crd['spec']['group']=='policy.hangang.dev'
                 crd['metadata']['labels']={'hangang.dev/qualification':namespace}
                 # CREATE is intentional: an intervening creator must cause refusal.
-                kube('create','-f','-',body=json.dumps(crd).encode())
-                owned_crd_uid=json.loads(kube('get','crd',crd_name,'-o','json'))['metadata']['uid']
+                created_crd=json.loads(kube('create','-f','-','-o','json',body=json.dumps(crd).encode()))
+                owned_crd_uid=created_crd['metadata']['uid']
                 kube('wait','--for=condition=Established','crd/'+crd_name,'--timeout=60s')
             if workload:
                 created_namespace=json.loads(kube('create','namespace',namespace,'-o','json'))
@@ -292,8 +298,9 @@ def main():
                 print('Owned native Sum source: '+namespace+' UID '+native_policy_uid,flush=True)
             if workload:
                 default_key=workload.prepare(items,config_map,hop,policy,gateway,commands,environments,env)
+                workload.install_tap(items,config_map,gateway,environments,env)
             kube('apply','-f','-',body=json.dumps({'apiVersion':'v1','kind':'List','items':items}).encode(),timeout=300)
-            for name in [*commands,'echo',*(['relay'] if args.composition else [])]:
+            for name in [*commands,'echo',*(['relay'] if args.composition else []),*(['workload-tap'] if args.workload else [])]:
                 kube('-n',namespace,'rollout','status','deployment/'+name,'--timeout=120s',timeout=135)
                 print('Ready: '+name,flush=True)
             def forward(name,remote):
@@ -612,7 +619,7 @@ def main():
                     try:
                         diagnostic=kube('-n',namespace,'logs','deployment/'+name,'--tail=200').decode(errors='replace')
                         for value in [*tokens.values(),*([composition_key] if args.composition else [])]:diagnostic=diagnostic.replace(value,'[redacted]')
-                        for file in ['server.key','client.key','ca.key']:diagnostic=diagnostic.replace((root/file).read_text(),'[redacted key]')
+                        for file in ['server.key','client.key','ca.key',*(['tap-server.key','tap-client.key'] if args.workload else [])]:diagnostic=diagnostic.replace((root/file).read_text(),'[redacted key]')
                         if args.evidence_dir:(args.evidence_dir/(name+'.log')).write_text(diagnostic[-65536:])
                         print('Owned diagnostic '+name+': '+diagnostic[-4000:],flush=True)
                     except (RuntimeError,subprocess.TimeoutExpired):pass

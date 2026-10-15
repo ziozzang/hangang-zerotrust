@@ -11,14 +11,19 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
+import select
 import subprocess
 import time
 from kubernetes_workload_plan import bootstrap, configuration_patches, token_request
 
+TAP_SHA256 = '71f9a8b33c8648f3be8f0376c835ace3b1e110dfadc3d692a955a966607706ae'
+HELD_SHA256 = 'c6e34ba9429a0ecc9f24803640d69b5f7159734da3557d3924de353d634d33c2'
+TAP_SOURCE = 'eae0d97534da69f0ea931ca54b1ed7d586d7ba61'
 PROBE_SHA256 = 'faa10e924f47db73a2ab4c35da372b64f8bcec97e476dcdb6bc65e9d7d95c65a'
 REQUIRED = {'hopae': ['workload_observed_authentication', 'workload_observed_projection_contract3'],
-            'pumgye': ['workload_observed_permits', 'typed_workload_users'],
-            'hangang': ['workload_observed_dispatch', 'raw_observed_transport_fence'],
+            'pumgye': ['workload_observed_permits', 'typed_workload_users', 'workload_resource_metadata_decision'],
+            'hangang': ['workload_observed_dispatch', 'raw_observed_transport_fence', 'workload_typed_http_preliminary_gate'],
             'sumunjang': ['native_network_check']}
 
 
@@ -28,7 +33,7 @@ def preflight(args):
         return
     if args.browser_probe or args.authenticated_client or args.sumunjang_native_source:
         raise ValueError('Workload runner does not yet support browser/admin UX, legacy authenticated client or combined Sum CRD source qualification')
-    for name in ['workload_capabilities', 'workload_utility_image', 'workload_issuer', 'workload_cluster_id', 'workload_reviewer_audience']:
+    for name in ['workload_capabilities', 'workload_utility_image', 'workload_issuer', 'workload_cluster_id', 'workload_reviewer_audience', 'workload_tap_image', 'workload_held_client', 'workload_backup_evidence']:
         if not getattr(args, name):
             raise ValueError('--workload requires --' + name.replace('_', '-'))
     document = json.loads(args.workload_capabilities.read_text())
@@ -45,6 +50,35 @@ def preflight(args):
     if (not args.receipt_client.is_file() or not os.access(args.receipt_client, os.X_OK)
             or hashlib.sha256(args.receipt_client.read_bytes()).hexdigest() != PROBE_SHA256):
         raise ValueError('frozen public Workload SDK probe hash/executable mismatch')
+    tap = document.get('qualification_tools', {}).get('workload_tap', {})
+    if (tap.get('image') != args.workload_tap_image
+            or not re.fullmatch(r'[^@\s]+@sha256:[0-9a-f]{64}', args.workload_tap_image)
+            or tap.get('source') != TAP_SOURCE or tap.get('binary_sha256') != TAP_SHA256):
+        raise ValueError('reviewed exact qualification tap capability required')
+    if (not args.workload_held_client.is_file() or not os.access(args.workload_held_client, os.X_OK)
+            or hashlib.sha256(args.workload_held_client.read_bytes()).hexdigest() != HELD_SHA256):
+        raise ValueError('frozen held public SDK probe hash/executable mismatch')
+    # Reviewed backup attestation is not automatic signature/coldness validation.
+    # Verify offhost file size+full SHA locally before the first kube operation.
+    backup = json.loads(args.workload_backup_evidence.read_text())
+    if (backup.get('version') != 1 or backup.get('cold_snapshot') is not True
+            or backup.get('offhost_verified') is not True
+            or not re.fullmatch(r'[0-9a-f]{64}', backup.get('sha256', ''))
+            or type(backup.get('bytes')) is not int or backup['bytes'] <= 0):
+        raise ValueError('reviewed cold offhost backup evidence required')
+    archive = Path(backup.get('offhost_path', ''))
+    if not archive.is_file() or archive.stat().st_size != backup['bytes']:
+        raise ValueError('offhost backup size mismatch')
+    digest = hashlib.sha256()
+    with archive.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(chunk)
+    if digest.hexdigest() != backup['sha256']:
+        raise ValueError('offhost backup full SHA mismatch')
+    if not re.fullmatch(r'[^@\s]+@sha256:[0-9a-f]{64}', args.echo_image):
+        raise ValueError('Workload echo/Node utility requires exact reviewed image digest')
+    if args.workload_reviewer_audience == 'orders-workload':
+        raise ValueError('reviewer API audience must differ from workload audience')
     bootstrap('owned-world-preflight', args.workload_utility_image)
     configuration_patches(namespace='owned-world-preflight', api_origin='https://kubernetes.default.svc',
         issuer=args.workload_issuer, cluster=args.workload_cluster_id, audience='orders-workload', sa_uid='preflight-sa', pod_uid='preflight-pod')
@@ -77,6 +111,7 @@ class Workload:
         self.globals = []
         self.namespace_uid = None
         self.patch = None
+        self.held_processes = []
 
     def create(self, item):
         result = json.loads(self.kube('create', '-f', '-', '-o', 'json', body=json.dumps(item).encode()))
@@ -147,6 +182,71 @@ class Workload:
             raise AssertionError('actual API refuses initial owned Pod-bound token')
         return self.primary
 
+    def install_tap(self, items, config_map, gateway, environments, env):
+        """Only owned namespace objects; fixed peers and distinct ingress caller."""
+        namespace = self.namespace
+        self.tokens['tap-caller'] = secrets.token_hex(32)
+        def peer(name, caller):
+            return {'address': f'https://{name}.{namespace}.svc:' + ('8703' if name == 'hopae' else '9087'),
+                    'server_name': f'{name}.{namespace}.svc', 'ca': '/tls/ca.crt',
+                    'certificate': '/tls/client.crt', 'key': '/tls/client.key', 'caller_env': caller}
+        config = {'listen': '0.0.0.0:8703', 'certificate': '/tls/tls.crt', 'key': '/tls/tls.key',
+                  'client_ca': '/tls/ca.crt', 'caller_env': 'OWNED_TAP_CALLER',
+                  'hop': peer('hopae', 'OWNED_RECEIPT_CALLER'), 'pum': peer('pumgye', 'OWNED_PUM_CALLER'),
+                  'hop_source_ppm': 500, 'pum_source_ppm': 500, 'receiver_ppm': 500}
+        config_map['data']['workload-tap.json'] = json.dumps(config)
+        native = gateway['http'][0]['auth']['native']
+        native['address'] = f'workload-tap.{namespace}.svc:8703'
+        native['tls']['server_name'] = f'workload-tap.{namespace}.svc'
+        for item in environments['hangang']:
+            if item['name'] == 'FIXTURE_KEY':
+                item['valueFrom']['secretKeyRef']['key'] = 'tap-caller'
+        config_map['data']['hangang.json'] = json.dumps(gateway)
+        metadata = {'name': 'workload-tap', 'namespace': namespace}
+        container = {'name': 'workload-tap', 'image': self.args.workload_tap_image,
+            'imagePullPolicy': 'Never', 'command': ['/workload-replay-tap'], 'args': ['/config/workload-tap.json'],
+            'env': [env('OWNED_TAP_CALLER', 'tap-caller'), env('OWNED_RECEIPT_CALLER', 'caller'),
+                    env('OWNED_PUM_CALLER', 'pum-decision')],
+            'securityContext': {'readOnlyRootFilesystem': True, 'allowPrivilegeEscalation': False, 'capabilities': {'drop': ['ALL']}},
+            'resources': {'requests': {'cpu': '50m', 'memory': '32Mi'}, 'limits': {'cpu': '1', 'memory': '128Mi'}},
+            'readinessProbe': {'tcpSocket': {'port': 8703}, 'periodSeconds': 2},
+            'volumeMounts': [{'name': 'config', 'mountPath': '/config', 'readOnly': True}, {'name': 'tls', 'mountPath': '/tls', 'readOnly': True}]}
+        items.extend([{'apiVersion': 'apps/v1', 'kind': 'Deployment', 'metadata': metadata,
+            'spec': {'replicas': 1, 'strategy': {'type': 'Recreate'}, 'selector': {'matchLabels': {'app': 'workload-tap'}},
+                'template': {'metadata': {'labels': {'app': 'workload-tap'}}, 'spec': {
+                    'automountServiceAccountToken': False, 'securityContext': {'runAsNonRoot': True,
+                    'runAsUser': 65532, 'runAsGroup': 65532, 'fsGroup': 65532, 'seccompProfile': {'type': 'RuntimeDefault'}},
+                    'containers': [container], 'volumes': [{'name': 'config', 'configMap': {'name': 'world-config'}},
+                        {'name': 'tls', 'secret': {'secretName': 'world-tap-tls', 'defaultMode': 416}}]}}}},
+            {'apiVersion': 'v1', 'kind': 'Service', 'metadata': metadata,
+                'spec': {'selector': {'app': 'workload-tap'}, 'ports': [{'port': 8703, 'targetPort': 8703}]}}])
+        for item in items:
+            if item['kind'] == 'Secret' and item['metadata']['name'] == 'world-credentials':
+                item['stringData'] = self.tokens
+
+    def replay_facts(self):
+        raw = self.kube('-n', self.namespace, 'logs', 'deployment/workload-tap').decode()
+        facts = []
+        for line in raw.splitlines():
+            value = json.loads(line)
+            if value.get('event') != 'workload_pair_replay':
+                raise AssertionError('unexpected tap evidence event')
+            if type(value.get('passed')) is not bool or type(value.get('elapsed_ms')) is not int or value['elapsed_ms'] < 0:
+                raise AssertionError('invalid safe tap counters')
+            # Copy only allowlisted scalar metadata, never raw logging payloads.
+            facts.append({key: value[key] for key in ['event', 'passed', 'replay_status',
+                'auth_and_permit_owner_checks', 'original_first_reply_returned_unchanged', 'elapsed_ms'] if key in value})
+        return facts
+
+    def check_replay_increment(self, before):
+        facts = self.replay_facts()
+        added = facts[len(before):]
+        if len(added) != 1 or added[0].get('passed') is not True or added[0].get('replay_status') != 'Unavailable' or added[0].get('auth_and_permit_owner_checks') != 'before_and_after_replay' or added[0].get('original_first_reply_returned_unchanged') is not True:
+            raise AssertionError('actual owned pair replay qualification missing or failed')
+        print('PASS: actual pair replay before first reply; native auth/permit owners current before/after; backend exactly once; flattened refusal not SQL-row-specific', flush=True)
+        if self.args.evidence_dir:
+            (self.args.evidence_dir/'workload-pair-replay.json').write_text(json.dumps(added, indent=2)+'\n')
+
     def check_rbac(self):
         for account, group, resource, verb, allowed in [
                 ('workload-reviewer', 'authentication.k8s.io', 'tokenreviews', 'create', True),
@@ -172,13 +272,18 @@ class Workload:
             raise AssertionError('TokenReview boolean status required')
         return authenticated
 
-    def probe(self, root, config, credential, expected=True):
+    def probe(self, root, config, credential, expected=True, startup_refusal=False):
         path = root / 'workload-probe.json'
         path.write_text(json.dumps(config)); path.chmod(0o600)
         result = subprocess.run([str(self.args.receipt_client.resolve()), str(path)], input='allow\n' if expected else 'deny\n',
             env=dict(os.environ, OWNED_RECEIPT_CALLER=self.tokens['caller'], OWNED_RECEIPT_CREDENTIAL=credential),
             text=True, capture_output=True, timeout=10)
         # Errors are intentionally generic: do not include provider/probe stderr/token payloads.
+        if startup_refusal:
+            facts = json.loads(result.stdout)
+            if result.returncode != 1 or facts.get('probe_error') != 'policy':
+                raise AssertionError('fixed probe startup trust mismatch was not refused')
+            return {'startup_trust_refused': True}
         if result.returncode != 0:
             raise AssertionError('public Workload SDK probe failed')
         facts = json.loads(result.stdout)
@@ -188,6 +293,50 @@ class Workload:
                 or not all(facts.get(x) is True for x in ['issued', 'independently_observed', 'refreshed'])):
             raise AssertionError('public Workload SDK native evidence missing')
         return facts
+
+    def held_line(self, process, command):
+        if process.poll() is not None:
+            raise AssertionError('held public probe exited')
+        process.stdin.write(command+'\n'); process.stdin.flush()
+        ready, _, _ = select.select([process.stdout], [], [], 10)
+        if not ready:
+            raise AssertionError('held public probe deadline')
+        line = process.stdout.readline(16385)
+        if len(line) > 16384 or not line.endswith('\n'):
+            raise AssertionError('held public probe framing')
+        return json.loads(line)
+
+    def begin_held(self, root, config, port):
+        held = copy.deepcopy(config)
+        held['settings']['address'] = f'localhost:{port}'
+        held['settings']['tls']['server_name'] = f'workload-tap.{self.namespace}.svc'
+        path = root/'held-workload-probe.json'; path.write_text(json.dumps(held)); path.chmod(0o600)
+        process = subprocess.Popen([str(self.args.workload_held_client.resolve()), str(path)],
+            env=dict(os.environ, OWNED_RECEIPT_CALLER=self.tokens['tap-caller'], OWNED_RECEIPT_CREDENTIAL=self.primary),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1)
+        self.held_processes.append(process)
+        if self.held_line(process, 'hold').get('held') is not True:
+            raise AssertionError('held public evidence missing')
+        return process
+
+    def finish_held(self, process):
+        # Fresh proof is independent; does not replace process-held old context.
+        # It confirms the stable tap/real-Hop connection is healthy after restart.
+        fresh = self.held_line(process, 'allow')
+        if fresh.get('allowed') is not True:
+            raise AssertionError('fresh postrestart public SDK connection failed')
+        facts = self.held_line(process, 'held-refuse')
+        if facts.get('held_refused') is not True:
+            raise AssertionError('old held source accepted after replacement')
+        print('PASS: held original evidence refused after actual Hop Pod replacement; same public connection fresh proof works; original1s expiry independently explains old refusal', flush=True)
+        if self.args.evidence_dir:
+            (self.args.evidence_dir/'workload-held-refusal.json').write_text(json.dumps({
+                'held_refused': True, 'fresh_connection_verified': True,
+                'elapsed_since_before_issue_ms': facts.get('elapsed_since_before_issue_ms'),
+                'cause': 'not_attributed; original1s expiry may explain refusal'}, indent=2)+'\n')
+        process.stdin.close(); process.wait(timeout=10)
+        if process.returncode != 0:
+            raise AssertionError('held public probe completion')
 
     def qualify(self, root, forward, request, api, admin, eventually, receipt_pin):
         port = forward('hopae', 8703)
@@ -216,8 +365,10 @@ class Workload:
                 'If-Match': f'"{document["revision"]}"', 'x-hangang-config-revision': metadata['x-hangang-config-revision']})
             assert code == 200
         publish({subject: ['reader']})
+        replay_before = self.replay_facts()
         code, body = request()
         assert code == 200
+        self.check_replay_increment(replay_before)
         headers = {name.lower(): value for name, value in json.loads(body)['headers'].items()}
         assert headers.get('x-forwarded-user') == subject and headers.get('x-hopae-aal') == '0' and headers.get('x-hopae-principal-kind') == 'workload'
         assert request('POST')[0] == 403
@@ -240,7 +391,7 @@ class Workload:
             self.probe(root, config, credential, False)
             assert request(key=credential)[0] != 200
         wrong = dict(config, identity_authority='wrong-owner')
-        self.probe(root, wrong, self.primary, False)
+        self.probe(root, wrong, self.primary, False, startup_refusal=True)
         # A locally fixed cluster realm is part of native identity association,
         # not a Kubernetes-attested claim. A deliberately different configured
         # realm yields a different verified subject and must lose the old grant.
@@ -260,12 +411,15 @@ class Workload:
         assert request()[0] == 403, 'Workload borrowed users grant'
         publish({subject: ['reader']})
         assert request()[0] == 200
+        # Hold the original proof through an actual OS Pod replacement.
+        held = self.begin_held(root, config, forward('workload-tap', 8703))
         # Actual OS Pod restart; every request must obtain fresh proof/permit/output.
         self.kube('-n', self.namespace, 'rollout', 'restart', 'deployment/hopae')
         self.kube('-n', self.namespace, 'rollout', 'status', 'deployment/hopae', '--timeout=120s', timeout=135)
         config = probe_config(forward('hopae', 8703))
         self.probe(root, config, self.primary)
         eventually(lambda: request()[0] == 200)
+        self.finish_held(held)
         # Minimal reviewer role withdrawal, then explicit newly owned restoration.
         path, uid = self.globals[-1]
         delete_owned(self.kube, path, uid)
@@ -315,11 +469,25 @@ class Workload:
         time.sleep(1.1)
         assert request(key=fresh)[0] != 200
         print('PASS: Workload actual public SDK verified subject→typed Pum grant→contract3→backend; audience/claims/owner/map denial, reviewer role withdrawal, Hop restart, Pod UID replacement/explicit grant and SA withdrawal; pod_API_withdraw_ms=' + str(pod_withdraw_ms) + ' sa_API_withdraw_ms=' + str(round((time.monotonic()-begun)*1000)), flush=True)
-        print('LIMIT: no Workload browser/admin UX or direct captured-pair replay/restart qualification; API propagation is distinct from original1s source evidence.', flush=True)
+        print('LIMIT: no Human or Workload browser/admin UX; restart-held refusal may also be original1s expiry; replay status is flattened; API propagation is distinct from original1s source evidence.', flush=True)
 
     def cleanup(self):
+        # Attempt every owned cleanup even if one UID conflict/transport fails.
+        # Replacement objects are always protected by API UID preconditions.
+        failures = []
+        for process in self.held_processes:
+            if process.poll() is None:
+                process.terminate()
+                try: process.wait(timeout=5)
+                except subprocess.TimeoutExpired: process.kill(); process.wait()
         for path, uid in reversed(self.globals):
-            delete_owned(self.kube, path, uid)
+            try: delete_owned(self.kube, path, uid)
+            except (RuntimeError, subprocess.TimeoutExpired): failures.append('owned global cleanup refused')
         if self.namespace_uid:
-            delete_owned(self.kube, '/api/v1/namespaces/' + self.namespace, self.namespace_uid)
-            self.kube('wait', '--for=delete', 'namespace/' + self.namespace, '--timeout=120s', timeout=135)
+            try:
+                delete_owned(self.kube, '/api/v1/namespaces/' + self.namespace, self.namespace_uid)
+                self.kube('wait', '--for=delete', 'namespace/' + self.namespace, '--timeout=120s', timeout=135)
+            except (RuntimeError, subprocess.TimeoutExpired): failures.append('owned namespace cleanup refused')
+        if failures:
+            raise RuntimeError('; '.join(failures))
+        print('Owned Workload namespace and exact created global UIDs cleaned', flush=True)

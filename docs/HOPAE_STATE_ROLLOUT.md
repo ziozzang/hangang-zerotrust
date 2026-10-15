@@ -134,3 +134,27 @@ CLI errors. Mocked candidate tests validate invocation/failure handling only;
 they do not substitute for actual native migration or serving gates.
 
 SQLite backup checks a10s monotonic deadline between128-page steps, with100ms busy timeout and50ms busy polling. Busy writer refusal is separately tested; this does not authorize concurrent CLI maintenance.
+
+## Exact isolation and final cutover boundary
+
+User/network namespaces do not isolate the filesystem. Only the fixed trusted Hop
+CLI is executed, with the clone's explicit state/store paths; other trusted config
+references still address the host filesystem. This is not a sandbox for an arbitrary
+candidate binary. Verify the candidate's signed provenance first. `--private-file`
+arguments must be absolute canonical paths (relative paths refuse); source/config
+CLI paths are made absolute and symlinks anywhere in their path refuse.
+
+The configuration's container `state_dir` is intentionally NOT required to equal
+`--state-dir`: the latter is the explicitly supplied host backing volume. Only the
+configured DB path relative to the configured state directory is transplanted.
+The operator must verify this host-volume/container mapping from actual mounts;
+the helper does not discover Docker mounts.
+
+The stopped-state seal covers ONLY current state-directory contents. It does not
+seal the current external configuration, external key/CA/env files, image, compose
+or runtime environment. The backup separately captures original config and explicit
+companion files, but the final operational supervisor MUST bind and recheck those
+live external inputs and the mount/image/UID mapping against its own reviewed
+cutover receipt. A valid state seal alone never authorizes applying old external
+files or starting an old binary. This helper intentionally prepares a separate
+restore directory while that complete cutover guard remains an operations gate.

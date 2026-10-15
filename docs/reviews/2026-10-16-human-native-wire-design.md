@@ -161,12 +161,13 @@ revisions are local to their own user/session: never apply a global user/session
 revision floor across different subjects. Global monotonic floors cover only actual
 source/app/key owners. Test high-revision user A followed by low-revision user B.
 
-Subject = existing canonical `s_` + 48 lowercase hex, derived by Hop's actual
-`stable_subject` from kind Human, configured authoritative issuer/realm and durable
-native user ID. It is not email, client username, service subject or session ID.
-Account linking remains Hop's explicit native identity policy. Realm change changes
-subject; material-key/signing/caller-key rotation does not rename users. Identical
-subject bytes in another principal class cannot authorize Human.
+The former s_48 Human derivation is **superseded** by the reviewed
+[H2a subject/lifecycle contract](2026-10-16-human-subject-lifecycle.md): human1:
+plus full lowercase SHA256, bound to fixed source issuer, actual durable Store
+realm and exact current native user ID. Caller email/realm/session/provider labels
+cannot select that coordinate. Existing Service/Workload s_48 and legacy strict
+session-receipt behavior remain unchanged. Account linking is only the actual
+owning native identity policy; current revision/AAL/proof epochs remain separate.
 
 Proposed canonical epoch:
 `hobs1:<32lowernonzero-process-nonce>:<authority>:p:<source-scope-revision>:a:<app-generation>`.
@@ -383,9 +384,10 @@ The fragment omits the already required receipt signing/transport configuration;
 never substitute material key for `receipt_issuer.seed_env`. Allow a Human-only
 issuer with no dummy Service profiles/scopes: adjust source-specific readiness and
 validation coherently, while a source-less empty issuer remains invalid. Existing
-Service RPC scope admission must not inherit Human declarations. The native subject
-formula specifically uses receipt issuer_ref, fixed Human scope realm and actual
-native user ID; provider issuer/provenance is checked independently. No client picks
+Service RPC scope admission must not inherit Human declarations. The provisional scope `realm` label in this fragment does not select a Human subject
+namespace: H2a supersedes that formula with the actual immutable Store realm.
+The native subject uses fixed issuer_ref and actual current user ID; provider
+issuer/provenance is checked independently. No client picks
 realm, profile revision, minimum assurance or server peer.
 
 Pum: proposed `--human-observed-permits --human-authentication-live <reference-file>`

@@ -115,11 +115,11 @@ profile revision과 같다고 가정하지 않습니다. user/session별 revisio
 subject 사이 global floor로 적용하지 않습니다. global floor는 실제 source/app/key
 owner에만 적용하며 user A revision100 뒤 user B revision1도 검사합니다.
 
-Subject는 실제 Hop stable_subject로 Human kind·고정 issuer/realm·durable native user
-ID를 묶은 canonical `s_`+48 lowercase hex입니다. email·client username·service subject·
-session ID가 아닙니다. 계정 연결은 기존 Hop 정책이며 realm 변경은 subject를 바꾸고
-material/signing/caller key 교체는 사용자를 바꾸지 않습니다. 다른 class의 같은 바이트는
-Human 권한을 주지 않습니다.
+이전 s_48 Human derivation은 [H2a subject/lifecycle 계약](2026-10-16-human-subject-lifecycle.md)으로
+**대체됩니다**. human1:+full lowercase SHA256이며 고정 source issuer·실제 durable Store
+realm·exact current native user ID를 묶습니다. caller email/realm/session/provider label은
+이를 선택하지 않습니다. Service/Workload s_48 및 legacy strict session receipt는 불변입니다.
+계정 연결은 실제 owning native identity 정책이며 revision/AAL/proof epoch는 별개입니다.
 
 Epoch 제안은
 `hobs1:<32lowernonzero-process-nonce>:<authority>:p:<source-scope-revision>:a:<app-generation>`
@@ -266,8 +266,9 @@ password/TOTP만 표시하며 API composition을 MFA로, Google unsupported forc
 기존 unknown-key 검사는 거부해야 합니다. receipt_issuer.human_receipts에 authority와
 service/audience/app_id/realm/route_ids/binding_contract2/header_policy{revision,names},
 maximum_records1024/maximum_retained_bytes33554432를 선언합니다. Human scope/profile
-revision은 실제 owning publication에서 나오며 client가 선택하지 않습니다. subject는
-receipt issuer_ref+고정 Human realm+실제 native user ID로 계산하고 provider provenance는
+revision은 실제 owning publication에서 나오며 client가 선택하지 않습니다. fragment의 임시 realm label은 Human namespace를 선택하지 않습니다. H2a가 이를 실제
+immutable Store realm으로 대체하며 subject는 고정 issuer_ref+실제 current user ID를
+사용하고 provider provenance는
 별도로 검사합니다. 실제 signing/transport 설정은 기존대로 필요하며 material key를
 receipt_issuer.seed_env 대신 쓰면 안 됩니다.
 

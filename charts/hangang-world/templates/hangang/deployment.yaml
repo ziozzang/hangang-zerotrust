@@ -124,13 +124,14 @@ spec:
             - {{ printf "0.0.0.0:%d" $port | quote }}
             - --admin
             - {{ ternary "0.0.0.0:9000" "127.0.0.1:9000" $h.admin.exposeMetrics | quote }}
-            {{- if $h.admin.exposeMetrics }}
-            # Off loopback the administration API is served over TLS only.
+            # The administration API is always TLS, also on loopback: any other
+            # container in the Pod network namespace (sidecar, debug
+            # container) and kubectl port-forward reach loopback, so plaintext
+            # there would bypass transport security.
             - --admin-tls-cert
             - /tls/tls.crt
             - --admin-tls-key
             - /tls/tls.key
-            {{- end }}
             - --health-path
             - /-/ready
             - --lame-duck-seconds

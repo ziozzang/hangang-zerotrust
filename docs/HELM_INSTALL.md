@@ -249,7 +249,7 @@ Gate 3 was repeated on the same remote k3s test cluster with the component fixes
 | Protected traffic during the rotation | 2028/2028 requests 200 |
 | `helm test` | Succeeded |
 
-The run was cleaned up to the pre-run baseline (nodes, CRDs, RBAC, webhooks, ingress classes, namespaces, the 285 PVs and HTTP checks identical; pre-existing Pods kept their UIDs and restart counts). The older off-host backup copy was removed after the new one verified. One Hangang follow-up was fixed on PR #23: a dynamic public listener no longer reports a reload metric. Observation: `kubectl port-forward` to the Hangang admin port answered plain HTTP while Pod-network clients get TLS; not yet explained.
+The run was cleaned up to the pre-run baseline (nodes, CRDs, RBAC, webhooks, ingress classes, namespaces, the 285 PVs and HTTP checks identical; pre-existing Pods kept their UIDs and restart counts). The older off-host backup copy was removed after the new one verified. One Hangang follow-up was fixed on PR #23: a dynamic public listener no longer reports a reload metric. A plain-HTTP `401` seen through `kubectl port-forward` to the Hangang admin port was a measurement artefact: the workstation already published an unrelated plaintext gateway on `0.0.0.0:49000`, so kubectl bound only `[::1]:49000` and the IPv4 probe reached that local service, not the Pod. Hangang's TLS admin listener never answers plaintext, also from loopback and under `--supervised` (regression test in Hangang PR #23). As defence in depth the chart now serves the admin API over TLS even when it stays on loopback, so no container in the Pod network namespace can reach a plaintext administration endpoint.
 
 ## Validation
 

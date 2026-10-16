@@ -48,5 +48,8 @@
   component fixes: after a forced cert-manager renewal Hangang, Hopae,
   Pumgye and Sumunjang served the new serial within about 2 minutes without
   restarts; 2028/2028 protected requests succeeded; cleaned up to baseline.
+- Serve the Hangang administration API over TLS also when it stays on
+  loopback, so sidecars and debug containers in the Pod network namespace
+  never see a plaintext administration endpoint.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

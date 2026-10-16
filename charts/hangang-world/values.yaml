@@ -199,8 +199,9 @@ hangang:
     mode: serviceLocal
     proxyProtocolFrom: []
   admin:
-    # Bind the administration listener (bearer-token protected) on the Pod
-    # network for metrics scraping; otherwise it stays on loopback.
+    # Bind the administration listener (TLS + bearer token) on the Pod
+    # network for metrics scraping; otherwise it stays on loopback, still
+    # over TLS (no plaintext even inside the Pod network namespace).
     exposeMetrics: false
   resources:
     requests: {cpu: 200m, memory: 128Mi}

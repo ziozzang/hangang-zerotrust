@@ -131,6 +131,7 @@ class WorldChart(unittest.TestCase):
         self.assertIn('w-hangang-world-sumunjang.world.svc:9082', args)
         self.assertEqual(args[args.index('--guard-failure-mode') + 1], 'deny')
         self.assertEqual(args[args.index('--admin') + 1], '127.0.0.1:9000')
+        self.assertEqual(args[args.index('--admin-tls-cert') + 1], '/tls/tls.crt', 'admin is TLS even on loopback')
         self.assertEqual(args[args.index('--kubernetes-namespace') + 1], '$(POD_NAMESPACE)')
         settings = json.loads(named(docs, 'ConfigMap', '-hangang-protection')['data']['settings.json'])
         self.assertTrue(settings['require_protection'])

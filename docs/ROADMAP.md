@@ -26,6 +26,11 @@ B. Deterministic classification compiler/resolver and shadow evaluation.
 C. Typed integrated policy evaluator with revision/freshness/obligation contracts.
 D. Exporter with Prometheus metrics, ClickHouse events, bounded replay and audit.
 E. Device/workload design only after environmental/assurance questions are resolved.
+F. Unified console: [ADR 0019](adr/0019-decision-events-exporter.md) decision events
+   and explain APIs, then [ADR 0020](adr/0020-unified-console-redesign.md) task-oriented
+   console (P0 decision log, request detail, unified audit, UI kit; P1 policy editor
+   with simulator; P2 charts/ASN workflows). Gate: per-page acceptance criteria in
+   EN/KO, light/dark, desktop/390 px, plus D1 overhead and privacy qualification.
 
 ```mermaid
 flowchart LR

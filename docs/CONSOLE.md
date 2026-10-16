@@ -6,6 +6,11 @@ Status: Guard import/registry prototype; production integration and Hopae
 management delegation require qualification. Merely routing a hostname to the
 old console does not install a plugin or create a menu entry.
 
+Redesign: [ADR 0020](adr/0020-unified-console-redesign.md) (proposed) replaces the
+per-component menus with task-oriented sections, entity routes, a host UI kit,
+key-based i18n and plugin contract v2, keeping the trust/broker/pinning model
+below. Decision log and simulator data come from [ADR 0019](adr/0019-decision-events-exporter.md).
+
 ## User-facing contract
 
 Guard and Hopae appear as native sidebar entries/submenus in Hangang. The console

@@ -37,3 +37,7 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 [ADR 0016: decision cores and metadata adapters](0016-decision-core-metadata-adapters.md) ([한국어](../ko/0016-decision-core-metadata-adapters.md)).
 
 [ADR 0018: draft authority-relative time observations](0018-authority-time-observations.md) ([한국어](../ko/0018-authority-time-observations.md)).
+
+[ADR 0019: proposed decision event schema and bounded exporter](0019-decision-events-exporter.md) ([한국어](../ko/0019-decision-events-exporter.md)) — one pseudonymized per-request multi-stage decision record, sampled and bounded off the request path; explain/simulate APIs.
+
+[ADR 0020: proposed unified zero-trust console redesign](0020-unified-console-redesign.md) ([한국어](../ko/0020-unified-console-redesign.md)) — task-oriented sections, entity routes, host UI kit, key-based i18n and plugin contract v2.

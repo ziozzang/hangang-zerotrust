@@ -4,6 +4,8 @@
 
 Status: proposed independent exporter module/runtime; no analytics dependency in
 ordinary admission. ClickHouse is an event analytics sink, not a policy authority.
+The per-request decision event schema, privacy profiles, sampling and the bounded
+ring/exporter are specified in [ADR 0019](adr/0019-decision-events-exporter.md) (proposed).
 
 ```mermaid
 flowchart LR

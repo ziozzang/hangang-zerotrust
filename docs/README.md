@@ -31,6 +31,10 @@ Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 
 [Decision cores and metadata adapters](adr/0016-decision-core-metadata-adapters.md) — typed resources, DB backbones and optional plugins.
 
+[Decision events and bounded exporter](adr/0019-decision-events-exporter.md) — proposed per-request multi-stage decision record, privacy and explain APIs.
+
+[Unified console redesign](adr/0020-unified-console-redesign.md) — proposed task-oriented zero-trust console, UI kit, i18n and plugin contract v2.
+
 - [Public-SDK Workload qualification probe](../tools/native-workload-probe/README.md) — authentication only; real full-chain gates remain.
 
 [Workload K3s qualification preparation](WORKLOAD_WORLD_QUALIFICATION.md) — opt-in native orchestration and pure tests; live execution remains unqualified and requires reviewed exact artifacts.

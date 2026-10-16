@@ -4,6 +4,8 @@
 
 각 런타임의 지표는 Prometheus에서 scrape하고, 검색/분석용 구조화 이벤트는 독립 exporter가
 ClickHouse로 배치 전송합니다. ClickHouse는 분석 저장소이며 정책 권한 주체가 아닙니다.
+요청별 판정 이벤트 스키마·개인정보 프로필·샘플링·제한된 링/exporter는
+[ADR 0019](0019-decision-events-exporter.md)(제안)에 정의합니다.
 
 지표는 결정 결과·지연·장애·풀/큐·회수·유실·재전송·spool/싱크 지연 등을 다룹니다.
 사용자 ID·IP·이메일·쿼리를 포함한 URL·세션/요청 ID를 Prometheus label로 넣지 않습니다.

@@ -29,6 +29,10 @@
 
 [권한 소유자 기준 시간 관측 초안](0018-authority-time-observations.md) — 교차 호스트 시계·집행 하한·replay 보존 상한.
 
+[판정 이벤트·제한된 exporter](0019-decision-events-exporter.md) — 제안: 요청별 다단계 판정 기록·개인정보·explain API.
+
+[통합 콘솔 재설계](0020-unified-console-redesign.md) — 제안: 작업 중심 제로트러스트 콘솔·UI 키트·i18n·플러그인 계약 v2.
+
 - [공개 SDK Workload 검증 도구](../../tools/native-workload-probe/README.ko.md) — 인증 경계 검증용이며 실제 전체 경로는 별도 검증.
 
 [Workload K3s 검증 준비](WORKLOAD_WORLD_QUALIFICATION.md) — 선택적 네이티브 실행 소스와 순수 테스트이며 실제 실행은 미검증·최종 artifact 승인 대기입니다.

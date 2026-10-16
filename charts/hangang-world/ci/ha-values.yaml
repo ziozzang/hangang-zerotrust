@@ -1,11 +1,6 @@
-# HA profile: gateway x3 with PROXY v2 behind an L4 load balancer, Hopae x2 on
-# PostgreSQL, external ClusterIssuer, ServiceMonitor, cluster-wide watch.
-global:
-  ha:
-    backend: postgresql
-    postgresql:
-      existingSecret: hangang-world-postgres
-      urlKey: url
+# HA profile: gateway x3 with PROXY v2 behind an L4 load balancer, external
+# ClusterIssuer, ServiceMonitor, cluster-wide watch. Hopae stays a single
+# SQLite replica until its PostgreSQL store is released.
 credentials:
   existingSecret: hangang-world-credentials
 tls:
@@ -50,9 +45,6 @@ hangang:
   image:
     digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 hopae:
-  replicas: 2
-  storage:
-    backend: postgresql
   image:
     digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
   extraSecretEnv:

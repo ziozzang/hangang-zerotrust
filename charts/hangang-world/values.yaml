@@ -170,9 +170,8 @@ hopae:
     tag: "0.0.8"
     digest: ""
     pullPolicy: IfNotPresent
-  # sqlite: single replica on a PVC. postgresql: shared store for replicas > 1
-  # (requires global.ha.backend: postgresql and a Hopae release with the
-  # PostgreSQL store).
+  # sqlite: single replica on a PVC. postgresql is refused until Hopae ships
+  # its PostgreSQL store (Hopae 0.0.10 rejects store.url_env).
   storage:
     backend: sqlite
   persistence:

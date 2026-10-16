@@ -7,7 +7,7 @@ One release installs the four Hangang World components as an integrated zero-tru
 | Component | Role | Workload | Ports (Service) |
 | --- | --- | --- | --- |
 | Hangang | Ingress controller and enforcement gateway; compiles `ProtectionPolicy` into routes | Deployment, stateless, N replicas | public `http`/`https`, optional `admin` 9000 (TLS, metrics) |
-| Hopae | Identity, sessions, native gateway verification | Deployment; SQLite single replica, or PostgreSQL for N replicas | `portal` 8700, `grpc` 8703 (mTLS) |
+| Hopae | Identity, sessions, native gateway verification | Deployment, single SQLite replica (PostgreSQL once Hopae ships it) | `portal` 8700, `grpc` 8703 (mTLS) |
 | Pumgye | Authorization decisions | Deployment, single writer (SQLite) | `management` 9084, `ppg1` 9085, `grpc` 9087 (mTLS) |
 | Sumunjang | Network admission (IP/risk) | Deployment, single writer (SQLite) | `management` 9080, `binary-mtls` 9081, `grpc-mtls` 9082 |
 
@@ -55,7 +55,7 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `hangang.service.type` / `port` / `nodePort` | `LoadBalancer` / `80` / `null` | Public Service |
 | `hangang.clientAddress.mode` / `proxyProtocolFrom` | `serviceLocal` / `[]` | Client address preservation |
 | `hangang.admin.exposeMetrics` | `false` | Serve the admin API (TLS) on the Pod network for metrics |
-| `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC) or `postgresql` (N replicas) |
+| `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC); `postgresql` is refused until Hopae ships its PostgreSQL store |
 | `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway` are chart-owned |
 | `hopae.extraSecretEnv` | `[]` | Environment variables from Secrets (provider client secrets) |
 | `pumgye.bootstrapPolicy` / `sumunjang.bootstrapPolicy` | minimal | Used only when the database is empty |
@@ -64,11 +64,11 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `monitoring.serviceMonitor.*` | disabled | Prometheus Operator scrape of the gateway |
 | `tests.enabled` / `tests.image` | `true` / busybox | `helm test` Pod (needs `sh`, `nc`, `wget`; digest required) |
 
-Profiles used by CI live in [`ci/`](ci): `minimal`, `ha` (gateway ×3 behind PROXY v2, Hopae ×2 on PostgreSQL, ClusterIssuer, ServiceMonitor, cluster scope) and `byo-certs`.
+Profiles used by CI live in [`ci/`](ci): `minimal`, `ha` (gateway ×3 behind PROXY v2, ClusterIssuer, ServiceMonitor, cluster scope) and `byo-certs`. The chart was also qualified on a disposable local cluster; see the [install guide](../../docs/HELM_INSTALL.md#qualification--disposable-local-cluster-2026-10-17).
 
 ## Scaling and HA
 
-Hangang is stateless in controller mode and scales freely. Hopae scales only with `storage.backend: postgresql` and `global.ha.backend: postgresql`. Pumgye and Sumunjang are single writers in this release (`replicas` is capped at 1 by the schema); ADR 0022 makes them stateless snapshot replicas once signed snapshot distribution exists. The chart refuses `replicas > 1` on SQLite rather than letting two Pods share one database.
+Hangang is stateless in controller mode and scales freely. Hopae stays a single SQLite replica: its PostgreSQL store is not released yet (Hopae 0.0.10 refuses `store.url_env`), so the chart refuses `storage.backend: postgresql`. Pumgye and Sumunjang are single writers in this release (`replicas` is capped at 1 by the schema); ADR 0022 makes them stateless snapshot replicas once signed snapshot distribution exists. The chart refuses `replicas > 1` on SQLite rather than letting two Pods share one database.
 
 ## Upgrades and rollback
 

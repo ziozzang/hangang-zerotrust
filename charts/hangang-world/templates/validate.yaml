@@ -28,6 +28,11 @@
 {{- if and $v.hopae.enabled (gt (int $v.hopae.replicas) 1) (ne $v.hopae.storage.backend "postgresql") -}}
 {{- fail "hopae.replicas > 1 needs hopae.storage.backend=postgresql (SQLite is single-writer)" -}}
 {{- end -}}
+{{- /* Qualified against Hopae 0.0.10: `store.url_env` is refused ("unknown key"). The
+       template keeps the documented PostgreSQL wiring for the release that ships it. */ -}}
+{{- if and $v.hopae.enabled (eq $v.hopae.storage.backend "postgresql") -}}
+{{- fail "hopae.storage.backend=postgresql: the Hopae PostgreSQL store (Hopae ADR-0002, M2) is not released; Hopae 0.0.10 refuses store.url_env. Keep sqlite with one replica" -}}
+{{- end -}}
 {{- if and $v.hopae.enabled (eq $v.hopae.storage.backend "postgresql") (or (ne $v.global.ha.backend "postgresql") (not $v.global.ha.postgresql.existingSecret)) -}}
 {{- fail "hopae.storage.backend=postgresql needs global.ha.backend=postgresql and global.ha.postgresql.existingSecret" -}}
 {{- end -}}

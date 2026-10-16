@@ -15,5 +15,12 @@
   ServiceMonitor, `helm test` and NOTES.
 - Add the `hangang-world-crds` chart with the ProtectionPolicy CRD and the
   aggregated `world-admin`/`world-editor`/`world-viewer` roles.
+- Qualify the package with the real component binaries (configuration
+  preflight) and on a disposable local k3d cluster: protected request chain,
+  401/403 refusals, Sumunjang block, component outages fail closed, withheld
+  unprotected Ingress, NetworkPolicies, `helm test`, rollout restart, upgrade
+  and rollback. Refuse `hopae.storage.backend: postgresql` until Hopae ships
+  its PostgreSQL store; identity profiles request `x-hopae-service-id`, use
+  Hopae's 500 ms verify budget and strip Hopae session cookies.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

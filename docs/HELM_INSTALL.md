@@ -2,7 +2,7 @@
 
 [한국어](ko/HELM_INSTALL.md) · [Design index](README.md) · [Chart reference](../charts/hangang-world/README.md)
 
-This guide installs the integrated Hangang World package (ADR 0022 P0 packaging): Hangang, Hopae, Pumgye and Sumunjang from the `hangang-world` chart, and the `world.hangang.dev` CRDs from the `hangang-world-crds` chart. The charts are validated offline (`helm lint`, `helm template` across profiles, Kubernetes/cert-manager/Prometheus Operator schema validation and a render test); they have **not** been installed on a cluster yet. See [What still blocks a production install](#what-still-blocks-a-production-install).
+This guide installs the integrated Hangang World package (ADR 0022 P0 packaging): Hangang, Hopae, Pumgye and Sumunjang from the `hangang-world` chart, and the `world.hangang.dev` CRDs from the `hangang-world-crds` chart. The charts are validated offline (`helm lint`, `helm template` across profiles, Kubernetes/cert-manager/Prometheus Operator schema validation and a render test); they were also installed and functionally qualified on a disposable local k3d cluster with locally built images ([qualification](#qualification--disposable-local-cluster-2026-10-17)); no production or registry-backed install exists yet. See [What still blocks a production install](#what-still-blocks-a-production-install).
 
 ## Prerequisites
 
@@ -65,7 +65,7 @@ This guide installs the integrated Hangang World package (ADR 0022 P0 packaging)
 ## Scaling and high availability
 
 - Hangang is stateless in controller mode: raise `hangang.replicas`; a PodDisruptionBudget and topology spread are added automatically.
-- Hopae scales with `hopae.storage.backend: postgresql`, `global.ha.backend: postgresql` and a Secret with the connection URL. The chart refuses more than one SQLite replica.
+- Hopae stays at one SQLite replica: its PostgreSQL store is not released, and the chart refuses more than one SQLite replica.
 - Pumgye and Sumunjang are single writers in this release; the schema caps them at one replica. Their state lives on a PVC that survives uninstall.
 
 ## Upgrade and rollback
@@ -88,9 +88,62 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Images.** No component image is published to a registry yet; the default repositories (`ghcr.io/ziozzang/…`) are placeholders until signed releases are pushed. `tools/package_component.py` builds the scratch images locally only.
 - **Signing and provenance.** No cosign signature, SBOM or SLSA attestation exists, so admission verification (policy-controller, Kyverno) cannot be enforced yet.
 - **Hangang version.** ProtectionPolicy support (Hangang PR #21) must be in the released Hangang image the digest points to.
-- **Hopae PostgreSQL.** Hopae's PostgreSQL store is planned (Hopae ADR-0002, M2) but not released; the HA profile renders the documented configuration and will fail Hopae's configuration check until it ships.
+- **Hopae PostgreSQL.** Hopae's PostgreSQL store is planned (Hopae ADR-0002, M2) but not released (Hopae 0.0.10 refuses `store.url_env`); the chart refuses `hopae.storage.backend: postgresql` until it ships, so Hopae runs as one SQLite replica.
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
-- **Live qualification.** The ADR 0022 functional gates (protected request chain, revocation SLO, API outage, certificate rotation) have not been run against the chart; certificate rotation needs each component to reload its files without restart.
+- **Live qualification.** The local cluster run covers the protected request chain, refusals, outages, upgrade and rollback; the ADR 0022 revocation SLO, 10-minute API outage, certificate rotation without restart and multi-node behaviour remain unqualified.
+
+## Qualification — disposable local cluster (2026-10-17)
+
+Source revisions: Hangang `a8e15e6` (ProtectionPolicy, PR #21), Hopae `60b3a60`
+(`integrate/identity-platform`, reports 0.0.10), Pumgye `775e6b9`
+(`feat/model-v2-p0`), Sumunjang `321eb6d` (`feat/console-api-gaps`). Each was built
+as a static debug binary and packaged `FROM scratch` (UID 65532) locally; no image
+was pushed to a registry.
+
+**Configuration preflight with the real binaries.** The chart-rendered files were
+fed to each component: Hangang loaded and validated the generated protection
+settings (minimal and HA profiles, including PROXY v2) before contacting the API;
+`hopae --check` accepted the generated configuration (`config ok`); `sumunjang
+--check` accepted the bootstrap policy and TLS layout; Pumgye started with the
+generated bootstrap policy and mTLS files and answered `/-/ready` 200. Findings
+fixed in the chart: Hopae 0.0.10 refuses `store.url_env`, so
+`hopae.storage.backend: postgresql` now fails at render time and the HA profile
+keeps Hopae on one SQLite replica; identity profiles now request
+`x-hopae-service-id`, use Hopae's 500 ms verify budget and strip Hopae session
+cookies upstream.
+
+**Cluster run.** A disposable k3d cluster `hangang-world-qual` (k3s v1.31.4, own
+Docker network, its own kubeconfig file, kube-router NetworkPolicy enforcement),
+cert-manager v1.15.3, `hangang-world-crds` and `hangang-world` with the
+`certManager` bootstrap CA, `kubernetesTls`, `serviceLocal` client address,
+`requireProtection: true` and network enforcement `Required`. A busybox backend
+behind Ingress `orders` (ProtectionPolicy: Hopae service API key, Pumgye
+`db:orders` GET→select, POST→update) and Ingress `bare` without a policy.
+
+| Check | Result |
+| --- | --- |
+| ProtectionPolicy status | `Accepted`, `ResolvedRefs`, `Programmed`, `ClientAddressPreserved` all `True` |
+| GET with the service key (Hopae → Sumunjang → Pumgye) | 200, backend reached |
+| No credential / unknown key | 401, backend not reached |
+| POST (action not granted by Pumgye) | 403, backend not reached |
+| Client IP blocked in Sumunjang, then unblocked | 403, then 200 |
+| Pumgye, Sumunjang, Hopae scaled to zero (each) | 503 fail-closed, no dispatch; 200 after recovery |
+| Ingress without a policy | withheld (no route, no certificate); reported `ProtectionRequired` |
+| ProtectionPolicy deleted, then re-applied | Ingress withheld, then 200 again |
+| NetworkPolicy from an ordinary Pod to Hopae, Pumgye, Sumunjang | refused |
+| `helm test` | Succeeded |
+| `kubectl rollout restart` of the gateway (2 replicas), 60 requests | 60/60 OK |
+| `helm upgrade` (all Pods replaced), 120 requests | 115 OK, 5 × 503 while the single Hopae Pod was recreated |
+| `helm rollback` to the previous revision, 120 requests | 116 OK, 4 × 503 (same cause) |
+
+Observations: images must be referenced by digest; in a registry-less cluster the
+imported image needed a `repo@digest` reference in containerd, which a registry
+pull creates automatically. Hopae authentication profiles are bootstrapped from
+the configuration only into an empty database; changing them later through values
+does not apply (Hopae then refused to start until the stored document was
+replaced). Change them through Hopae's owner API. Single-writer restarts make
+protected traffic fail closed for a few seconds, as designed. The cluster, all
+built and pulled images and the build directories were removed afterwards.
 
 ## Validation
 

@@ -221,16 +221,15 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(settings['pumgye_services'], {'orders': ['shop']})
         self.assertEqual(settings['identity_profiles']['corp-sso']['namespaces'], ['shop', 'payroll'])
         hopae = named(docs, 'Deployment', '-hopae')
-        self.assertEqual((hopae['spec']['replicas'], hopae['spec']['strategy']['type']), (2, 'RollingUpdate'))
+        self.assertEqual((hopae['spec']['replicas'], hopae['spec']['strategy']['type']), (1, 'Recreate'))
         env = {e['name']: e['valueFrom']['secretKeyRef'] for e in hopae['spec']['template']['spec']['containers'][0]['env']}
-        self.assertEqual(env['HOPAE_STORE_URL'], {'name': 'hangang-world-postgres', 'key': 'url'})
         self.assertEqual(env['HOPAE_PROVIDER_CORP_CLIENT_SECRET'], {'name': 'hopae-providers', 'key': 'corp'})
         config = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
-        self.assertEqual(config['store'], {'kind': 'postgres', 'url_env': 'HOPAE_STORE_URL'})
+        self.assertEqual(config['store'], {'kind': 'sqlite'})
         claims = {d['metadata']['name'] for d in by_kind(docs, 'PersistentVolumeClaim')}
-        self.assertEqual(claims, {'w-hangang-world-pumgye-state'}, 'Hopae on PostgreSQL and a restored Sumunjang claim need no new PVC')
+        self.assertEqual(claims, {'w-hangang-world-pumgye-state', 'w-hangang-world-hopae-state'}, 'a restored Sumunjang claim needs no new PVC')
         pdbs = {d['metadata']['name'] for d in by_kind(docs, 'PodDisruptionBudget')}
-        self.assertEqual(pdbs, {'w-hangang-world-hangang', 'w-hangang-world-hopae'})
+        self.assertEqual(pdbs, {'w-hangang-world-hangang'})
         monitor = by_kind(docs, 'ServiceMonitor')[0]['spec']['endpoints'][0]
         self.assertEqual((monitor['scheme'], monitor['authorization']['credentials']['key']), ('https', 'hangang-admin-token'))
 
@@ -243,6 +242,8 @@ class WorldChart(unittest.TestCase):
             'sqlite with replicas': ['hopae.replicas=2'],
             'single-writer Pumgye scaled': ['pumgye.replicas=2'],
             'postgres without HA backend': ['hopae.storage.backend=postgresql'],
+            'unreleased Hopae PostgreSQL store': ['hopae.storage.backend=postgresql', 'global.ha.backend=postgresql',
+                                                  'global.ha.postgresql.existingSecret=pg', 'hopae.replicas=2'],
             'proxy protocol without CIDRs': ['hangang.clientAddress.mode=proxyProtocol'],
             'serviceLocal on ClusterIP': ['hangang.service.type=ClusterIP'],
             'chart-owned Hopae key': ['json:hopae.config={"listen":{"portal":"0.0.0.0:1"}}'],

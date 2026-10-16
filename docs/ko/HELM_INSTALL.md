@@ -2,7 +2,7 @@
 
 [English](../HELM_INSTALL.md) · [설계 목차](README.md) · [차트 참조](../../charts/hangang-world/README.ko.md)
 
-이 안내는 통합 Hangang World 패키지(ADR 0022 P0 패키징)를 설치합니다. `hangang-world` 차트로 Hangang, Hopae, Pumgye, Sumunjang을, `hangang-world-crds` 차트로 `world.hangang.dev` CRD를 설치합니다. 차트는 오프라인으로 검증했습니다(`helm lint`, 여러 프로필의 `helm template`, Kubernetes·cert-manager·Prometheus Operator 스키마 검증, 렌더 테스트). 아직 클러스터에 **설치해 보지는 않았습니다**. [운영 설치를 아직 막는 것](#운영-설치를-아직-막는-것)을 참조하십시오.
+이 안내는 통합 Hangang World 패키지(ADR 0022 P0 패키징)를 설치합니다. `hangang-world` 차트로 Hangang, Hopae, Pumgye, Sumunjang을, `hangang-world-crds` 차트로 `world.hangang.dev` CRD를 설치합니다. 차트는 오프라인으로 검증했습니다(`helm lint`, 여러 프로필의 `helm template`, Kubernetes·cert-manager·Prometheus Operator 스키마 검증, 렌더 테스트). 로컬에서 빌드한 이미지로 일회용 로컬 k3d 클러스터에 설치해 기능도 검증했습니다([검증 기록](#검증-기록--일회용-로컬-클러스터-2026-10-17)). 운영 또는 레지스트리 기반 설치는 아직 없습니다. [운영 설치를 아직 막는 것](#운영-설치를-아직-막는-것)을 참조하십시오.
 
 ## 사전 조건
 
@@ -65,7 +65,7 @@
 ## 확장과 고가용성
 
 - Hangang은 컨트롤러 모드에서 무상태입니다. `hangang.replicas`를 늘리면 PodDisruptionBudget과 토폴로지 분산이 자동으로 추가됩니다.
-- Hopae는 `hopae.storage.backend: postgresql`, `global.ha.backend: postgresql`, 연결 URL을 가진 Secret이 있을 때 늘어납니다. 차트는 SQLite 복제본을 둘 이상 두는 것을 거부합니다.
+- Hopae는 SQLite 단일 복제본으로 유지됩니다. PostgreSQL 저장소가 릴리스되지 않았고, 차트는 SQLite 복제본을 둘 이상 두는 것을 거부합니다.
 - Pumgye와 Sumunjang은 이번 릴리스에서 단일 기록자이며 스키마가 복제본을 하나로 제한합니다. 상태는 삭제 후에도 남는 PVC에 있습니다.
 
 ## 업그레이드와 되돌리기
@@ -88,9 +88,59 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **이미지.** 어떤 구성 요소 이미지도 아직 레지스트리에 게시되지 않았습니다. 기본 저장소(`ghcr.io/ziozzang/…`)는 서명된 릴리스가 올라가기 전까지 자리표시자입니다. `tools/package_component.py`는 scratch 이미지를 로컬에서만 빌드합니다.
 - **서명과 출처.** cosign 서명, SBOM, SLSA 증명이 없으므로 승인 단계 검증(policy-controller, Kyverno)을 아직 강제할 수 없습니다.
 - **Hangang 버전.** ProtectionPolicy 지원(Hangang PR #21)이 digest가 가리키는 릴리스 이미지에 들어 있어야 합니다.
-- **Hopae PostgreSQL.** Hopae의 PostgreSQL 저장소는 계획(Hopae ADR-0002, M2)되어 있으나 릴리스되지 않았습니다. HA 프로필은 문서에 정의된 설정을 렌더링하며, 그 기능이 나오기 전까지 Hopae 설정 검사에서 실패합니다.
+- **Hopae PostgreSQL.** Hopae의 PostgreSQL 저장소는 계획(Hopae ADR-0002, M2)되어 있으나 릴리스되지 않았습니다(Hopae 0.0.10은 `store.url_env`를 거부). 그 기능이 나올 때까지 차트는 `hopae.storage.backend: postgresql`을 거부하므로 Hopae는 SQLite 단일 복제본으로 실행됩니다.
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
-- **실제 검증.** ADR 0022 기능 게이트(보호된 요청 체인, 철회 SLO, API 중단, 인증서 회전)를 차트로 실행하지 않았습니다. 인증서 회전에는 각 구성 요소가 재시작 없이 파일을 다시 읽는 기능이 필요합니다.
+- **실제 검증.** 로컬 클러스터 실행은 보호된 요청 체인, 거부, 장애, 업그레이드와 되돌리기를 다룹니다. ADR 0022의 철회 SLO, 10분 API 중단, 재시작 없는 인증서 회전, 다중 노드 동작은 아직 검증하지 않았습니다.
+
+## 검증 기록 — 일회용 로컬 클러스터 (2026-10-17)
+
+소스 리비전: Hangang `a8e15e6`(ProtectionPolicy, PR #21), Hopae `60b3a60`
+(`integrate/identity-platform`, 0.0.10으로 보고), Pumgye `775e6b9`
+(`feat/model-v2-p0`), Sumunjang `321eb6d`(`feat/console-api-gaps`). 각각 정적 debug
+바이너리로 빌드해 로컬에서 `FROM scratch`(UID 65532) 이미지로 만들었고, 레지스트리에는
+올리지 않았습니다.
+
+**실제 바이너리로 설정 사전 점검.** 차트가 렌더링한 파일을 각 구성 요소에 넣었습니다.
+Hangang은 API에 접속하기 전에 생성된 보호 설정을 읽고 검증했습니다(minimal과 HA
+프로필, PROXY v2 포함). `hopae --check`는 생성된 설정을 받아들였고(`config ok`),
+`sumunjang --check`는 부트스트랩 정책과 TLS 배치를 받아들였으며, Pumgye는 생성된
+부트스트랩 정책과 mTLS 파일로 시작해 `/-/ready`에 200을 응답했습니다. 차트에서 고친
+점: Hopae 0.0.10은 `store.url_env`를 거부하므로 `hopae.storage.backend: postgresql`은
+이제 렌더링 단계에서 실패하고 HA 프로필은 Hopae를 SQLite 단일 복제본으로 둡니다. 신원
+프로필은 이제 `x-hopae-service-id`를 요청하고, Hopae의 500 ms 검증 예산을 쓰며, Hopae
+세션 쿠키를 업스트림에서 제거합니다.
+
+**클러스터 실행.** 일회용 k3d 클러스터 `hangang-world-qual`(k3s v1.31.4, 전용 Docker
+네트워크, 전용 kubeconfig 파일, kube-router NetworkPolicy 강제), cert-manager v1.15.3,
+`hangang-world-crds`와 `hangang-world`를 `certManager` 부트스트랩 CA, `kubernetesTls`,
+`serviceLocal` 클라이언트 주소, `requireProtection: true`, 네트워크 강제 `Required`로
+설치했습니다. Ingress `orders`(ProtectionPolicy: Hopae 서비스 API 키, Pumgye
+`db:orders` GET→select, POST→update) 뒤에 busybox 백엔드를, 정책이 없는 Ingress
+`bare`를 두었습니다.
+
+| 점검 | 결과 |
+| --- | --- |
+| ProtectionPolicy 상태 | `Accepted`, `ResolvedRefs`, `Programmed`, `ClientAddressPreserved` 모두 `True` |
+| 서비스 키로 GET(Hopae → Sumunjang → Pumgye) | 200, 백엔드 도달 |
+| 자격 증명 없음 / 알 수 없는 키 | 401, 백엔드 미도달 |
+| POST(Pumgye가 허용하지 않은 동작) | 403, 백엔드 미도달 |
+| Sumunjang에서 클라이언트 IP 차단 후 해제 | 403, 이후 200 |
+| Pumgye, Sumunjang, Hopae를 각각 0으로 축소 | 실패 시 닫힘 503, 전달 없음, 복구 후 200 |
+| 정책 없는 Ingress | 보류(경로·인증서 없음), `ProtectionRequired`로 보고 |
+| ProtectionPolicy 삭제 후 다시 적용 | Ingress 보류, 이후 다시 200 |
+| 일반 Pod에서 Hopae, Pumgye, Sumunjang으로의 NetworkPolicy | 거부 |
+| `helm test` | 성공 |
+| 게이트웨이(복제본 2개) `kubectl rollout restart` 중 요청 60건 | 60/60 성공 |
+| `helm upgrade`(모든 Pod 교체) 중 요청 120건 | 115 성공, 단일 Hopae Pod 재생성 중 503 5건 |
+| 이전 리비전으로 `helm rollback` 중 요청 120건 | 116 성공, 같은 원인으로 503 4건 |
+
+관찰: 이미지는 digest로 참조해야 합니다. 레지스트리가 없는 클러스터에서는 가져온
+이미지에 containerd의 `repo@digest` 참조가 필요했으며, 레지스트리에서 받으면 이 참조는
+자동으로 생깁니다. Hopae 인증 프로필은 빈 데이터베이스에만 설정에서 부트스트랩되므로,
+나중에 values로 바꾸면 적용되지 않습니다(저장된 문서를 바꿀 때까지 Hopae가 시작을
+거부했습니다). Hopae 소유자 API로 변경하십시오. 단일 기록자를 재시작하면 설계대로 몇 초
+동안 보호된 트래픽이 실패 시 닫힙니다. 이후 클러스터, 빌드·다운로드한 모든 이미지와
+빌드 디렉터리를 제거했습니다.
 
 ## 검증
 

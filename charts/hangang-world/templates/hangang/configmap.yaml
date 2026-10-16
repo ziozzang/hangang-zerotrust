@@ -8,8 +8,10 @@
   "url" "http://127.0.0.1:8701/_hopae/verify"
   "native" (dict "transport" "grpc" "address" (printf "%s:8703" (include "world.host" $hopae)) "tls" (include "world.peerTls" $hopae | fromJson))
   "request_headers" ($profile.requestHeaders | default (list "authorization" "cookie"))
-  "response_headers" (list "x-forwarded-user" "x-hopae-aal" "x-hopae-principal-kind")
+  "response_headers" (list "x-forwarded-user" "x-hopae-aal" "x-hopae-principal-kind" "x-hopae-service-id")
   "forward_response" (ne $profile.forwardResponse false)
+  "timeout_ms" 500
+  "strip_request_cookies" (list "__Host-hopae" "__Host-hopae_bind")
   "static_request_headers" (dict "x-hopae-gateway-key" (dict "env" "HOPAE_GATEWAY_KEY") "x-hopae-contract" "1") }}
 {{- $entry := dict "auth" $auth }}
 {{- with $profile.namespaces }}{{- $_ := set $entry "namespaces" . }}{{- end }}

@@ -20,7 +20,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 WORLD = ROOT / 'charts/hangang-world'
 CRDS = ROOT / 'charts/hangang-world-crds'
-PROFILES = ['minimal', 'ha', 'byo-certs']
+PROFILES = ['minimal', 'ha', 'byo-certs', 'admin']
 HELM = os.environ.get('HELM') or shutil.which('helm') or str(Path.home() / '.local/bin/helm')
 KUBECONFORM = shutil.which('kubeconform') or str(Path.home() / '.local/bin/kubeconform')
 DIGEST = 'sha256:' + 'e' * 64
@@ -254,6 +254,17 @@ class WorldChart(unittest.TestCase):
             'test image without digest': ['tests.image.digest='],
             'invalid CIDR': ['hangang.clientAddress.mode=proxyProtocol', 'hangang.clientAddress.proxyProtocolFrom[0]=not-a-cidr'],
             'stale threshold below watch timeout': ['hangang.staleSeconds=30'],
+            'admin without delegation key': ['hopae.admin.enabled=true'],
+            'owner without admin listener': ['pumgye.hopaeOwner.enabled=true', 'pumgye.hopaeOwner.tokenSecret.name=t',
+                                             'json:pumgye.hopaeOwner.lifecycle={}'],
+            'owner without token': ['hopae.admin.enabled=true', 'hopae.admin.delegation.enabled=false',
+                                    'pumgye.hopaeOwner.enabled=true', 'json:pumgye.hopaeOwner.lifecycle={}'],
+            'owner without inputs': ['hopae.admin.enabled=true', 'hopae.admin.delegation.enabled=false',
+                                     'pumgye.hopaeOwner.enabled=true', 'pumgye.hopaeOwner.tokenSecret.name=t'],
+            'admin URL with a path': ['hopae.admin.enabled=true', 'hopae.admin.publicUrl=https://admin.example.test/x'],
+            'BYO certificates without the admin certificate': ['tls.mode=existingSecrets'] + [
+                f'tls.existingSecrets.{component}=world-{component}-tls' for component in ['hangang', 'hopae', 'pumgye', 'sumunjang']
+            ] + ['hopae.admin.enabled=true', 'hopae.admin.delegation.enabled=false'],
         }
         for label, overrides in cases.items():
             failed, error = refused(*overrides)
@@ -262,6 +273,50 @@ class WorldChart(unittest.TestCase):
         docs = render('hangang.protection.enabled=false', 'hangang.guard.enabled=false',
                       'hopae.enabled=false', 'pumgye.enabled=false', 'sumunjang.enabled=false', 'hopae.image.digest=')
         self.assertEqual({d['metadata']['name'] for d in by_kind(docs, 'Deployment')}, {'w-hangang-world-hangang'})
+
+    def test_hopae_admin_listener_and_pumgye_owner(self):
+        docs = render(profile='admin')
+        config = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual(config['listen']['admin'], '0.0.0.0:8702')
+        self.assertEqual(config['listen']['admin_tls'], {'certificate': '/tls-admin/tls.crt', 'key': '/tls-admin/tls.key', 'client_ca': '/tls/ca.crt'})
+        self.assertEqual(config['admin']['public_url'], 'https://w-hangang-world-hopae-admin.world.svc:8702')
+        self.assertEqual(config['admin']['hangang_delegation'], {'authority': 'hangang', 'key_env': 'HOPAE_CONSOLE_DELEGATION_KEY'})
+        self.assertEqual(config['admin']['users'], [{'email': 'owner@example.test', 'role': 'admin'}], 'operator admin keys are merged')
+        self.assertNotIn('service_audience', config['admin'])
+        hopae = named(docs, 'Deployment', '-hopae')['spec']['template']['spec']
+        env = {e['name']: e['valueFrom']['secretKeyRef'] for e in hopae['containers'][0]['env']}
+        self.assertEqual(env['HOPAE_CONSOLE_DELEGATION_KEY'], {'name': 'hopae-console-delegation', 'key': 'key'})
+        volumes = {v['name']: v for v in hopae['volumes']}
+        self.assertEqual(volumes['admin-tls']['secret']['secretName'], 'w-hangang-world-hopae-admin-tls')
+        service = named(docs, 'Service', '-hopae-admin')['spec']
+        self.assertEqual((service['type'], service['ports'][0]['port']), ('ClusterIP', 8702))
+        certificate = named(docs, 'Certificate', '-hopae-admin')['spec']
+        self.assertEqual(certificate['dnsNames'], ['w-hangang-world-hopae-admin.world.svc'])
+        policy = named(docs, 'NetworkPolicy', '-hopae-admin')['spec']['ingress'][0]
+        self.assertEqual(policy['ports'], [{'port': 8702, 'protocol': 'TCP'}])
+        self.assertEqual([p['podSelector']['matchLabels']['app.kubernetes.io/name'] for p in policy['from']], ['hangang', 'pumgye'])
+        for other in by_kind(docs, 'NetworkPolicy'):
+            for rule in other['spec'].get('ingress', []):
+                if any(p.get('port') == 8702 for p in rule.get('ports', [])):
+                    self.assertEqual(other['metadata']['name'], 'w-hangang-world-hopae-admin')
+        pumgye = named(docs, 'Deployment', '-pumgye')['spec']['template']['spec']['containers'][0]
+        self.assertEqual(pumgye['args'][pumgye['args'].index('--hopae-owner') + 1], '/config/hopae-owner.json')
+        token = next(e for e in pumgye['env'] if e['name'] == 'PUMGYE_HOPAE_TOKEN')['valueFrom']['secretKeyRef']
+        self.assertEqual(token, {'name': 'pumgye-hopae-service-credential', 'key': 'token'})
+        owner = json.loads(named(docs, 'ConfigMap', '-pumgye-bootstrap')['data']['hopae-owner.json'])
+        self.assertEqual(owner['address'], 'https://w-hangang-world-hopae-admin.world.svc:8702/')
+        self.assertEqual((owner['certificate'], owner['key'], owner['ca'], owner['token_env']),
+                         ('/tls/tls.crt', '/tls/tls.key', '/tls/ca.crt', 'PUMGYE_HOPAE_TOKEN'))
+        self.assertEqual(owner['projection']['audience'], 'pumgye')
+        # Disabled by default: nothing admin-related is rendered.
+        plain = render()
+        self.assertFalse([d for d in plain if d['metadata']['name'].endswith('-admin')])
+        custom = render(
+            'hopae.admin.publicUrl=https://hopae-admin.example.test', 'hopae.admin.serviceAudience=world-admin', profile='admin')
+        config = json.loads(named(custom, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual((config['admin']['public_url'], config['admin']['service_audience']), ('https://hopae-admin.example.test', 'world-admin'))
+        self.assertEqual(named(custom, 'Certificate', '-hopae-admin')['spec']['dnsNames'],
+                         ['hopae-admin.example.test', 'w-hangang-world-hopae-admin.world.svc'])
 
     def test_client_address_modes(self):
         docs = render('hangang.clientAddress.mode=hostNetwork', 'hangang.service.type=ClusterIP')

@@ -58,13 +58,17 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC); `postgresql` is refused until Hopae ships its PostgreSQL store |
 | `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway` are chart-owned |
 | `hopae.extraSecretEnv` | `[]` | Environment variables from Secrets (provider client secrets) |
+| `hopae.admin.enabled` | `false` | Hopae admin listener 8702 with mutual TLS, ClusterIP-only `-admin` Service, own server certificate (`tls.existingSecrets.hopaeAdmin` when BYO); NetworkPolicy admits only Hangang and Pumgye |
+| `hopae.admin.publicUrl` / `untrustedPeers` / `serviceAudience` | in-cluster admin Service / `as_client` / `""` | Console origin callers must address; `service_audience` needs Hopae with service credentials (PR #10) |
+| `hopae.admin.delegation.keySecret` | `""` / `hopae-console-delegation-key` | Secret with the signed Hangang console delegation key |
+| `pumgye.hopaeOwner.enabled` / `tokenSecret` / `projection` / `lifecycle` | `false` | Pumgye v2 owner inputs (`--hopae-owner`) over Hopae's admin listener with this component's certificate and a route-scoped `hsc1` service credential |
 | `pumgye.bootstrapPolicy` / `sumunjang.bootstrapPolicy` | minimal | Used only when the database is empty |
 | `<component>.persistence.size` / `storageClassName` / `existingClaim` | `1Gi` / `""` / `""` | State volume |
 | `networkPolicy.enabled` / `publicFrom` / `metricsFrom` | `true` / `[]` / `[]` | NetworkPolicies |
 | `monitoring.serviceMonitor.*` | disabled | Prometheus Operator scrape of the gateway |
 | `tests.enabled` / `tests.image` | `true` / busybox | `helm test` Pod (needs `sh`, `nc`, `wget`; digest required) |
 
-Profiles used by CI live in [`ci/`](ci): `minimal`, `ha` (gateway ×3 behind PROXY v2, ClusterIssuer, ServiceMonitor, cluster scope) and `byo-certs`. The chart was also qualified on a disposable local cluster; see the [install guide](../../docs/HELM_INSTALL.md#qualification--disposable-local-cluster-2026-10-17).
+Profiles used by CI live in [`ci/`](ci): `minimal`, `ha` (gateway ×3 behind PROXY v2, ClusterIssuer, ServiceMonitor, cluster scope) and `byo-certs`, plus `admin` (Hopae admin listener and Pumgye owner). The chart was also qualified on a disposable local cluster; see the [install guide](../../docs/HELM_INSTALL.md#qualification--disposable-local-cluster-2026-10-17).
 
 ## Scaling and HA
 

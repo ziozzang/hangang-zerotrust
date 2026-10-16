@@ -43,3 +43,23 @@
 {{- end -}}
 {{- end -}}
 {{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.admin.enabled $v.hopae.admin.delegation.enabled (not $v.hopae.admin.delegation.keySecret.name) -}}
+{{- fail "hopae.admin.delegation.enabled needs hopae.admin.delegation.keySecret.name (the signed Hangang console delegation key)" -}}
+{{- end -}}
+{{- if and $v.hopae.admin.enabled (not $v.hopae.enabled) -}}
+{{- fail "hopae.admin.enabled needs hopae.enabled" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.admin.enabled (eq $v.tls.mode "existingSecrets") (not $v.tls.existingSecrets.hopaeAdmin) -}}
+{{- fail "tls.mode=existingSecrets with hopae.admin.enabled needs tls.existingSecrets.hopaeAdmin (server certificate for the console host)" -}}
+{{- end -}}
+{{- if and $v.pumgye.enabled $v.pumgye.hopaeOwner.enabled -}}
+{{- if not (and $v.hopae.enabled $v.hopae.admin.enabled) -}}
+{{- fail "pumgye.hopaeOwner.enabled needs hopae.enabled and hopae.admin.enabled (Pumgye reads Hopae's admin listener)" -}}
+{{- end -}}
+{{- if not $v.pumgye.hopaeOwner.tokenSecret.name -}}
+{{- fail "pumgye.hopaeOwner.tokenSecret.name is required: mint the hsc1 token with `hopae admin service-credentials create pumgye-v2 --preset pumgye-v2 --client-san <Pumgye SPIFFE ID>` and store it in a Secret" -}}
+{{- end -}}
+{{- if not (or $v.pumgye.hopaeOwner.projection $v.pumgye.hopaeOwner.lifecycle) -}}
+{{- fail "pumgye.hopaeOwner needs projection and/or lifecycle" -}}
+{{- end -}}
+{{- end -}}

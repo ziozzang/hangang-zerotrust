@@ -92,6 +92,23 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
 - **실제 검증.** 로컬 클러스터 실행은 보호된 요청 체인, 거부, 장애, 업그레이드와 되돌리기를 다룹니다. ADR 0022의 철회 SLO, 10분 API 중단, 재시작 없는 인증서 회전, 다중 노드 동작은 아직 검증하지 않았습니다.
 
+## Hopae 관리와 Pumgye v2 소유자 입력
+
+`hopae.admin.enabled`는 ClusterIP 전용 `<release>-hangang-world-hopae-admin` Service 뒤에 상호 TLS를 쓰는 Hopae 관리 리스너(8702)를 엽니다. 서버 인증서는 콘솔 호스트용으로 발급하고, 클라이언트는 각자의 World 구성 요소 인증서를 제시합니다. NetworkPolicy는 Hangang 콘솔 브로커와 Pumgye만 허용합니다. 콘솔 origin(`admin.public_url`)의 기본값은 이 Service이므로 클러스터 내부 호출자가 콘솔 호스트를 지정하게 되며, 서명된 Hangang 콘솔 위임 키는 `hopae.admin.delegation.keySecret`에서 가져옵니다.
+
+Pumgye 정책 모델 v2는 경로 범위 읽기 전용 서비스 자격 증명(Hopae `docs/SERVICE_CREDENTIALS.md`)으로 Hopae의 서명된 멤버십 projection과 주체 수명 주기를 읽습니다. Hopae Pod 안에서 Pumgye의 SPIFFE ID에 고정해 발급하고 Secret에 저장한 뒤 `pumgye.hopaeOwner`를 켭니다.
+
+```sh
+kubectl -n hangang-world exec deploy/world-hangang-world-hopae -- \
+  hopae admin service-credentials create pumgye-v2 --preset pumgye-v2 \
+  --client-san spiffe://cluster.local/ns/hangang-world/sa/world-hangang-world-pumgye \
+  --config /config/hopae.json > pumgye-hopae.token
+kubectl -n hangang-world create secret generic pumgye-hopae-service-credential \
+  --from-file=hopae-service-token=pumgye-hopae.token
+```
+
+오프라인 검증(Hopae `60b3a60`과 PR #10 `b318922`, Pumgye `775e6b9`): 두 Hopae 버전 모두 렌더링한 관리 설정을 받아들이며, `admin.service_audience`는 PR #10 빌드가 필요합니다(그 전에는 `unknown key`). PR #10 빌드로 관리 리스너를 실행하고, 발급한 자격 증명과 렌더링한 `--hopae-owner` 파일로 Pumgye를 시작하자 mTLS 연결, SPIFFE 고정, 토큰은 받아들여졌고 Hopae는 모든 호출을 `service_audience_mismatch`로 거부했습니다. 원인은 Pumgye 소유자 클라이언트가 아직 `X-Hopae-Audience`를 보내지 않는 데 있습니다. 이 경로의 Pumgye 쪽 선행 조건이며, 나오기 전까지 Pumgye는 `max_staleness_secs`가 지나면 소유자 입력에 대해 실패 시 닫힙니다. Hangang 콘솔 플러그인 바인딩(플러그인 자산과 `--admin-plugins`)은 아직 패키지에 포함하지 않았습니다.
+
 ## 검증 기록 — 일회용 로컬 클러스터 (2026-10-17)
 
 소스 리비전: Hangang `a8e15e6`(ProtectionPolicy, PR #21), Hopae `60b3a60`

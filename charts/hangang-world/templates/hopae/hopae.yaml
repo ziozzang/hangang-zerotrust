@@ -11,6 +11,17 @@
   "state_dir" "/state"
   "store" (ternary (dict "kind" "postgres" "url_env" "HOPAE_STORE_URL") (dict "kind" "sqlite") $postgres)
   "gateway" (dict "kind" "hangang" "caller_key_env" "HOPAE_GATEWAY_KEY") }}
+{{- $admin := $v.admin }}
+{{- if $admin.enabled }}
+{{- $_ := set $owned.listen "admin" "0.0.0.0:8702" }}
+{{- $_ := set $owned.listen "admin_tls" (dict "certificate" "/tls-admin/tls.crt" "key" "/tls-admin/tls.key" "client_ca" "/tls/ca.crt") }}
+{{- $console := dict "public_url" (include "world.hopaeAdminUrl" .) "untrusted_peers" $admin.untrustedPeers }}
+{{- with $admin.serviceAudience }}{{- $_ := set $console "service_audience" . }}{{- end }}
+{{- if $admin.delegation.enabled }}
+{{- $_ := set $console "hangang_delegation" (dict "authority" "hangang" "key_env" "HOPAE_CONSOLE_DELEGATION_KEY") }}
+{{- end }}
+{{- $_ := set $owned "admin" $console }}
+{{- end }}
 {{- $config := merge $owned (deepCopy $v.config) }}
 apiVersion: v1
 kind: ConfigMap
@@ -75,6 +86,13 @@ spec:
                   name: {{ .Values.global.ha.postgresql.existingSecret }}
                   key: {{ .Values.global.ha.postgresql.urlKey }}
             {{- end }}
+            {{- if and $admin.enabled $admin.delegation.enabled }}
+            - name: HOPAE_CONSOLE_DELEGATION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $admin.delegation.keySecret.name }}
+                  key: {{ $admin.delegation.keySecret.key }}
+            {{- end }}
             {{- range $v.extraSecretEnv }}
             - name: {{ .name }}
               valueFrom:
@@ -89,6 +107,11 @@ spec:
             - name: grpc
               containerPort: 8703
               protocol: TCP
+            {{- if $admin.enabled }}
+            - name: admin
+              containerPort: 8702
+              protocol: TCP
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /healthz
@@ -115,6 +138,11 @@ spec:
               mountPath: /state
             - name: tmp
               mountPath: /tmp
+            {{- if $admin.enabled }}
+            - name: admin-tls
+              mountPath: /tls-admin
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           configMap:
@@ -129,6 +157,12 @@ spec:
           {{- end }}
         - name: tmp
           emptyDir: {medium: Memory, sizeLimit: 16Mi}
+        {{- if $admin.enabled }}
+        - name: admin-tls
+          secret:
+            secretName: {{ include "world.hopaeAdminTlsSecret" . }}
+            defaultMode: 0440
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
@@ -149,6 +183,27 @@ spec:
       port: 8703
       targetPort: grpc
       protocol: TCP
+{{- if $admin.enabled }}
+---
+# Admin listener: ClusterIP only, never exposed through the gateway or a load
+# balancer; NetworkPolicy admits only the Hangang console broker and Pumgye.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}-admin
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    hangang.dev/endpoint: admin
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: admin
+      port: 8702
+      targetPort: admin
+      protocol: TCP
+{{- end }}
 {{- with (include "world.pdb" $ctx) }}
 ---
 {{ . }}

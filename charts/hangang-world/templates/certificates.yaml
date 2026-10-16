@@ -91,4 +91,46 @@ spec:
     {{- end }}
 {{- end }}
 {{- end }}
+{{- if and .Values.hopae.enabled .Values.hopae.admin.enabled }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+{{- $adminHost := regexReplaceAll ":[0-9]+$" (include "world.hopaeAdminUrl" . | trimPrefix "https://") "" }}
+---
+# Hopae admin listener: server certificate for the console host. Clients
+# (Hangang console broker, Pumgye) present their own component certificates,
+# verified against the World CA (ca.crt of the Hopae certificate).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "world.name" $ctx }}-admin
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  secretName: {{ include "world.hopaeAdminTlsSecret" . }}
+  duration: {{ $cm.duration }}
+  renewBefore: {{ $cm.renewBefore }}
+  commonName: {{ $adminHost }}
+  dnsNames:
+    - {{ $adminHost }}
+    {{- $service := printf "%s-admin.%s.svc" (include "world.name" $ctx) .Release.Namespace }}
+    {{- if ne $adminHost $service }}
+    - {{ $service }}
+    {{- end }}
+  usages: ["server auth", "digital signature", "key encipherment"]
+  privateKey:
+    algorithm: {{ $cm.privateKey.algorithm }}
+    {{- if ne $cm.privateKey.algorithm "Ed25519" }}
+    size: {{ $cm.privateKey.size }}
+    {{- end }}
+    rotationPolicy: Always
+  issuerRef:
+    {{- if $bootstrap }}
+    name: {{ $prefix }}-ca
+    kind: Issuer
+    group: cert-manager.io
+    {{- else }}
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+    group: {{ $issuer.group }}
+    {{- end }}
+{{- end }}
 {{- end }}

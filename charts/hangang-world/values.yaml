@@ -60,6 +60,8 @@ tls:
     hopae: ""
     pumgye: ""
     sumunjang: ""
+    # Hopae admin listener (server certificate for hopae.admin), when enabled.
+    hopaeAdmin: ""
 
 networkPolicy:
   # Default-deny ingress for every World Pod plus the exact component-to-
@@ -189,6 +191,25 @@ hopae:
   # Extra environment from Secrets, e.g. provider client secrets:
   # [{name: HOPAE_PROVIDER_GOOGLE_CLIENT_SECRET, secretName: hopae-providers, key: google}]
   extraSecretEnv: []
+  # Hopae management console / admin listener (mutual TLS, ClusterIP only).
+  # Callers: the Hangang console broker (signed delegation) and Pumgye's
+  # scoped read-only service credential (hopae admin service-credentials).
+  admin:
+    enabled: false
+    # Console origin. Machine callers must address this host, so the default
+    # is the in-cluster admin Service: https://<release>-hangang-world-hopae-admin.<ns>.svc:8702
+    publicUrl: ""
+    # Peers outside trusted_proxies: as_client (mTLS already restricts peers) or refuse.
+    untrustedPeers: as_client
+    # Audience service credentials must name (Hopae with service credentials,
+    # hopae PR #10); empty keeps Hopae's default (the console origin).
+    serviceAudience: ""
+    # Signed Hangang console delegation key (Secret reference).
+    delegation:
+      enabled: true
+      keySecret:
+        name: ""
+        key: hopae-console-delegation-key
   resources:
     requests: {cpu: 100m, memory: 64Mi}
     limits: {memory: 256Mi}
@@ -218,6 +239,19 @@ pumgye:
     size: 1Gi
     storageClassName: ""
     existingClaim: ""
+  # Policy model v2 owner inputs from Hopae (--hopae-owner): signed membership
+  # projection and subject lifecycle over Hopae's admin listener with mTLS and
+  # a route-scoped service credential (hsc1 token minted with
+  # `hopae admin service-credentials create ... --preset pumgye-v2`).
+  hopaeOwner:
+    enabled: false
+    tokenSecret:
+      name: ""
+      key: hopae-service-token
+    # {audience, keys: [{issuer_ref, key_epoch, public_key}], max_age_secs, ...}
+    projection: null
+    # {poll_interval_secs, reconcile_interval_secs}
+    lifecycle: null
   # Bootstrap policy used only when the database is empty.
   bootstrapPolicy:
     revision: 0

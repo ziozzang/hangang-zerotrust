@@ -166,3 +166,21 @@ spec:
     matchLabels:
       {{- include "world.selectorLabels" . | nindent 6 }}
 {{- end -}}
+
+{{/* Hopae admin console origin: explicit publicUrl or the in-cluster admin Service. */}}
+{{- define "world.hopaeAdminUrl" -}}
+{{- $admin := .Values.hopae.admin -}}
+{{- if $admin.publicUrl -}}
+{{- $admin.publicUrl -}}
+{{- else -}}
+{{- printf "https://%s-admin.%s.svc:8702" (include "world.name" (dict "root" . "component" "hopae")) .Release.Namespace -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "world.hopaeAdminTlsSecret" -}}
+{{- if eq .Values.tls.mode "existingSecrets" -}}
+{{- .Values.tls.existingSecrets.hopaeAdmin -}}
+{{- else -}}
+{{- printf "%s-admin-tls" (include "world.name" (dict "root" . "component" "hopae")) -}}
+{{- end -}}
+{{- end -}}

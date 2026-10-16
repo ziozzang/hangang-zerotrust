@@ -76,4 +76,31 @@ spec:
         - podSelector: {{ toJson $test }}
 {{- end }}
 {{- end }}
+{{- if and .Values.hopae.enabled .Values.hopae.admin.enabled }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+---
+# Hopae admin listener: only the Hangang console broker and Pumgye's scoped
+# service credential client; not the test Pod, not any other workload.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "world.name" $ctx }}-admin
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - ports:
+        - {port: 8702, protocol: TCP}
+      from:
+        {{- if .Values.hangang.enabled }}
+        {{- include "world.peer" (dict "root" . "component" "hangang") | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.pumgye.enabled .Values.pumgye.hopaeOwner.enabled }}
+        {{- include "world.peer" (dict "root" . "component" "pumgye") | nindent 8 }}
+        {{- end }}
+{{- end }}
 {{- end }}

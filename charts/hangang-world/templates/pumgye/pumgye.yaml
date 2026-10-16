@@ -11,6 +11,20 @@ data:
   # Applied only when the database is empty; later changes go through the
   # management API (CAS) or a future World source mode.
   policy.json: {{ toJson $v.bootstrapPolicy | quote }}
+  {{- if $v.hopaeOwner.enabled }}
+  {{- $owner := dict
+    "address" (printf "%s/" (include "world.hopaeAdminUrl" .))
+    "ca" "/tls/ca.crt"
+    "certificate" "/tls/tls.crt"
+    "key" "/tls/tls.key"
+    "token_env" "PUMGYE_HOPAE_TOKEN" }}
+  {{- with $v.hopaeOwner.projection }}{{- $_ := set $owner "projection" . }}{{- end }}
+  {{- with $v.hopaeOwner.lifecycle }}{{- $_ := set $owner "lifecycle" . }}{{- end }}
+  # Hopae owner client: admin listener mTLS (this component's certificate,
+  # pinned by its SPIFFE URI SAN in the Hopae service credential) plus the
+  # route-scoped hsc1 bearer from PUMGYE_HOPAE_TOKEN.
+  hopae-owner.json: {{ toJson $owner | quote }}
+  {{- end }}
 ---
 {{ include "world.pvc" $ctx }}
 ---
@@ -35,7 +49,7 @@ spec:
         {{- include "world.labels" $ctx | nindent 8 }}
         {{- with $v.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
       annotations:
-        checksum/bootstrap: {{ toJson $v.bootstrapPolicy | sha256sum }}
+        checksum/bootstrap: {{ toJson (list $v.bootstrapPolicy $v.hopaeOwner) | sha256sum }}
         {{- with $v.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
     spec:
       serviceAccountName: {{ include "world.name" $ctx }}
@@ -68,9 +82,20 @@ spec:
             - /tls/tls.key
             - --client-ca
             - /tls/ca.crt
+            {{- if $v.hopaeOwner.enabled }}
+            - --hopae-owner
+            - /config/hopae-owner.json
+            {{- end }}
           env:
             {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_ADMIN_TOKEN" "key" "pumgyeAdminToken") | nindent 12 }}
             {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_DECISION_TOKEN" "key" "pumgyeDecisionToken") | nindent 12 }}
+            {{- if $v.hopaeOwner.enabled }}
+            - name: PUMGYE_HOPAE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $v.hopaeOwner.tokenSecret.name }}
+                  key: {{ $v.hopaeOwner.tokenSecret.key }}
+            {{- end }}
           ports:
             - {name: management, containerPort: 9084, protocol: TCP}
             - {name: ppg1, containerPort: 9085, protocol: TCP}

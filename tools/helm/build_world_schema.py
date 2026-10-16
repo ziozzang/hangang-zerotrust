@@ -107,7 +107,7 @@ schema = obj({
             'duration': DURATION, 'renewBefore': DURATION, 'caDuration': DURATION,
             'privateKey': obj({'algorithm': {'enum': ['ECDSA', 'Ed25519', 'RSA']}, 'size': {'type': 'integer', 'enum': [256, 384, 2048, 3072, 4096]}}, required=['algorithm']),
         }),
-        'existingSecrets': obj({c: SECRET_NAME for c in ['hangang', 'hopae', 'pumgye', 'sumunjang']}),
+        'existingSecrets': obj({c: SECRET_NAME for c in ['hangang', 'hopae', 'pumgye', 'sumunjang', 'hopaeAdmin']}),
     }, required=['mode']),
     'networkPolicy': obj({
         'enabled': {'type': 'boolean'},
@@ -167,11 +167,34 @@ schema = obj({
             'secretName': {'type': 'string', 'pattern': DNS_SUBDOMAIN, 'maxLength': 253},
             'key': KEY}, required=['name', 'secretName', 'key'])},
         'pdb': PDB,
+        'admin': obj({
+            'enabled': {'type': 'boolean'},
+            'publicUrl': {'type': 'string', 'maxLength': 300, 'pattern': '^$|^https://[a-z0-9]([-a-z0-9.]*[a-z0-9])?(:[0-9]{1,5})?$'},
+            'untrustedPeers': {'enum': ['as_client', 'refuse']},
+            'serviceAudience': {'type': 'string', 'maxLength': 256, 'pattern': '^[\\x21-\\x7e]*$'},
+            'delegation': obj({'enabled': {'type': 'boolean'}, 'keySecret': obj({'name': SECRET_NAME, 'key': KEY}, required=['name', 'key'])}, required=['enabled']),
+        }, required=['enabled']),
     }, required=['storage', 'persistence', 'config']),
     'pumgye': component('Pumgye', {
         'storage': storage(['sqlite']),
         'persistence': PERSISTENCE,
         'bootstrapPolicy': free_object('Pumgye bootstrap document, used only when the database is empty.'),
+        'hopaeOwner': obj({
+            'enabled': {'type': 'boolean'},
+            'tokenSecret': obj({'name': SECRET_NAME, 'key': KEY}, required=['name', 'key']),
+            'projection': {'anyOf': [{'type': 'null'}, obj({
+                'audience': {'type': 'string', 'minLength': 1, 'maxLength': 256},
+                'keys': {'type': 'array', 'minItems': 1, 'maxItems': 16, 'items': obj({
+                    'issuer_ref': {'type': 'string', 'minLength': 1, 'maxLength': 128},
+                    'key_epoch': {'type': 'integer', 'minimum': 0},
+                    'public_key': {'type': 'string', 'pattern': '^[A-Za-z0-9+/]{43}=$'}}, required=['issuer_ref', 'key_epoch', 'public_key'])},
+                'max_age_secs': {'type': 'integer', 'minimum': 1, 'maximum': 86400},
+                'max_staleness_secs': {'type': 'integer', 'minimum': 1, 'maximum': 604800},
+                'poll_interval_secs': {'type': 'integer', 'minimum': 1, 'maximum': 3600}}, required=['audience', 'keys'])]},
+            'lifecycle': {'anyOf': [{'type': 'null'}, obj({
+                'poll_interval_secs': {'type': 'integer', 'minimum': 1, 'maximum': 3600},
+                'reconcile_interval_secs': {'type': 'integer', 'minimum': 1, 'maximum': 604800}})]},
+        }, required=['enabled']),
     }, required=['storage', 'persistence', 'bootstrapPolicy'], replicas_max=1),
     'sumunjang': component('Sumunjang', {
         'storage': storage(['sqlite']),

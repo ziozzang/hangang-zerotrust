@@ -1,0 +1,38 @@
+# Hopae admin listener with Hangang console delegation and Pumgye v2 owner
+# inputs over a route-scoped Hopae service credential.
+credentials:
+  existingSecret: hangang-world-credentials
+tests:
+  image:
+    digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+hangang:
+  image:
+    digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+hopae:
+  image:
+    digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  config:
+    portal: {public_url: https://auth.example.test}
+    apps: [{app_id: app, display_name: Example, hosts: [app.example.test]}]
+    admin:
+      users: [{email: owner@example.test, role: admin}]
+  admin:
+    enabled: true
+    delegation:
+      keySecret: {name: hopae-console-delegation, key: key}
+pumgye:
+  image:
+    digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  hopaeOwner:
+    enabled: true
+    tokenSecret: {name: pumgye-hopae-service-credential, key: token}
+    projection:
+      audience: pumgye
+      keys: [{issuer_ref: hopae-groups, key_epoch: 1, public_key: "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="}]
+      max_age_secs: 300
+      max_staleness_secs: 900
+      poll_interval_secs: 15
+    lifecycle: {poll_interval_secs: 30, reconcile_interval_secs: 3600}
+sumunjang:
+  image:
+    digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd

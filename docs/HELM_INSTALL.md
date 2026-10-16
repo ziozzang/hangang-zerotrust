@@ -92,6 +92,23 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
 - **Live qualification.** The local cluster run covers the protected request chain, refusals, outages, upgrade and rollback; the ADR 0022 revocation SLO, 10-minute API outage, certificate rotation without restart and multi-node behaviour remain unqualified.
 
+## Hopae administration and Pumgye v2 owner inputs
+
+`hopae.admin.enabled` binds Hopae's admin listener (8702) with mutual TLS behind a ClusterIP-only `<release>-hangang-world-hopae-admin` Service. Its server certificate is issued for the console host; clients present their own World component certificates. The NetworkPolicy admits only the Hangang console broker and Pumgye. The console origin (`admin.public_url`) defaults to that Service so in-cluster callers address the console host; the signed Hangang console delegation key comes from `hopae.admin.delegation.keySecret`.
+
+Pumgye's policy model v2 reads Hopae's signed membership projection and subject lifecycle with a route-scoped, read-only service credential (Hopae `docs/SERVICE_CREDENTIALS.md`). Mint it inside the Hopae Pod, pinned to Pumgye's SPIFFE ID, store it in a Secret, then enable `pumgye.hopaeOwner`:
+
+```sh
+kubectl -n hangang-world exec deploy/world-hangang-world-hopae -- \
+  hopae admin service-credentials create pumgye-v2 --preset pumgye-v2 \
+  --client-san spiffe://cluster.local/ns/hangang-world/sa/world-hangang-world-pumgye \
+  --config /config/hopae.json > pumgye-hopae.token
+kubectl -n hangang-world create secret generic pumgye-hopae-service-credential \
+  --from-file=hopae-service-token=pumgye-hopae.token
+```
+
+Offline qualification (Hopae `60b3a60` and PR #10 `b318922`, Pumgye `775e6b9`): both Hopae versions accept the rendered admin configuration; `admin.service_audience` requires the PR #10 build (`unknown key` before it). With the PR #10 build running the admin listener, the minted credential and Pumgye started with the rendered `--hopae-owner` file, the mTLS connection, SPIFFE pin and token were accepted and Hopae refused every call with `service_audience_mismatch`. The cause is that Pumgye's owner client does not send `X-Hopae-Audience` yet. That is a Pumgye prerequisite for this path: until it ships, Pumgye fails closed on owner inputs after `max_staleness_secs`. The Hangang console plugin binding (plugin assets and `--admin-plugins`) is not packaged yet.
+
 ## Qualification — disposable local cluster (2026-10-17)
 
 Source revisions: Hangang `a8e15e6` (ProtectionPolicy, PR #21), Hopae `60b3a60`

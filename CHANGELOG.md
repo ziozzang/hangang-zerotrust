@@ -22,5 +22,12 @@
   and rollback. Refuse `hopae.storage.backend: postgresql` until Hopae ships
   its PostgreSQL store; identity profiles request `x-hopae-service-id`, use
   Hopae's 500 ms verify budget and strip Hopae session cookies.
+- Add `hopae.admin` (admin mTLS listener on a ClusterIP-only Service, own
+  server certificate via cert-manager or BYO, delegation key Secret,
+  NetworkPolicy admitting only Hangang and Pumgye) and `pumgye.hopaeOwner`
+  (Pumgye v2 `--hopae-owner` over the admin listener with its SPIFFE-pinned
+  certificate and an `hsc1` service credential). Qualified offline against
+  Hopae `60b3a60`/PR #10 and Pumgye `775e6b9`; Pumgye must still send
+  `X-Hopae-Audience`.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

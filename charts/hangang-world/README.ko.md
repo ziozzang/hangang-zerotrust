@@ -58,13 +58,17 @@ CRD(`world.hangang.dev`)와 집계 역할 `world-admin`/`world-editor`/`world-vi
 | `hopae.storage.backend` | `sqlite` | `sqlite`(1개 복제본, PVC), Hopae가 PostgreSQL 저장소를 제공할 때까지 `postgresql`은 거부 |
 | `hopae.config` | portal/apps/providers | Hopae 설정, `listen`·`state_dir`·`store`·`gateway`는 차트 소유 |
 | `hopae.extraSecretEnv` | `[]` | Secret에서 가져오는 환경 변수(공급자 클라이언트 비밀) |
+| `hopae.admin.enabled` | `false` | 상호 TLS를 쓰는 Hopae 관리 리스너 8702, ClusterIP 전용 `-admin` Service, 별도 서버 인증서(BYO면 `tls.existingSecrets.hopaeAdmin`), NetworkPolicy는 Hangang과 Pumgye만 허용 |
+| `hopae.admin.publicUrl` / `untrustedPeers` / `serviceAudience` | 클러스터 내부 관리 Service / `as_client` / `""` | 호출자가 지정해야 하는 콘솔 origin, `service_audience`는 서비스 자격 증명을 지원하는 Hopae(PR #10) 필요 |
+| `hopae.admin.delegation.keySecret` | `""` / `hopae-console-delegation-key` | 서명된 Hangang 콘솔 위임 키를 가진 Secret |
+| `pumgye.hopaeOwner.enabled` / `tokenSecret` / `projection` / `lifecycle` | `false` | 이 구성 요소의 인증서와 경로 범위 `hsc1` 서비스 자격 증명으로 Hopae 관리 리스너를 읽는 Pumgye v2 소유자 입력(`--hopae-owner`) |
 | `pumgye.bootstrapPolicy` / `sumunjang.bootstrapPolicy` | 최소 | 데이터베이스가 비어 있을 때만 사용 |
 | `<component>.persistence.size` / `storageClassName` / `existingClaim` | `1Gi` / `""` / `""` | 상태 볼륨 |
 | `networkPolicy.enabled` / `publicFrom` / `metricsFrom` | `true` / `[]` / `[]` | NetworkPolicy |
 | `monitoring.serviceMonitor.*` | 비활성 | 게이트웨이의 Prometheus Operator 수집 |
 | `tests.enabled` / `tests.image` | `true` / busybox | `helm test` Pod(`sh`, `nc`, `wget` 필요, digest 필수) |
 
-CI가 쓰는 프로필은 [`ci/`](ci)에 있습니다. `minimal`, `ha`(PROXY v2 뒤 게이트웨이 3개, ClusterIssuer, ServiceMonitor, 클러스터 범위), `byo-certs`입니다. 일회용 로컬 클러스터 검증 결과는 [설치 안내](../../docs/ko/HELM_INSTALL.md#검증-기록--일회용-로컬-클러스터-2026-10-17)를 참조하십시오.
+CI가 쓰는 프로필은 [`ci/`](ci)에 있습니다. `minimal`, `ha`(PROXY v2 뒤 게이트웨이 3개, ClusterIssuer, ServiceMonitor, 클러스터 범위), `byo-certs`, 그리고 `admin`(Hopae 관리 리스너와 Pumgye 소유자)입니다. 일회용 로컬 클러스터 검증 결과는 [설치 안내](../../docs/ko/HELM_INSTALL.md#검증-기록--일회용-로컬-클러스터-2026-10-17)를 참조하십시오.
 
 ## 확장과 HA
 

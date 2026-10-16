@@ -116,6 +116,14 @@ Read [Architecture](docs/ARCHITECTURE.md),
 [Observability](docs/OBSERVABILITY.md), [Ontology and automation](docs/AUTOMATION.md),
 [Feedback loop](docs/FEEDBACK_LOOP.md), and [Device/workload questions](docs/DEVICES.md).
 
+## Helm charts
+
+`charts/hangang-world` installs Hangang, Hopae, Pumgye and Sumunjang as one
+mTLS-wired package; `charts/hangang-world-crds` holds the `world.hangang.dev`
+CRDs and roles. See the [install guide](docs/HELM_INSTALL.md) for prerequisites,
+HA, upgrade/rollback and what still blocks a production install. The charts are
+validated offline with `python3 -m unittest tools/test_helm_charts.py`.
+
 ## Validate the draft contracts
 
 ```sh

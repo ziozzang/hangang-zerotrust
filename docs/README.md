@@ -18,6 +18,7 @@
 | [Threat model](THREAT_MODEL.md) | Attacks, bounds and adversarial qualification |
 | [Roadmap](ROADMAP.md) | Dependencies, deliverables and acceptance gates |
 | [ADRs](adr/README.md) | Proposed architectural decisions |
+| [Helm install](HELM_INSTALL.md) | Hangang World charts: install, HA, upgrade/rollback, open blockers |
 
 Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 

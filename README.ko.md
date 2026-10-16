@@ -112,6 +112,14 @@ flowchart LR
 유지하며, 롤백은 중간의 다른 변경을 보존합니다. 검증된 결과는 다음 조사에 재사용할 근거이며
 자동으로 전역 룰의 적용 권한이 되지는 않습니다.
 
+## Helm 차트
+
+`charts/hangang-world`는 Hangang, Hopae, Pumgye, Sumunjang을 mTLS로 연결한
+하나의 패키지로 설치하고, `charts/hangang-world-crds`에는 `world.hangang.dev`
+CRD와 역할이 있습니다. 사전 조건, HA, 업그레이드/되돌리기, 운영 설치를 아직
+막는 것은 [설치 안내](docs/ko/HELM_INSTALL.md)를 참조하십시오. 차트는
+`python3 -m unittest tools/test_helm_charts.py`로 오프라인 검증합니다.
+
 ## Dorang LLM 게이트웨이
 
 [Dorang(도랑)](https://github.com/ziozzang/dorang)을 패키지 구조의 LLM Gateway로

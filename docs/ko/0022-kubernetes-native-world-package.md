@@ -103,7 +103,13 @@ API 규칙: `preserve-unknown-fields` 없는 구조적 스키마, 모든 문자�
 - **남북: Hangang이 Gateway API 구현.** `GatewayClass` `hangang.dev/gateway-controller`, Gateway, HTTPRoute,
   GRPCRoute(P1), ReferenceGrant, 적합성 시험을 릴리즈 게이트로. `requireProtection` Gateway 아래 보호 정책 없는 경로는
   `Accepted=False` — 보호 없이 조용히 게시하지 않음.
-- **Ingress**는 기존 의미(보호 없는 라우팅)로 호환 유지, 보호 Gateway 호스트와 겹치면 거부.
+- **Ingress**도 계속 지원합니다. *2026-10-17 개정:* 기존 클러스터 대부분이 Ingress로 경로를 선언하므로,
+  `ProtectionPolicy`는 과도기·호환 경로로 `networking.k8s.io/Ingress`도 대상으로 삼을 수 있습니다. 같은
+  fail-closed 규칙을 적용합니다. `requireProtection`이 켜져 있으면 유효 정책이 정확히 하나가 아닌 Ingress는
+  보류(`ProtectionRequired`)하고, 정책이 여럿 붙으면 거부(`Conflicted`)합니다. 더 새롭고 엄격한 정책이 조용히
+  무시되지 않도록 Gateway API의 가장 오래된 정책 우선보다 의도적으로 엄격합니다. 참조를 해석하지 못해도 거부합니다.
+  `requireProtection`이 꺼져 있을 때만 보호 없는 Ingress를 `access_mode: public`으로 게시합니다. 보호 Gateway
+  리스너 호스트와 겹치는 Ingress 호스트는 거부합니다. 주 모델은 여전히 Gateway API입니다.
 - **클라이언트 IP 보존 필수**(네트워크 조건 사용 시): `externalTrafficPolicy: Local`, 신뢰 LB CIDR의 PROXY v2,
   bare-metal용 `hostNetwork` DaemonSet. `none`이면 zone 조건 정책은 `Programmed=False`(`ClientAddressUnavailable`).
 - **동서는 CNI에 위임.** Sumunjang은 (a) 게이트웨이 남북 IP 승인/위험 엔진, (b) `NetworkControl` 동서 의도를

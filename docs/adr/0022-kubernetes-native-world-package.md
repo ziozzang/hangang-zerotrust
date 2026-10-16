@@ -217,9 +217,17 @@ version only after one minor release with deprecation warnings.
   sections. A Gateway may declare `requireProtection` (via a Gateway-targeted
   `ProtectionPolicy` default): routes without an effective protection policy are
   then `Accepted=False` — never silently published unprotected (ADR 0015 rule).
-- **Ingress** remains supported for compatibility with existing semantics
-  (unprotected routing, documented as such). An Ingress host that overlaps a
-  protected Gateway listener host is rejected; protection on Ingress is not added.
+- **Ingress** remains supported. *Amended 2026-10-17:* `ProtectionPolicy` may
+  also target `networking.k8s.io/Ingress` as the supported transitional and
+  compatibility path, because most existing clusters declare routes with Ingress.
+  The same fail-closed rule applies: with `requireProtection`, an Ingress without
+  exactly one effective policy is withheld (`ProtectionRequired`), multiple
+  attached policies are refused (`Conflicted` — intentionally stricter than Gateway
+  API oldest-wins so a newer, stricter policy is never silently ignored), and
+  unresolved references are refused. Ingress without protection is published as
+  `access_mode: public` only when `requireProtection` is off. An Ingress host that
+  overlaps a protected Gateway listener host is rejected. Gateway API remains the
+  primary model.
 - **Client IP preservation is required** for any `ProtectionPolicy` that uses network
   conditions. Supported modes: Service `type: LoadBalancer|NodePort` with
   `externalTrafficPolicy: Local`; PROXY protocol v2 from an explicitly trusted LB

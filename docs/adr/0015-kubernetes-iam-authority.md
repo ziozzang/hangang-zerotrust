@@ -2,6 +2,8 @@
 
 [한국어](../ko/0015-kubernetes-iam-authority.md)
 
+Superseded in part by [ADR 0022](0022-kubernetes-native-world-package.md) (proposed).
+
 Status: accepted direction with partial implementation. Hangang implements an
 Ingress controller and offline import. Hopae verifies Pod-bound credentials with
 TokenReview and live ServiceAccount/Pod UID checks. Pumgye implements an opt-in

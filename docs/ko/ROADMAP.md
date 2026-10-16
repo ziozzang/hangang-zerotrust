@@ -22,3 +22,14 @@ exporter 유실·재전송·개인정보·저장 장애 시험, 통합정책 판
 
 10k/100k QPS는 실제 조건과 오류·지연·자원·회수 지연을 포함해 검증합니다.
 상태는 계획 → 설계 → 시제품 → 보안검토 → 검증 → 릴리즈 → 운영관찰로 구분합니다.
+
+인가 모델·Kubernetes 패키지 트랙(제안, [ADR 0021](0021-pumgye-authorization-model-revision.md)·[ADR 0022](0022-kubernetes-native-world-package.md)):
+P0은 품계 정책 v2(주체·그룹·템플릿·바인딩, deny, zone 참조, clearance 상한, 유효 기간, trace 동치 explain,
+v1→v2 변환기·shadow), 호패 그룹·멤버십 projection·주체 생명주기 피드·오프라인 JWKS 워크로드 검증과 tombstone,
+수문장 `NetworkZone`/`NetworkControl`, `world.hangang.dev` v1alpha1 CRD와 서명 스냅샷·제한 staleness·빠른 회수를 갖춘
+`hangang-world-controller`, 클라이언트 IP를 보존하는 한강 Gateway API·`ProtectionPolicy`, cert-manager mTLS,
+digest 고정 서명 이미지의 Helm/OCI 차트입니다. 게이트는 새로 검증한 백업 이후 지정 원격 k3s에서 차트로 설치한
+기능 인수이며 기능 게이트 통과 전 부하 시험은 하지 않습니다.
+P1은 HA(PostgreSQL, N≥2, PDB), 업그레이드/롤백, v1beta1·변환, CNI 정책 생성, SPIFFE SVID, 콘솔·판정 이벤트(ADR 0019/0020),
+백업/복구 훈련, Gateway API 적합성입니다. P2는 JIT·접근 검토, 다중 클러스터, 동서 L7, SAR authorizer 재설계,
+10k/100k 전체 경로 부하 검증입니다.

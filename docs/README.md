@@ -35,6 +35,10 @@ Draft schemas are under `schemas/`, synthetic examples under `examples/`.
 
 [Unified console redesign](adr/0020-unified-console-redesign.md) — proposed task-oriented zero-trust console, UI kit, i18n and plugin contract v2.
 
+[Pumgye authorization model revision (proposed ADR 0021)](adr/0021-pumgye-authorization-model-revision.md) — principals, groups, role templates, deny, network zones, explain API.
+
+[Kubernetes-native Hangang World package (proposed ADR 0022)](adr/0022-kubernetes-native-world-package.md) — World CRDs, controller, Gateway API, workload identity, Helm/HA.
+
 - [Public-SDK Workload qualification probe](../tools/native-workload-probe/README.md) — authentication only; real full-chain gates remain.
 
 [Workload K3s qualification preparation](WORKLOAD_WORLD_QUALIFICATION.md) — opt-in native orchestration and pure tests; live execution remains unqualified and requires reviewed exact artifacts.

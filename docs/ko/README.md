@@ -33,6 +33,10 @@
 
 [통합 콘솔 재설계](0020-unified-console-redesign.md) — 제안: 작업 중심 제로트러스트 콘솔·UI 키트·i18n·플러그인 계약 v2.
 
+[품계 인가 모델 개정(제안 ADR 0021)](0021-pumgye-authorization-model-revision.md) — 주체·그룹·역할 템플릿·deny·네트워크 zone·explain API.
+
+[Kubernetes 네이티브 Hangang World 패키지(제안 ADR 0022)](0022-kubernetes-native-world-package.md) — World CRD·controller·Gateway API·워크로드 신원·Helm/HA.
+
 - [공개 SDK Workload 검증 도구](../../tools/native-workload-probe/README.ko.md) — 인증 경계 검증용이며 실제 전체 경로는 별도 검증.
 
 [Workload K3s 검증 준비](WORKLOAD_WORLD_QUALIFICATION.md) — 선택적 네이티브 실행 소스와 순수 테스트이며 실제 실행은 미검증·최종 artifact 승인 대기입니다.

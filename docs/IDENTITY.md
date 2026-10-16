@@ -75,3 +75,41 @@ end-user Hopae session into a Hangang administrator. Attribute/role mappings
 require explicit issuer and management-grant policy.
 
 Native entry integration uses Hopae’s existing `/_hopae/login` and `/_hopae/logout` contracts. Provider/session logic and logout confirmation remain in Hopae.
+
+## Console operator assurance
+
+Status: implemented on branches (Hopae `feat/operator-aal`, ADR-0021, PR #18;
+Hangang `feat/operator-aal`, PR #25); qualified locally in a real browser with a
+virtual WebAuthn authenticator; not yet verified on a live gateway.
+
+Console operators sign in through Hopae with a phishing-resistant factor. Hopae's
+`console_operators` policy names the console's application and requires the
+configured level (AAL 2 by default, AAL 3 with high-assurance keys) and the
+`webauthn` factor on the whole console host, and a fresh passkey use
+(`step_up_max_age_secs`) on the console's step-up path. Only a passkey meets or
+refreshes these rules; TOTP, external factors and recovery codes do not. An
+operator without a passkey is sent to add one before the first console grant; an
+optional, dated enrollment grace admits operators with no passkey at all, never
+on the step-up path.
+
+Every allowed verify for the console application carries Hopae's operator
+assertion (`x-hopae-operator-assertion`): the level, the latest second factor and
+its time, high assurance, the policy and whether it is met, HMAC-signed with a key
+the console shares and valid for 60 seconds. The Hangang console verifies it on
+every SSO request and enforces its own minimum: sign-in and reads need the policy
+(optionally Hopae's grace for reads), every change needs it without grace, and
+sensitive changes (publish, activate, factor reset, accounts, configuration)
+need the factor used within the console's `sensitive_max_age_seconds`. A refusal
+sends the operator through the gateway to the step-up path, where Hopae runs the
+passkey ceremony; the console then signs in again with the rotated session. The
+console header shows the operator's level and factor.
+
+The Hangang local administrator sign-in remains the break-glass path. It is shown
+as such in the header, every break-glass sign-in and change is recorded in the
+console audit, and it can be disabled. Admissions are recorded by Hopae
+(`operator.console_admitted`); SSO sign-ins, step-up refusals and SSO changes by
+the console with the operator's level and factor.
+
+Open: an asymmetric assertion signature for consoles that must not share a key;
+console audit in the durable Hangang account audit store; live-gateway
+verification with hardware authenticators.

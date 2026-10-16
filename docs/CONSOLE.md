@@ -62,6 +62,14 @@ API calls still reach the original native authority. Both paths need end-to-end
 role/revocation tests; the adapter is a separate managed runtime, not a new user
 source of truth.
 
+## Operator assurance and break-glass
+
+Console operators authenticate through Hopae with a passkey (or AAL 3), proven to
+the console by Hopae's signed operator assertion and refreshed for sensitive
+changes; the header shows the operator's level and factor; the local administrator
+sign-in is an audited, disableable break-glass path. See
+[IDENTITY](IDENTITY.md#console-operator-assurance).
+
 ## Audit and pending Hopae work
 
 Write intent and outcome records bind actual actor, plugin, operation and body

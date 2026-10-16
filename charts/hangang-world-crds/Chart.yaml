@@ -1,0 +1,16 @@
+apiVersion: v2
+name: hangang-world-crds
+description: >-
+  CustomResourceDefinitions and aggregated RBAC roles of the Hangang World
+  (world.hangang.dev). Installed separately from hangang-world because Helm never
+  upgrades a chart's crds/ directory; versions move in lockstep with hangang-world.
+type: application
+version: 0.1.0
+appVersion: "v1alpha1"
+kubeVersion: ">=1.27.0-0"
+keywords: [hangang, zero-trust, crd, world]
+home: https://github.com/ziozzang/hangang-zerotrust
+sources:
+  - https://github.com/ziozzang/hangang
+annotations:
+  hangang.dev/adr: "0022"

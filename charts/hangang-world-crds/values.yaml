@@ -1,0 +1,14 @@
+# Keep CRDs (and therefore every World object) when the release is uninstalled.
+# Removing a CRD deletes all of its objects cluster-wide; leave this on unless
+# you intend exactly that.
+keep: true
+
+protectionPolicy:
+  # world.hangang.dev/v1alpha1 ProtectionPolicy (Hangang route protection).
+  enabled: true
+
+rbac:
+  # Aggregated ClusterRoles (ADR 0022): world-admin, world-editor, world-viewer.
+  # They aggregate into the built-in admin, edit and view roles so namespace
+  # administrators manage World objects of their own namespace.
+  aggregatedRoles: true

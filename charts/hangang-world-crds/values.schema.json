@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "hangang-world-crds values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "keep": {"type": "boolean"},
+    "protectionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"enabled": {"type": "boolean"}}
+    },
+    "rbac": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"aggregatedRoles": {"type": "boolean"}}
+    },
+    "global": {"type": "object"}
+  }
+}

@@ -1,0 +1,9 @@
+Hangang World CRDs {{ .Chart.Version }} installed (API group world.hangang.dev).
+{{- if .Values.protectionPolicy.enabled }}
+  - ProtectionPolicy (v1alpha1): kubectl explain protectionpolicy.spec
+{{- end }}
+{{- if .Values.keep }}
+CRDs carry helm.sh/resource-policy=keep: uninstalling this release leaves them
+and every World object in place.
+{{- end }}
+Install or upgrade this chart BEFORE the hangang-world chart of the same version.

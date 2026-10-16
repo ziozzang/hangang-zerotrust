@@ -17,7 +17,8 @@ data:
     "ca" "/tls/ca.crt"
     "certificate" "/tls/tls.crt"
     "key" "/tls/tls.key"
-    "token_env" "PUMGYE_HOPAE_TOKEN" }}
+    "token_env" "PUMGYE_HOPAE_TOKEN"
+    "audience" (.Values.hopae.admin.serviceAudience | default (include "world.hopaeAdminUrl" .)) }}
   {{- with $v.hopaeOwner.projection }}{{- $_ := set $owner "projection" . }}{{- end }}
   {{- with $v.hopaeOwner.lifecycle }}{{- $_ := set $owner "lifecycle" . }}{{- end }}
   # Hopae owner client: admin listener mTLS (this component's certificate,

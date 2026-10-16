@@ -144,7 +144,10 @@ class WorldChart(unittest.TestCase):
         hopae = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
         self.assertEqual(hopae['listen']['grpc_gateway'], '0.0.0.0:8703')
         self.assertEqual(hopae['store'], {'kind': 'sqlite'})
+        self.assertEqual(hopae['authentication'], {'source': 'config'}, 'values own the authentication profiles by default')
         self.assertEqual(hopae['apps'][0]['app_id'], 'app')
+        store = json.loads(named(render('hopae.authentication.source=store'), 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual(store['authentication'], {'source': 'store'})
         self.assertEqual(len(by_kind(docs, 'PersistentVolumeClaim')), 3)
         for claim in by_kind(docs, 'PersistentVolumeClaim'):
             self.assertEqual(claim['metadata']['annotations']['helm.sh/resource-policy'], 'keep')
@@ -247,6 +250,8 @@ class WorldChart(unittest.TestCase):
             'proxy protocol without CIDRs': ['hangang.clientAddress.mode=proxyProtocol'],
             'serviceLocal on ClusterIP': ['hangang.service.type=ClusterIP'],
             'chart-owned Hopae key': ['json:hopae.config={"listen":{"portal":"0.0.0.0:1"}}'],
+            'chart-owned Hopae authentication key': ['json:hopae.config={"authentication":{"source":"store"}}'],
+            'unknown authentication source': ['hopae.authentication.source=file'],
             'metrics without admin listener': ['monitoring.serviceMonitor.enabled=true'],
             'protection without Pumgye': ['pumgye.enabled=false'],
             'guard without Sumunjang': ['sumunjang.enabled=false'],
@@ -308,6 +313,7 @@ class WorldChart(unittest.TestCase):
         self.assertEqual((owner['certificate'], owner['key'], owner['ca'], owner['token_env']),
                          ('/tls/tls.crt', '/tls/tls.key', '/tls/ca.crt', 'PUMGYE_HOPAE_TOKEN'))
         self.assertEqual(owner['projection']['audience'], 'pumgye')
+        self.assertEqual(owner['audience'], 'https://w-hangang-world-hopae-admin.world.svc:8702', 'sent as x-hopae-audience')
         # Disabled by default: nothing admin-related is rendered.
         plain = render()
         self.assertFalse([d for d in plain if d['metadata']['name'].endswith('-admin')])

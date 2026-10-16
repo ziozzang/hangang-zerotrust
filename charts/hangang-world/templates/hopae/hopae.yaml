@@ -10,7 +10,8 @@
     "native_gateway_tls" (dict "certificate" "/tls/tls.crt" "key" "/tls/tls.key" "client_ca" "/tls/ca.crt"))
   "state_dir" "/state"
   "store" (ternary (dict "kind" "postgres" "url_env" "HOPAE_STORE_URL") (dict "kind" "sqlite") $postgres)
-  "gateway" (dict "kind" "hangang" "caller_key_env" "HOPAE_GATEWAY_KEY") }}
+  "gateway" (dict "kind" "hangang" "caller_key_env" "HOPAE_GATEWAY_KEY")
+  "authentication" (dict "source" $v.authentication.source) }}
 {{- $admin := $v.admin }}
 {{- if $admin.enabled }}
 {{- $_ := set $owned.listen "admin" "0.0.0.0:8702" }}

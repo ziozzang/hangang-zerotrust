@@ -56,7 +56,8 @@ CRD(`world.hangang.dev`)와 집계 역할 `world-admin`/`world-editor`/`world-vi
 | `hangang.clientAddress.mode` / `proxyProtocolFrom` | `serviceLocal` / `[]` | 클라이언트 주소 보존 |
 | `hangang.admin.exposeMetrics` | `false` | 지표 수집을 위해 관리 API(TLS)를 Pod 네트워크에 노출 |
 | `hopae.storage.backend` | `sqlite` | `sqlite`(1개 복제본, PVC), Hopae가 PostgreSQL 저장소를 제공할 때까지 `postgresql`은 거부 |
-| `hopae.config` | portal/apps/providers | Hopae 설정, `listen`·`state_dir`·`store`·`gateway`는 차트 소유 |
+| `hopae.authentication.source` | `config` | `config`: values가 인증 프로필을 소유하고 롤아웃마다 Hopae 저장소를 맞춤(Hopae PR #13), `store`: values는 빈 저장소만 부트스트랩 |
+| `hopae.config` | portal/apps/providers | Hopae 설정, `listen`·`state_dir`·`store`·`gateway`·`authentication`은 차트 소유 |
 | `hopae.extraSecretEnv` | `[]` | Secret에서 가져오는 환경 변수(공급자 클라이언트 비밀) |
 | `hopae.admin.enabled` | `false` | 상호 TLS를 쓰는 Hopae 관리 리스너 8702, ClusterIP 전용 `-admin` Service, 별도 서버 인증서(BYO면 `tls.existingSecrets.hopaeAdmin`), NetworkPolicy는 Hangang과 Pumgye만 허용 |
 | `hopae.admin.publicUrl` / `untrustedPeers` / `serviceAudience` | 클러스터 내부 관리 Service / `as_client` / `""` | 호출자가 지정해야 하는 콘솔 origin, `service_audience`는 서비스 자격 증명을 지원하는 Hopae(PR #10) 필요 |

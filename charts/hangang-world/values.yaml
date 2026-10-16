@@ -180,9 +180,15 @@ hopae:
     size: 1Gi
     storageClassName: ""
     existingClaim: ""
+  # Who owns authentication profiles and the credential projection plan:
+  # config (default) - this values file; every rollout reconciles Hopae's store
+  #                    to it and console/API edits are refused (Hopae PR #13).
+  # store            - Hopae's database; values only bootstrap an empty store.
+  authentication:
+    source: config
   # Hopae configuration (docs/CONFIG.md in the Hopae repository): portal,
   # apps, providers, authentication_gateway, ... The chart owns listen,
-  # state_dir, store and gateway; setting them here is refused.
+  # state_dir, store, gateway and authentication; setting them here is refused.
   config:
     portal:
       public_url: https://auth.example.test

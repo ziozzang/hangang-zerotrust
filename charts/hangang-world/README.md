@@ -56,7 +56,8 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `hangang.clientAddress.mode` / `proxyProtocolFrom` | `serviceLocal` / `[]` | Client address preservation |
 | `hangang.admin.exposeMetrics` | `false` | Serve the admin API (TLS) on the Pod network for metrics |
 | `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC); `postgresql` is refused until Hopae ships its PostgreSQL store |
-| `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway` are chart-owned |
+| `hopae.authentication.source` | `config` | `config`: values own the authentication profiles and every rollout reconciles Hopae's store (Hopae PR #13); `store`: values bootstrap an empty store only |
+| `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway`, `authentication` are chart-owned |
 | `hopae.extraSecretEnv` | `[]` | Environment variables from Secrets (provider client secrets) |
 | `hopae.admin.enabled` | `false` | Hopae admin listener 8702 with mutual TLS, ClusterIP-only `-admin` Service, own server certificate (`tls.existingSecrets.hopaeAdmin` when BYO); NetworkPolicy admits only Hangang and Pumgye |
 | `hopae.admin.publicUrl` / `untrustedPeers` / `serviceAudience` | in-cluster admin Service / `as_client` / `""` | Console origin callers must address; `service_audience` needs Hopae with service credentials (PR #10) |

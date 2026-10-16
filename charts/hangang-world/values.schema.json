@@ -931,11 +931,26 @@
             }
           }
         },
+        "authentication": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "enum": [
+                "config",
+                "store"
+              ]
+            }
+          },
+          "required": [
+            "source"
+          ]
+        },
         "config": {
           "type": "object",
           "additionalProperties": true,
           "properties": {},
-          "description": "Hopae configuration minus the chart-owned listen, state_dir, store and gateway.",
+          "description": "Hopae configuration minus the chart-owned listen, state_dir, store, gateway and authentication.",
           "not": {
             "anyOf": [
               {
@@ -956,6 +971,11 @@
               {
                 "required": [
                   "gateway"
+                ]
+              },
+              {
+                "required": [
+                  "authentication"
                 ]
               }
             ]
@@ -1073,7 +1093,8 @@
         "resources",
         "storage",
         "persistence",
-        "config"
+        "config",
+        "authentication"
       ],
       "if": {
         "properties": {

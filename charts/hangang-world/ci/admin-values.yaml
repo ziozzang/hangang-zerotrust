@@ -28,7 +28,7 @@ pumgye:
     tokenSecret: {name: pumgye-hopae-service-credential, key: token}
     projection:
       audience: pumgye
-      keys: [{issuer_ref: hopae-groups, key_epoch: 1, public_key: "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="}]
+      keys: [{issuer_ref: hopae-groups, key_epoch: 1, public_key: "h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik="}]
       max_age_secs: 300
       max_staleness_secs: 900
       poll_interval_secs: 15

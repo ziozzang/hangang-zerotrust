@@ -92,6 +92,12 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
 - **실제 검증.** 로컬 클러스터 실행은 보호된 요청 체인, 거부, 장애, 업그레이드와 되돌리기를 다룹니다. ADR 0022의 철회 SLO, 10분 API 중단, 재시작 없는 인증서 회전, 다중 노드 동작은 아직 검증하지 않았습니다.
 
+## Hopae 인증 프로필(설정 권위 모드)
+
+`hopae.authentication.source`의 기본값은 `config`입니다. values의 서비스 인증 프로필(`hopae.config.authentication_gateway`)과 자격 증명 projection 계획이 권위를 가집니다. 롤아웃할 때마다 Hopae의 CAS 게시(감사 행, `authentication.reconciled` 이벤트)로 저장소를 values에 맞추며, 잘못된 파일은 시작을 멈추고 저장소를 그대로 두고, 콘솔/API 편집은 `409 config_authoritative`로 거부됩니다. 설정 권위 프로필을 지원하는 Hopae 빌드(Hopae PR #13)가 필요합니다. `store`는 기존 동작으로, values는 빈 저장소만 부트스트랩하고 이후 변경은 Hopae 소유자 API로 합니다.
+
+`store`에서 `config`로 옮기기: 현재 프로필을 내보내고(관리 리스너의 `GET /v1/authentication/profiles`), `hopae.config.authentication_gateway`에 넣은 뒤(환경 변수 참조만, 키 값은 절대 넣지 않음), Hopae PVC를 백업하고 `hopae.authentication.source: config`로 `helm upgrade`합니다. 첫 시작에서 파일이 다음 리비전으로 게시되며, values에 없는 키나 프로필은 그 시점에 제거됩니다. 되돌리려면 `store`로 설정하면 되고, 저장소는 마지막으로 맞춘 문서를 유지합니다.
+
 ## Hopae 관리와 Pumgye v2 소유자 입력
 
 `hopae.admin.enabled`는 ClusterIP 전용 `<release>-hangang-world-hopae-admin` Service 뒤에 상호 TLS를 쓰는 Hopae 관리 리스너(8702)를 엽니다. 서버 인증서는 콘솔 호스트용으로 발급하고, 클라이언트는 각자의 World 구성 요소 인증서를 제시합니다. NetworkPolicy는 Hangang 콘솔 브로커와 Pumgye만 허용합니다. 콘솔 origin(`admin.public_url`)의 기본값은 이 Service이므로 클러스터 내부 호출자가 콘솔 호스트를 지정하게 되며, 서명된 Hangang 콘솔 위임 키는 `hopae.admin.delegation.keySecret`에서 가져옵니다.

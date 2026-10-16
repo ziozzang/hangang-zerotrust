@@ -160,8 +160,9 @@ schema = obj({
     'hopae': component('Hopae', {
         'storage': storage(['sqlite', 'postgresql']),
         'persistence': PERSISTENCE,
-        'config': obj({}, extra=True, description='Hopae configuration minus the chart-owned listen, state_dir, store and gateway.',
-                      **{'not': {'anyOf': [{'required': [k]} for k in ['listen', 'state_dir', 'store', 'gateway']]}}),
+        'authentication': obj({'source': {'enum': ['config', 'store']}}, required=['source']),
+        'config': obj({}, extra=True, description='Hopae configuration minus the chart-owned listen, state_dir, store, gateway and authentication.',
+                      **{'not': {'anyOf': [{'required': [k]} for k in ['listen', 'state_dir', 'store', 'gateway', 'authentication']]}}),
         'extraSecretEnv': {'type': 'array', 'maxItems': 64, 'items': obj({
             'name': {'type': 'string', 'pattern': '^[A-Z_][A-Z0-9_]{0,127}$'},
             'secretName': {'type': 'string', 'pattern': DNS_SUBDOMAIN, 'maxLength': 253},
@@ -174,7 +175,7 @@ schema = obj({
             'serviceAudience': {'type': 'string', 'maxLength': 256, 'pattern': '^[\\x21-\\x7e]*$'},
             'delegation': obj({'enabled': {'type': 'boolean'}, 'keySecret': obj({'name': SECRET_NAME, 'key': KEY}, required=['name', 'key'])}, required=['enabled']),
         }, required=['enabled']),
-    }, required=['storage', 'persistence', 'config']),
+    }, required=['storage', 'persistence', 'config', 'authentication']),
     'pumgye': component('Pumgye', {
         'storage': storage(['sqlite']),
         'persistence': PERSISTENCE,

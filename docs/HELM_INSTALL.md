@@ -92,6 +92,12 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
 - **Live qualification.** The local cluster run covers the protected request chain, refusals, outages, upgrade and rollback; the ADR 0022 revocation SLO, 10-minute API outage, certificate rotation without restart and multi-node behaviour remain unqualified.
 
+## Hopae authentication profiles (configuration-authoritative)
+
+`hopae.authentication.source` defaults to `config`: the service authentication profiles (`hopae.config.authentication_gateway`) and the credential projection plan in values are authoritative. Every rollout reconciles Hopae's store to them through Hopae's CAS publication (audit row, `authentication.reconciled` event); an invalid file stops the start and leaves the store untouched, and console/API edits answer `409 config_authoritative`. This needs a Hopae build with configuration-authoritative profiles (Hopae PR #13). `store` keeps the earlier behaviour: values bootstrap an empty store only and later changes go through Hopae's owner API.
+
+Migration from `store` to `config`: export the current profiles (`GET /v1/authentication/profiles` on the admin listener), put them into `hopae.config.authentication_gateway` (environment references only, never key material), back up the Hopae PVC, then `helm upgrade` with `hopae.authentication.source: config`. The first start publishes the file as the next revision; keys or profiles missing from values are removed at that moment. To go back, set `store`; the store keeps the last reconciled document.
+
 ## Hopae administration and Pumgye v2 owner inputs
 
 `hopae.admin.enabled` binds Hopae's admin listener (8702) with mutual TLS behind a ClusterIP-only `<release>-hangang-world-hopae-admin` Service. Its server certificate is issued for the console host; clients present their own World component certificates. The NetworkPolicy admits only the Hangang console broker and Pumgye. The console origin (`admin.public_url`) defaults to that Service so in-cluster callers address the console host; the signed Hangang console delegation key comes from `hopae.admin.delegation.keySecret`.

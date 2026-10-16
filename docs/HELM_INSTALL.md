@@ -68,6 +68,55 @@ This guide installs the integrated Hangang World package (ADR 0022 P0 packaging)
 - Hopae stays at one SQLite replica: its PostgreSQL store is not released, and the chart refuses more than one SQLite replica.
 - Pumgye and Sumunjang are single writers in this release; the schema caps them at one replica. Their state lives on a PVC that survives uninstall.
 
+## Certificate rotation without restarts
+
+Every component polls the **contents** of its certificate, key and CA files (no inotify, which is scarce on shared hosts) and swaps rotated material in atomically: new handshakes use the new certificate, established connections keep theirs, and invalid new files keep the previous certificate and raise an alert metric. The Secret is always mounted as a directory (never `subPath`), so the kubelet's atomic `..data` swap reaches the Pod; with cert-manager a renewal therefore needs no rollout.
+
+| Component | Value (default) | What is reloaded |
+| --- | --- | --- |
+| Hangang | `hangang.tlsReloadSeconds` (10, 0 off) | admin listener; Hopae/Pumgye client identities; Sumunjang decision client |
+| Hopae | `hopae.tlsReloadSeconds` (10, 0 off) → `reload.tls_interval_secs` | native and gRPC gateway listeners, admin listener, projection clients |
+| Pumgye | `pumgye.tlsReloadSeconds` (10, 1–3600) → `--tls-reload-interval-secs` | management, PPG1 and gRPC listeners; outbound mTLS clients |
+| Sumunjang | `sumunjang.tlsReloadSeconds` (10, 0 off) → `--tls-reload-seconds` | HGD1, gRPC and management listeners |
+
+The worst-case delay after cert-manager writes the Secret is the kubelet's Secret volume sync (about a minute by default) plus one polling interval.
+
+## Kubernetes staleness and readiness (Hangang)
+
+`hangang.maxStalenessSeconds` (default 300, 60–3600, at least `staleSeconds`) is ADR 0022's bounded staleness: when the Kubernetes API cannot confirm the published snapshot for longer, protected routes answer `503` with `x-hangang-reason: kubernetes-authority-stale` and public routes keep serving the last-good snapshot. `hangang.readiness: snapshot` (default) keeps replicas ready while they serve an activated snapshot, so an API-server outage does not drain every gateway at once; `fresh` restores the earlier behaviour (not ready once a watch is stale).
+
+## Hopae live configuration reconciliation
+
+With `hopae.authentication.source: config`, Hopae polls its configuration file every `hopae.authentication.reloadIntervalMs` (default 1000; 0 off; 200–60000) and reconciles changed authentication profiles and projection plans without a restart; the chart therefore leaves `authentication_gateway` and `credential_projection` out of the Pod's `checksum/config`, so editing them in values updates the ConfigMap without a rollout, while every other Hopae key still rolls the Pod. The ConfigMap is mounted as a directory, never with `subPath`. **Propagation delay:** the kubelet refreshes ConfigMap volumes on its sync period plus cache TTL (about a minute by default), so a revocation in values takes effect after that delay plus one poll; when revocations must be faster, lower the kubelet's sync settings or revoke through the Hopae console in `store` mode.
+
+## Monitoring and alerts
+
+`monitoring.serviceMonitor.enabled` creates a Prometheus Operator ServiceMonitor for every component that serves `/metrics`:
+
+- **Hangang:** the admin listener (TLS, needs `hangang.admin.exposeMetrics`), bearer = the admin token.
+- **Pumgye:** the management listener 9084 over mutual TLS, bearer = `credentials.keys.pumgyeMetricsToken` (passed as `PUMGYE_METRICS_TOKEN`, opens only `/metrics`).
+- **Sumunjang:** the management listener 9080 over mutual TLS (`--management-tls`), bearer = `credentials.keys.guardMetricsToken` (`HANGANG_GUARD_METRICS_TOKEN`). Its probes use the separate probe-only listener 9083 (`/readyz`, `/healthz`), which is not in the Service.
+- **Hopae:** no ServiceMonitor; Hopae has no Prometheus endpoint yet (its counters are in-process only). Its certificate expiry is covered by the cert-manager rule.
+
+Prometheus presents a client certificate to the mutual-TLS listeners: with cert-manager the chart issues `<release>-hangang-world-metrics-client` (client auth only, from the World issuer); with BYO certificates set `monitoring.serviceMonitor.clientCertificate.existingSecret`. The certificate grants nothing on its own; every scrape still needs the read-only bearer. Add the two metrics tokens (16–4096 visible ASCII characters, distinct from every other credential) to the credentials Secret before enabling the ServiceMonitors, and let the monitoring namespace in through `networkPolicy.metricsFrom`.
+
+`monitoring.prometheusRule.enabled` adds the alerts recommended by each component's documentation:
+
+| Alert | Expression (simplified) |
+| --- | --- |
+| `HangangProtectedRoutesFailClosed` (critical) | `hangang_kubernetes_protected_fail_closed == 1` |
+| `HangangKubernetesSnapshotStale` | snapshot age above half of the bound |
+| `HangangTLSReloadFailing`, `PumgyeTLSReloadFailing`, `SumunjangTLSReloadFailing` | rotated material rejected; previous certificate still served |
+| `PumgyeCertificateExpiringSoon`, `SumunjangCertificateExpiringSoon`, `WorldCertificateExpiringSoon` | leaf (or cert-manager Certificate) expires within `certificateExpiryDays` (7) |
+| `WorldCertificateNotReady` | a release Certificate not Ready for 15 minutes |
+| `SumunjangCheckpointStale` | `sumunjang_checkpoint_age_seconds > checkpointAgeSeconds` (60) |
+| `PumgyeHopaeFeedStale` | Pumgye's Hopae projection/lifecycle feed older than the projection's `max_staleness_secs` |
+| `PumgyeDecisionsUnavailable`, `SumunjangDecisionsUnavailable` | share of decisions answered unavailable above `decisionUnavailableRatio` (1 %) over 10 minutes |
+| `PumgyeUnavailable`, `SumunjangNotReady` (critical) | the decision service cannot answer |
+| `HangangIngressesWithheld`, `PumgyeShadowMismatchUnexplained`, `SumunjangEvidenceDropped` | operational warnings |
+
+The cert-manager rules need cert-manager's own metrics in Prometheus (`monitoring.prometheusRule.certManagerExpiry: false` to omit them).
+
 ## Upgrade and rollback
 
 Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
@@ -90,7 +139,8 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Hangang version.** ProtectionPolicy support (Hangang PR #21) must be in the released Hangang image the digest points to.
 - **Hopae PostgreSQL.** Hopae's PostgreSQL store is planned (Hopae ADR-0002, M2) but not released (Hopae 0.0.10 refuses `store.url_env`); the chart refuses `hopae.storage.backend: postgresql` until it ships, so Hopae runs as one SQLite replica.
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
-- **Live qualification.** The local and remote runs cover the protected chain, revocation, a 10-minute API outage, certificate rotation and a node drain; open defects: no certificate hot reload in Hopae/Pumgye/Sumunjang, Hangang has no fail-closed bound for API outages, Hopae declarative revocation is rollout-bound.
+- **Live qualification.** The local and remote runs cover the protected chain, revocation, a 10-minute API outage, certificate rotation and a node drain. The component fixes for certificate hot reload, bounded staleness and live Hopae reconciliation are in open component pull requests (Hangang #23, Pumgye #7, Hopae #14, Sumunjang `feat/asn-proposals`) and must be released before the digests can point at them.
+- **Hopae metrics.** Hopae has no Prometheus endpoint, so it has no ServiceMonitor and only cert-manager covers its certificate expiry.
 
 ## Hopae authentication profiles (configuration-authoritative)
 

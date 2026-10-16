@@ -33,6 +33,11 @@ credentials:
     guardAdminToken: guard-admin-token
     pumgyeDecisionToken: pumgye-decision-token
     pumgyeAdminToken: pumgye-admin-token
+    # Read-only /metrics scrape credentials (16-4096 visible ASCII, distinct
+    # from every other credential). Read only while
+    # monitoring.serviceMonitor.enabled; the keys must then exist.
+    pumgyeMetricsToken: pumgye-metrics-token
+    guardMetricsToken: guard-metrics-token
 
 # Mutual TLS between components (Service DNS + SPIFFE URI SAN per component).
 tls:
@@ -74,12 +79,45 @@ networkPolicy:
   metricsFrom: []
 
 monitoring:
+  # Prometheus Operator scrape of every component that serves /metrics:
+  #   Hangang   - admin listener (TLS, bearer = admin token); needs
+  #               hangang.admin.exposeMetrics
+  #   Pumgye    - management listener 9084 (mutual TLS, bearer = metrics token)
+  #   Sumunjang - management listener 9080 (mutual TLS, bearer = metrics token)
+  # Hopae has no Prometheus endpoint yet (its counters are in-process only);
+  # its certificate expiry is covered by the cert-manager rule below.
   serviceMonitor:
-    # Requires the monitoring.coreos.com/v1 CRDs and hangang.admin.exposeMetrics.
+    # Requires the monitoring.coreos.com/v1 CRDs.
     enabled: false
     interval: 30s
     scrapeTimeout: 10s
     labels: {}
+    # Client certificate Prometheus presents to the mutual-TLS management
+    # listeners (issued by the World CA). certManager mode: the chart issues
+    # it. existingSecrets mode: name a kubernetes.io/tls Secret whose
+    # certificate has clientAuth and chains to the components' ca.crt.
+    clientCertificate:
+      existingSecret: ""
+  # PrometheusRule with the alerts recommended by each component's
+  # documentation (TLS reload failing, certificate expiry, Kubernetes
+  # snapshot staleness, checkpoint age, projection freshness, decision
+  # availability). Requires the monitoring.coreos.com/v1 CRDs.
+  prometheusRule:
+    enabled: false
+    labels: {}
+    # Warn when a serving certificate expires within this many days.
+    certificateExpiryDays: 7
+    # Also alert on cert-manager's certmanager_certificate_expiration_timestamp_seconds
+    # for this release's Certificates (covers Hangang and Hopae, which do not
+    # export leaf expiry). Needs cert-manager metrics in Prometheus.
+    certManagerExpiry: true
+    # Sumunjang durable checkpoint older than this (seconds).
+    checkpointAgeSeconds: 60
+    # Pumgye's Hopae projection/lifecycle feed older than this (seconds);
+    # 0 uses pumgye.hopaeOwner.projection.max_staleness_secs (default 900).
+    projectionStalenessSeconds: 0
+    # Fraction of decisions answered "unavailable" over 10 minutes.
+    decisionUnavailableRatio: 0.01
 
 tests:
   # `helm test`: connectivity and readiness of every enabled component.
@@ -110,7 +148,22 @@ hangang:
   publishAddress: ""
   # Watch Ingress TLS Secrets (kubernetes.io/tls only) and terminate TLS.
   kubernetesTls: false
+  # A watched kind silent this long marks the controller non-authoritative
+  # (logged and exported; withdraws readiness only with readiness=fresh).
   staleSeconds: 60
+  # ADR 0022 bounded staleness: once the published snapshot is unconfirmed
+  # by the API server for this long, protected routes answer 503
+  # (x-hangang-reason: kubernetes-authority-stale) while public routes keep
+  # the last-good snapshot. 60..3600 and at least staleSeconds.
+  maxStalenessSeconds: 300
+  # snapshot - ready while serving an activated snapshot, so an API-server
+  #            outage does not drain every replica at once (ADR 0022)
+  # fresh    - not ready while any watch is stale or a cache is incomplete
+  readiness: snapshot
+  # Seconds between content polls of certificate files (admin listener,
+  # Hopae/Pumgye/Sumunjang client identities); rotated material is swapped
+  # in without a restart. 0 disables. No inotify is used.
+  tlsReloadSeconds: 10
   protection:
     # ProtectionPolicy reconciliation (requires hangang-world-crds, Hopae and Pumgye).
     enabled: true
@@ -186,9 +239,20 @@ hopae:
   # store            - Hopae's database; values only bootstrap an empty store.
   authentication:
     source: config
+    # config mode: how often a running Hopae polls its configuration file and
+    # reconciles changed authentication profiles or projection plans live
+    # (milliseconds; 0 off, otherwise 200-60000). The ConfigMap is mounted
+    # as a directory (never subPath), so edits reach the Pod without a
+    # restart, after the kubelet's ConfigMap propagation delay (sync period
+    # plus cache TTL, about a minute by default).
+    reloadIntervalMs: 1000
+  # Seconds between content polls of Hopae's TLS files (native/gRPC gateway,
+  # admin listener, projection clients); 0 off, at most 3600.
+  tlsReloadSeconds: 10
   # Hopae configuration (docs/CONFIG.md in the Hopae repository): portal,
   # apps, providers, authentication_gateway, ... The chart owns listen,
-  # state_dir, store, gateway and authentication; setting them here is refused.
+  # state_dir, store, gateway, authentication and reload; setting them here is
+  # refused.
   config:
     portal:
       public_url: https://auth.example.test
@@ -258,6 +322,9 @@ pumgye:
     projection: null
     # {poll_interval_secs, reconcile_interval_secs}
     lifecycle: null
+  # Seconds between content polls of TLS files (listeners and outbound mTLS
+  # clients); 1-3600.
+  tlsReloadSeconds: 10
   # Bootstrap policy used only when the database is empty.
   bootstrapPolicy:
     revision: 0
@@ -294,6 +361,9 @@ sumunjang:
     mode: enforce
     allow: []
   threads: 2
+  # Seconds between content polls of the decision/management TLS files;
+  # 0 disables, at most 3600.
+  tlsReloadSeconds: 10
   resources:
     requests: {cpu: 100m, memory: 64Mi}
     limits: {memory: 256Mi}

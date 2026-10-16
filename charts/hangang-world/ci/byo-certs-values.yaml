@@ -8,12 +8,21 @@ tls:
     hopae: world-hopae-tls
     pumgye: world-pumgye-tls
     sumunjang: world-sumunjang-tls
+monitoring:
+  serviceMonitor:
+    enabled: true
+    clientCertificate:
+      existingSecret: world-metrics-client-tls
+  prometheusRule:
+    enabled: true
 tests:
   enabled: false
 hangang:
   service:
     type: NodePort
     nodePort: 30080
+  admin:
+    exposeMetrics: true
   image:
     digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 hopae:

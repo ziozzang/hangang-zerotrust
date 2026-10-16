@@ -68,6 +68,55 @@
 - Hopae는 SQLite 단일 복제본으로 유지됩니다. PostgreSQL 저장소가 릴리스되지 않았고, 차트는 SQLite 복제본을 둘 이상 두는 것을 거부합니다.
 - Pumgye와 Sumunjang은 이번 릴리스에서 단일 기록자이며 스키마가 복제본을 하나로 제한합니다. 상태는 삭제 후에도 남는 PVC에 있습니다.
 
+## 재시작 없는 인증서 교체
+
+모든 구성 요소는 인증서, 키, CA 파일의 **내용**을 폴링하고(공유 호스트에서 부족한 inotify를 쓰지 않음) 교체된 자료를 원자적으로 바꿉니다. 새 핸드셰이크는 새 인증서를 쓰고, 이미 맺은 연결은 기존 인증서를 유지하며, 잘못된 새 파일이면 이전 인증서를 계속 쓰고 경보 지표를 올립니다. Secret은 항상 디렉터리로 마운트하므로(`subPath` 아님) kubelet의 원자적 `..data` 교체가 Pod에 닿고, cert-manager 갱신에는 롤아웃이 필요 없습니다.
+
+| 구성 요소 | 값(기본) | 재적재 대상 |
+| --- | --- | --- |
+| Hangang | `hangang.tlsReloadSeconds`(10, 0이면 끔) | 관리 리스너, Hopae/Pumgye 클라이언트 신원, Sumunjang 결정 클라이언트 |
+| Hopae | `hopae.tlsReloadSeconds`(10, 0이면 끔) → `reload.tls_interval_secs` | 네이티브·gRPC 게이트웨이 리스너, 관리 리스너, projection 클라이언트 |
+| Pumgye | `pumgye.tlsReloadSeconds`(10, 1–3600) → `--tls-reload-interval-secs` | 관리, PPG1, gRPC 리스너와 외부 mTLS 클라이언트 |
+| Sumunjang | `sumunjang.tlsReloadSeconds`(10, 0이면 끔) → `--tls-reload-seconds` | HGD1, gRPC, 관리 리스너 |
+
+cert-manager가 Secret을 쓴 뒤 최악의 지연은 kubelet의 Secret 볼륨 동기화(기본 약 1분)에 폴링 간격 하나를 더한 값입니다.
+
+## Kubernetes 오래됨과 준비 상태(Hangang)
+
+`hangang.maxStalenessSeconds`(기본 300, 60–3600, `staleSeconds` 이상)는 ADR 0022의 제한된 오래됨입니다. Kubernetes API가 게시된 스냅샷을 이보다 오래 확인하지 못하면 보호 경로는 `x-hangang-reason: kubernetes-authority-stale`과 함께 `503`을 반환하고 공개 경로는 마지막 정상 스냅샷을 계속 제공합니다. `hangang.readiness: snapshot`(기본)은 활성화된 스냅샷을 제공하는 동안 복제본을 준비 상태로 두므로 API 서버 장애가 모든 게이트웨이를 한꺼번에 빼지 않습니다. `fresh`는 이전 동작(감시가 오래되면 준비되지 않음)입니다.
+
+## Hopae 설정 실시간 반영
+
+`hopae.authentication.source: config`이면 Hopae는 `hopae.authentication.reloadIntervalMs`(기본 1000, 0이면 끔, 200–60000)마다 설정 파일을 폴링하여 바뀐 인증 프로필과 projection 계획을 재시작 없이 반영합니다. 그래서 차트는 Pod의 `checksum/config`에서 `authentication_gateway`와 `credential_projection`을 빼므로, values에서 이들을 고치면 롤아웃 없이 ConfigMap만 바뀌고 그 밖의 Hopae 키는 여전히 Pod를 다시 띄웁니다. ConfigMap은 `subPath` 없이 디렉터리로 마운트합니다. **전파 지연:** kubelet은 동기화 주기와 캐시 TTL(기본 약 1분)에 따라 ConfigMap 볼륨을 갱신하므로, values의 폐기는 그 지연에 폴링 한 번을 더한 뒤 적용됩니다. 더 빠른 폐기가 필요하면 kubelet 동기화 설정을 낮추거나 `store` 모드에서 Hopae 콘솔로 폐기하세요.
+
+## 모니터링과 경보
+
+`monitoring.serviceMonitor.enabled`는 `/metrics`를 제공하는 모든 구성 요소에 Prometheus Operator ServiceMonitor를 만듭니다.
+
+- **Hangang:** 관리 리스너(TLS, `hangang.admin.exposeMetrics` 필요), bearer는 관리 토큰.
+- **Pumgye:** 상호 TLS를 쓰는 관리 리스너 9084, bearer는 `credentials.keys.pumgyeMetricsToken`(`PUMGYE_METRICS_TOKEN`으로 전달되며 `/metrics`만 열림).
+- **Sumunjang:** 상호 TLS를 쓰는 관리 리스너 9080(`--management-tls`), bearer는 `credentials.keys.guardMetricsToken`(`HANGANG_GUARD_METRICS_TOKEN`). 프로브는 Service에 포함되지 않는 별도 프로브 전용 리스너 9083(`/readyz`, `/healthz`)을 씁니다.
+- **Hopae:** ServiceMonitor 없음. Hopae에는 아직 Prometheus 엔드포인트가 없습니다(카운터는 프로세스 내부에만 있음). 인증서 만료는 cert-manager 규칙이 다룹니다.
+
+Prometheus는 상호 TLS 리스너에 클라이언트 인증서를 제시합니다. cert-manager를 쓰면 차트가 `<release>-hangang-world-metrics-client`(클라이언트 인증 전용, World 발급자)를 발급하고, BYO 인증서라면 `monitoring.serviceMonitor.clientCertificate.existingSecret`을 지정합니다. 이 인증서만으로는 아무 권한도 없으며 모든 수집에는 읽기 전용 bearer가 필요합니다. ServiceMonitor를 켜기 전에 두 지표 토큰(16–4096자의 보이는 ASCII, 다른 모든 자격 증명과 다름)을 자격 증명 Secret에 넣고, `networkPolicy.metricsFrom`으로 모니터링 네임스페이스를 허용하세요.
+
+`monitoring.prometheusRule.enabled`는 각 구성 요소 문서가 권장하는 경보를 추가합니다.
+
+| 경보 | 식(요약) |
+| --- | --- |
+| `HangangProtectedRoutesFailClosed`(critical) | `hangang_kubernetes_protected_fail_closed == 1` |
+| `HangangKubernetesSnapshotStale` | 스냅샷 나이가 경계의 절반 초과 |
+| `HangangTLSReloadFailing`, `PumgyeTLSReloadFailing`, `SumunjangTLSReloadFailing` | 교체 자료 거부, 이전 인증서 계속 제공 |
+| `PumgyeCertificateExpiringSoon`, `SumunjangCertificateExpiringSoon`, `WorldCertificateExpiringSoon` | 리프(또는 cert-manager Certificate)가 `certificateExpiryDays`(7) 안에 만료 |
+| `WorldCertificateNotReady` | 릴리스의 Certificate가 15분 동안 Ready 아님 |
+| `SumunjangCheckpointStale` | `sumunjang_checkpoint_age_seconds > checkpointAgeSeconds`(60) |
+| `PumgyeHopaeFeedStale` | Pumgye의 Hopae projection/수명 주기 피드가 projection의 `max_staleness_secs`보다 오래됨 |
+| `PumgyeDecisionsUnavailable`, `SumunjangDecisionsUnavailable` | 10분 동안 unavailable로 답한 결정 비율이 `decisionUnavailableRatio`(1 %) 초과 |
+| `PumgyeUnavailable`, `SumunjangNotReady`(critical) | 결정 서비스가 답할 수 없음 |
+| `HangangIngressesWithheld`, `PumgyeShadowMismatchUnexplained`, `SumunjangEvidenceDropped` | 운영 경고 |
+
+cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합니다(빼려면 `monitoring.prometheusRule.certManagerExpiry: false`).
+
 ## 업그레이드와 되돌리기
 
 Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
@@ -90,7 +139,8 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **Hangang 버전.** ProtectionPolicy 지원(Hangang PR #21)이 digest가 가리키는 릴리스 이미지에 들어 있어야 합니다.
 - **Hopae PostgreSQL.** Hopae의 PostgreSQL 저장소는 계획(Hopae ADR-0002, M2)되어 있으나 릴리스되지 않았습니다(Hopae 0.0.10은 `store.url_env`를 거부). 그 기능이 나올 때까지 차트는 `hopae.storage.backend: postgresql`을 거부하므로 Hopae는 SQLite 단일 복제본으로 실행됩니다.
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
-- **실제 검증.** 로컬·원격 실행은 보호된 체인, 철회, 10분 API 중단, 인증서 회전, 노드 drain을 다룹니다. 남은 결함: Hopae/Pumgye/Sumunjang의 인증서 무중단 재로드 없음, Hangang의 API 중단 시 실패 시 닫힘 한도 없음, Hopae 선언형 철회의 롤아웃 의존.
+- **실제 검증.** 로컬·원격 실행은 보호된 체인, 철회, 10분 API 중단, 인증서 회전, 노드 drain을 다룹니다. 인증서 무중단 재적재, 제한된 오래됨, Hopae 실시간 반영을 고친 구성 요소 변경은 열린 PR(Hangang #23, Pumgye #7, Hopae #14, Sumunjang `feat/asn-proposals`)에 있으며, digest가 이를 가리키려면 먼저 릴리스되어야 합니다.
+- **Hopae 지표.** Hopae에는 Prometheus 엔드포인트가 없어 ServiceMonitor가 없고, 인증서 만료는 cert-manager만 다룹니다.
 
 ## Hopae 인증 프로필(설정 권위 모드)
 

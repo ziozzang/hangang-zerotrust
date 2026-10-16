@@ -33,5 +33,16 @@
   verified off-host backup: revocation latency (Pumgye/Sumunjang p99 ≤ 0.05 s),
   10-minute API pause, cert-manager rotation (no live reload in Hopae, Pumgye,
   Sumunjang) and a PDB-guarded node drain; full cleanup to baseline.
+- Wire the component live-reload and observability knobs: Hangang
+  `maxStalenessSeconds` (ADR 0022 bounded staleness), `readiness`
+  (`snapshot`/`fresh`) and `tlsReloadSeconds`; Hopae `tlsReloadSeconds`
+  (`reload.tls_interval_secs`) and `authentication.reloadIntervalMs`, with
+  profile and projection edits excluded from the rollout checksum and the
+  ConfigMap mounted as a directory; Pumgye and Sumunjang TLS polling;
+  Sumunjang HTTP readiness/liveness probes on a probe-only listener.
+  ServiceMonitors for Hangang, Pumgye and Sumunjang (mutual TLS with a
+  chart-issued scrape client certificate and read-only metrics tokens from
+  the credentials Secret; Hopae has no `/metrics`), metrics NetworkPolicy
+  rules, and an optional PrometheusRule with the documented alerts.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

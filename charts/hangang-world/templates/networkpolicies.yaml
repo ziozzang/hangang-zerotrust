@@ -45,9 +45,9 @@ spec:
     {{- end }}
 {{- end }}
 {{- $flows := list
-  (dict "component" "hopae" "ports" (list 8700 8703) "from" (list "hangang"))
-  (dict "component" "pumgye" "ports" (list 9084 9085 9087) "from" (list "hangang"))
-  (dict "component" "sumunjang" "ports" (list 9080 9081 9082) "from" (list "hangang" "pumgye")) }}
+  (dict "component" "hopae" "ports" (list 8700 8703) "from" (list "hangang") "metrics" 0)
+  (dict "component" "pumgye" "ports" (list 9084 9085 9087) "from" (list "hangang") "metrics" 9084)
+  (dict "component" "sumunjang" "ports" (list 9080 9081 9082) "from" (list "hangang" "pumgye") "metrics" 9080) }}
 {{- range $flow := $flows }}
 {{- $ctx := dict "root" $root "component" $flow.component }}
 {{- if (index $root.Values $flow.component).enabled }}
@@ -74,6 +74,13 @@ spec:
         {{- include "world.peer" (dict "root" $root "component" .) | nindent 8 }}
         {{- end }}
         - podSelector: {{ toJson $test }}
+    {{- if and $flow.metrics $root.Values.monitoring.serviceMonitor.enabled $root.Values.networkPolicy.metricsFrom }}
+    # Metrics scrape (mutual TLS + read-only bearer) from the monitoring peers.
+    - ports:
+        - {port: {{ $flow.metrics }}, protocol: TCP}
+      from:
+        {{- toYaml $root.Values.networkPolicy.metricsFrom | nindent 8 }}
+    {{- end }}
 {{- end }}
 {{- end }}
 {{- if and .Values.hopae.enabled .Values.hopae.admin.enabled }}

@@ -117,6 +117,18 @@
               "minLength": 1,
               "maxLength": 253,
               "pattern": "^[-._a-zA-Z0-9]+$"
+            },
+            "pumgyeMetricsToken": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[-._a-zA-Z0-9]+$"
+            },
+            "guardMetricsToken": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[-._a-zA-Z0-9]+$"
             }
           },
           "required": [
@@ -303,6 +315,57 @@
                 "maxLength": 4096
               },
               "maxProperties": 64
+            },
+            "clientCertificate": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "existingSecret": {
+                  "type": "string",
+                  "maxLength": 253,
+                  "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                }
+              }
+            }
+          }
+        },
+        "prometheusRule": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "maxProperties": 64
+            },
+            "certificateExpiryDays": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            },
+            "certManagerExpiry": {
+              "type": "boolean"
+            },
+            "checkpointAgeSeconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            },
+            "projectionStalenessSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 604800
+            },
+            "decisionUnavailableRatio": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
             }
           }
         }
@@ -524,6 +587,23 @@
         "staleSeconds": {
           "type": "integer",
           "minimum": 31,
+          "maximum": 3600
+        },
+        "maxStalenessSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "ADR 0022 bounded staleness; at least staleSeconds."
+        },
+        "readiness": {
+          "enum": [
+            "snapshot",
+            "fresh"
+          ]
+        },
+        "tlsReloadSeconds": {
+          "type": "integer",
+          "minimum": 0,
           "maximum": 3600
         },
         "protection": {
@@ -940,17 +1020,32 @@
                 "config",
                 "store"
               ]
+            },
+            "reloadIntervalMs": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60000,
+              "not": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "exclusiveMaximum": 200
+              }
             }
           },
           "required": [
             "source"
           ]
         },
+        "tlsReloadSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600
+        },
         "config": {
           "type": "object",
           "additionalProperties": true,
           "properties": {},
-          "description": "Hopae configuration minus the chart-owned listen, state_dir, store, gateway and authentication.",
+          "description": "Hopae configuration minus the chart-owned listen, state_dir, store, gateway, authentication and reload.",
           "not": {
             "anyOf": [
               {
@@ -976,6 +1071,11 @@
               {
                 "required": [
                   "authentication"
+                ]
+              },
+              {
+                "required": [
+                  "reload"
                 ]
               }
             ]
@@ -1424,6 +1524,11 @@
           "required": [
             "enabled"
           ]
+        },
+        "tlsReloadSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
         }
       },
       "required": [
@@ -1646,6 +1751,11 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 64
+        },
+        "tlsReloadSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600
         }
       },
       "required": [

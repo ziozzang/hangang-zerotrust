@@ -4,7 +4,8 @@
 Needs `helm` (v3) on PATH or HELM=/path/to/helm; skipped otherwise. No cluster is
 contacted. Set WORLD_KUBECONFORM=1 (with kubeconform on PATH) to also validate
 the rendered objects against the Kubernetes, cert-manager and Prometheus
-Operator schemas; that fetches schemas over the network.
+Operator schemas; that fetches schemas over the network. Set PROMTOOL to a
+promtool binary to also parse the PrometheusRule expressions.
 """
 import json
 import os
@@ -23,6 +24,7 @@ CRDS = ROOT / 'charts/hangang-world-crds'
 PROFILES = ['minimal', 'ha', 'byo-certs', 'admin']
 HELM = os.environ.get('HELM') or shutil.which('helm') or str(Path.home() / '.local/bin/helm')
 KUBECONFORM = shutil.which('kubeconform') or str(Path.home() / '.local/bin/kubeconform')
+PROMTOOL = os.environ.get('PROMTOOL') or shutil.which('promtool') or ''
 DIGEST = 'sha256:' + 'e' * 64
 
 
@@ -144,10 +146,11 @@ class WorldChart(unittest.TestCase):
         hopae = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
         self.assertEqual(hopae['listen']['grpc_gateway'], '0.0.0.0:8703')
         self.assertEqual(hopae['store'], {'kind': 'sqlite'})
-        self.assertEqual(hopae['authentication'], {'source': 'config'}, 'values own the authentication profiles by default')
+        self.assertEqual(hopae['authentication'], {'source': 'config', 'reload_interval_ms': 1000}, 'values own the authentication profiles by default')
+        self.assertEqual(hopae['reload'], {'tls_interval_secs': 10})
         self.assertEqual(hopae['apps'][0]['app_id'], 'app')
         store = json.loads(named(render('hopae.authentication.source=store'), 'ConfigMap', '-hopae-config')['data']['hopae.json'])
-        self.assertEqual(store['authentication'], {'source': 'store'})
+        self.assertEqual(store['authentication'], {'source': 'store', 'reload_interval_ms': 1000})
         self.assertEqual(len(by_kind(docs, 'PersistentVolumeClaim')), 3)
         for claim in by_kind(docs, 'PersistentVolumeClaim'):
             self.assertEqual(claim['metadata']['annotations']['helm.sh/resource-policy'], 'keep')
@@ -233,8 +236,11 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(claims, {'w-hangang-world-pumgye-state', 'w-hangang-world-hopae-state'}, 'a restored Sumunjang claim needs no new PVC')
         pdbs = {d['metadata']['name'] for d in by_kind(docs, 'PodDisruptionBudget')}
         self.assertEqual(pdbs, {'w-hangang-world-hangang'})
-        monitor = by_kind(docs, 'ServiceMonitor')[0]['spec']['endpoints'][0]
+        monitor = named(docs, 'ServiceMonitor', '-hangang')['spec']['endpoints'][0]
         self.assertEqual((monitor['scheme'], monitor['authorization']['credentials']['key']), ('https', 'hangang-admin-token'))
+        args = gateway['spec']['template']['spec']['containers'][0]['args']
+        self.assertEqual(args[args.index('--kubernetes-max-staleness-seconds') + 1], '600')
+        self.assertEqual(args[args.index('--tls-reload-seconds') + 1], '30')
 
     def test_invalid_values_are_refused(self):
         cases = {
@@ -259,6 +265,17 @@ class WorldChart(unittest.TestCase):
             'test image without digest': ['tests.image.digest='],
             'invalid CIDR': ['hangang.clientAddress.mode=proxyProtocol', 'hangang.clientAddress.proxyProtocolFrom[0]=not-a-cidr'],
             'stale threshold below watch timeout': ['hangang.staleSeconds=30'],
+            'staleness bound below the stale threshold': ['hangang.staleSeconds=120', 'hangang.maxStalenessSeconds=60'],
+            'staleness bound above an hour': ['hangang.maxStalenessSeconds=3601'],
+            'unknown readiness mode': ['hangang.readiness=always'],
+            'Hopae reload interval below 200 ms': ['hopae.authentication.reloadIntervalMs=100'],
+            'chart-owned Hopae reload key': ['json:hopae.config={"reload":{"tls_interval_secs":1}}'],
+            'Pumgye TLS polling off': ['pumgye.tlsReloadSeconds=0'],
+            'Sumunjang TLS polling above an hour': ['sumunjang.tlsReloadSeconds=3601'],
+            'BYO monitoring without a scrape client certificate': ['tls.mode=existingSecrets'] + [
+                f'tls.existingSecrets.{component}=world-{component}-tls' for component in ['hangang', 'hopae', 'pumgye', 'sumunjang']
+            ] + ['monitoring.serviceMonitor.enabled=true', 'hangang.admin.exposeMetrics=true'],
+            'unavailable ratio above one': ['monitoring.prometheusRule.decisionUnavailableRatio=2'],
             'admin without delegation key': ['hopae.admin.enabled=true'],
             'owner without admin listener': ['pumgye.hopaeOwner.enabled=true', 'pumgye.hopaeOwner.tokenSecret.name=t',
                                              'json:pumgye.hopaeOwner.lifecycle={}'],
@@ -323,6 +340,107 @@ class WorldChart(unittest.TestCase):
         self.assertEqual((config['admin']['public_url'], config['admin']['service_audience']), ('https://hopae-admin.example.test', 'world-admin'))
         self.assertEqual(named(custom, 'Certificate', '-hopae-admin')['spec']['dnsNames'],
                          ['hopae-admin.example.test', 'w-hangang-world-hopae-admin.world.svc'])
+
+    def test_runtime_knobs_probes_and_live_reload(self):
+        docs = render()
+        gateway = named(docs, 'Deployment', '-hangang')['spec']['template']['spec']['containers'][0]
+        args = gateway['args']
+        self.assertEqual(args[args.index('--kubernetes-max-staleness-seconds') + 1], '300')
+        self.assertEqual(args[args.index('--kubernetes-readiness') + 1], 'snapshot')
+        self.assertEqual(args[args.index('--tls-reload-seconds') + 1], '10')
+        self.assertEqual(gateway['readinessProbe']['httpGet']['path'], '/-/ready')
+        pumgye = named(docs, 'Deployment', '-pumgye')['spec']['template']['spec']['containers'][0]
+        self.assertEqual(pumgye['args'][pumgye['args'].index('--tls-reload-interval-secs') + 1], '10')
+        self.assertNotIn('--metrics-token-env', pumgye['args'])
+        sumunjang = named(docs, 'Deployment', '-sumunjang')['spec']['template']['spec']['containers'][0]
+        args = sumunjang['args']
+        self.assertIn('--management-tls', args)
+        self.assertEqual(args[args.index('--listen') + 1], '0.0.0.0:9080')
+        self.assertEqual(args[args.index('--readiness-listen') + 1], '0.0.0.0:9083')
+        self.assertEqual(args[args.index('--tls-reload-seconds') + 1], '10')
+        self.assertEqual(sumunjang['readinessProbe']['httpGet'], {'path': '/readyz', 'port': 'readiness'})
+        self.assertEqual(sumunjang['livenessProbe']['httpGet'], {'path': '/healthz', 'port': 'readiness'})
+        self.assertNotIn(9083, [p['port'] for p in named(docs, 'Service', '-sumunjang')['spec']['ports']], 'probe port stays out of the Service')
+        # Hopae: the ConfigMap is a directory mount (never subPath) and only
+        # restart-requiring keys roll the Pod in config mode.
+        hopae = named(docs, 'Deployment', '-hopae')['spec']['template']
+        mount = next(m for m in hopae['spec']['containers'][0]['volumeMounts'] if m['name'] == 'config')
+        self.assertEqual(mount, {'name': 'config', 'mountPath': '/config', 'readOnly': True})
+        for deployment in by_kind(docs, 'Deployment'):
+            for container in deployment['spec']['template']['spec']['containers']:
+                self.assertFalse([m for m in container.get('volumeMounts', []) if 'subPath' in m], container['name'])
+        checksum = hopae['metadata']['annotations']['checksum/config']
+        profiles = 'json:hopae.config.authentication_gateway={"profiles":[]}'
+        live = named(render(profiles), 'Deployment', '-hopae')['spec']['template']['metadata']['annotations']['checksum/config']
+        self.assertEqual(live, checksum, 'profile edits are reconciled live, without a rollout')
+        restart = named(render('hopae.config.portal.public_url=https://login.example.test'), 'Deployment', '-hopae')
+        self.assertNotEqual(restart['spec']['template']['metadata']['annotations']['checksum/config'], checksum)
+        store = named(render('hopae.authentication.source=store'), 'Deployment', '-hopae')['spec']['template']['metadata']['annotations']['checksum/config']
+        stored = named(render('hopae.authentication.source=store', profiles), 'Deployment', '-hopae')
+        self.assertNotEqual(stored['spec']['template']['metadata']['annotations']['checksum/config'], store, 'store mode bootstraps on start')
+        tuned = json.loads(named(render('hopae.authentication.reloadIntervalMs=0', 'hopae.tlsReloadSeconds=60'),
+                                 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual((tuned['authentication']['reload_interval_ms'], tuned['reload']), (0, {'tls_interval_secs': 60}))
+        self.assertFalse(by_kind(docs, 'ServiceMonitor') + by_kind(docs, 'PrometheusRule'))
+
+    def test_service_monitors_and_alerts(self):
+        docs = render(profile='ha')
+        monitors = {d['metadata']['name']: d['spec'] for d in by_kind(docs, 'ServiceMonitor')}
+        self.assertEqual(set(monitors), {f'w-hangang-world-{c}' for c in ['hangang', 'pumgye', 'sumunjang']}, 'Hopae has no /metrics')
+        for component, key in [('pumgye', 'pumgye-metrics-token'), ('sumunjang', 'guard-metrics-token')]:
+            endpoint = monitors[f'w-hangang-world-{component}']['endpoints'][0]
+            self.assertEqual((endpoint['port'], endpoint['scheme'], endpoint['path']), ('management', 'https', '/metrics'))
+            self.assertEqual(endpoint['authorization']['credentials'], {'name': 'hangang-world-credentials', 'key': key})
+            tls = endpoint['tlsConfig']
+            self.assertEqual(tls['serverName'], f'w-hangang-world-{component}.world.svc')
+            self.assertEqual(tls['cert']['secret']['name'], 'w-hangang-world-metrics-client-tls')
+            self.assertEqual(tls['keySecret'], {'name': 'w-hangang-world-metrics-client-tls', 'key': 'tls.key'})
+            self.assertNotIn('insecureSkipVerify', tls)
+        client = named(docs, 'Certificate', '-metrics-client')['spec']
+        self.assertEqual(client['usages'], ['client auth', 'digital signature', 'key encipherment'])
+        self.assertEqual(client['issuerRef']['name'], 'world-ca')
+        pumgye = named(docs, 'Deployment', '-pumgye')['spec']['template']['spec']['containers'][0]
+        self.assertEqual(pumgye['args'][pumgye['args'].index('--metrics-token-env') + 1], 'PUMGYE_METRICS_TOKEN')
+        self.assertEqual(next(e for e in pumgye['env'] if e['name'] == 'PUMGYE_METRICS_TOKEN')['valueFrom']['secretKeyRef']['key'], 'pumgye-metrics-token')
+        sumunjang = named(docs, 'Deployment', '-sumunjang')['spec']['template']['spec']['containers'][0]
+        self.assertEqual(next(e for e in sumunjang['env'] if e['name'] == 'HANGANG_GUARD_METRICS_TOKEN')['valueFrom']['secretKeyRef']['key'], 'guard-metrics-token')
+        policies = {d['metadata']['name']: d['spec'] for d in by_kind(docs, 'NetworkPolicy')}
+        for component, port in [('pumgye', 9084), ('sumunjang', 9080)]:
+            rule = policies[f'w-hangang-world-{component}']['ingress'][1]
+            self.assertEqual(rule['ports'], [{'port': port, 'protocol': 'TCP'}])
+            self.assertEqual(rule['from'], [{'namespaceSelector': {'matchLabels': {'kubernetes.io/metadata.name': 'monitoring'}}}])
+        rules = by_kind(docs, 'PrometheusRule')[0]['spec']['groups']
+        alerts = {r['alert']: r['expr'] for group in rules for r in group['rules']}
+        for name in ['HangangProtectedRoutesFailClosed', 'HangangKubernetesSnapshotStale', 'HangangTLSReloadFailing',
+                     'PumgyeTLSReloadFailing', 'PumgyeCertificateExpiringSoon', 'PumgyeDecisionsUnavailable',
+                     'SumunjangCheckpointStale', 'SumunjangTLSReloadFailing', 'SumunjangCertificateExpiringSoon',
+                     'SumunjangDecisionsUnavailable', 'WorldCertificateExpiringSoon']:
+            self.assertIn(name, alerts)
+        self.assertIn('< 604800', alerts['PumgyeCertificateExpiringSoon'])
+        self.assertIn('job="w-hangang-world-hangang-admin"', alerts['HangangTLSReloadFailing'])
+        self.assertIn('> 60', alerts['SumunjangCheckpointStale'])
+        self.assertNotIn('PumgyeHopaeFeedStale', alerts, 'no Hopae owner feed in the HA profile')
+        owner = {r['alert']: r['expr'] for group in by_kind(render('monitoring.prometheusRule.enabled=true', profile='admin'), 'PrometheusRule')[0]['spec']['groups']
+                 for r in group['rules']}
+        self.assertIn('> 900', owner['PumgyeHopaeFeedStale'], 'defaults to the projection max_staleness_secs')
+        self.assertNotIn('HangangTLSReloadFailing', owner, 'Hangang alerts need its metrics listener')
+        byo = render(profile='byo-certs')
+        self.assertFalse([d for d in by_kind(byo, 'Certificate')])
+        endpoint = named(byo, 'ServiceMonitor', '-sumunjang')['spec']['endpoints'][0]
+        self.assertEqual(endpoint['tlsConfig']['cert']['secret']['name'], 'world-metrics-client-tls')
+        byo_alerts = {r['alert'] for group in by_kind(byo, 'PrometheusRule')[0]['spec']['groups'] for r in group['rules']}
+        self.assertNotIn('WorldCertificateExpiringSoon', byo_alerts, 'no cert-manager without certManager mode')
+
+    @unittest.skipUnless(PROMTOOL and Path(PROMTOOL).exists(), 'set PROMTOOL=/path/to/promtool')
+    def test_alert_expressions_parse(self):
+        for profile in ['ha', 'admin', 'byo-certs']:
+            docs = render('monitoring.prometheusRule.enabled=true', 'monitoring.serviceMonitor.enabled=true',
+                          'hangang.admin.exposeMetrics=true', profile=profile)
+            with tempfile.NamedTemporaryFile('w', suffix='.yaml') as rules:
+                yaml.safe_dump(by_kind(docs, 'PrometheusRule')[0]['spec'], rules)
+                rules.flush()
+                result = subprocess.run([PROMTOOL, 'check', 'rules', rules.name], capture_output=True, text=True, timeout=60)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_client_address_modes(self):
         docs = render('hangang.clientAddress.mode=hostNetwork', 'hangang.service.type=ClusterIP')

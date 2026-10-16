@@ -1,0 +1,158 @@
+{{- if .Values.monitoring.prometheusRule.enabled }}
+{{- $r := .Values.monitoring.prometheusRule }}
+{{- $ns := .Release.Namespace }}
+{{- $prefix := include "world.fullname" . }}
+{{- $expiry := mul (int $r.certificateExpiryDays) 86400 }}
+{{- $hangang := printf "namespace=%q,job=%q" $ns (printf "%s-admin" (include "world.name" (dict "root" . "component" "hangang"))) }}
+{{- $pumgye := printf "namespace=%q,job=%q" $ns (include "world.name" (dict "root" . "component" "pumgye")) }}
+{{- $sumunjang := printf "namespace=%q,job=%q" $ns (include "world.name" (dict "root" . "component" "sumunjang")) }}
+{{- $projection := $r.projectionStalenessSeconds }}
+{{- if not $projection }}
+{{- $projection = 900 }}
+{{- with .Values.pumgye.hopaeOwner.projection }}{{- with .max_staleness_secs }}{{- $projection = . }}{{- end }}{{- end }}
+{{- end }}
+# Alerts recommended by the component documentation: Hangang
+# (docs/KUBERNETES.md, docs/TLS_RELOAD.md, docs/KUBERNETES_PROTECTION.md),
+# Pumgye (docs/SERVER.md), Sumunjang (docs/METRICS.md) and cert-manager
+# expiry for every certificate of this release (Hopae has no /metrics yet).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ $prefix }}
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "monitoring") | nindent 4 }}
+    {{- with $r.labels }}{{ toYaml . | nindent 4 }}{{ end }}
+spec:
+  groups:
+    {{- if and .Values.hangang.enabled .Values.hangang.admin.exposeMetrics }}
+    - name: hangang-world.hangang
+      rules:
+        - alert: HangangProtectedRoutesFailClosed
+          expr: max by (namespace, pod) (hangang_kubernetes_protected_fail_closed{ {{- $hangang -}} }) == 1
+          for: 1m
+          labels: {severity: critical}
+          annotations:
+            summary: Kubernetes snapshot older than the staleness bound; protected routes answer 503
+            description: '{{ "{{ $labels.pod }}" }} has not confirmed its Kubernetes snapshot within hangang.maxStalenessSeconds; protected routes fail closed (x-hangang-reason: kubernetes-authority-stale) while public routes keep serving. Check API-server reachability.'
+        - alert: HangangKubernetesSnapshotStale
+          expr: max by (namespace, pod) (hangang_kubernetes_snapshot_age_seconds{ {{- $hangang -}} } > hangang_kubernetes_max_snapshot_staleness_seconds{ {{- $hangang -}} } / 2)
+          for: 1m
+          labels: {severity: warning}
+          annotations:
+            summary: Kubernetes snapshot past half of its staleness bound
+            description: '{{ "{{ $labels.pod }}" }} snapshot age is {{ "{{ $value | humanizeDuration }}" }}; protected routes fail closed at the bound.'
+        - alert: HangangTLSReloadFailing
+          expr: max by (namespace, pod, material) (hangang_tls_reload_failing{ {{- $hangang -}} }) == 1
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Rotated certificate material rejected; previous certificate still in use
+            description: '{{ "{{ $labels.pod }}" }} rejected new {{ "{{ $labels.material }}" }} material; fix the files before the old certificate expires.'
+        {{- if .Values.hangang.protection.enabled }}
+        - alert: HangangIngressesWithheld
+          expr: max by (namespace, pod) (hangang_kubernetes_ingresses_withheld{ {{- $hangang -}} }) > 0
+          for: 15m
+          labels: {severity: warning}
+          annotations:
+            summary: Ingresses withheld for missing or invalid protection
+            description: 'See GET /v1/kubernetes/protection or the ProtectionPolicy status for the reason.'
+        {{- end }}
+    {{- end }}
+    {{- if .Values.pumgye.enabled }}
+    - name: hangang-world.pumgye
+      rules:
+        - alert: PumgyeUnavailable
+          expr: max by (namespace, pod) (pumgye_available{ {{- $pumgye -}} }) == 0
+          for: 2m
+          labels: {severity: critical}
+          annotations:
+            summary: Pumgye cannot decide; protected routes are refused
+        - alert: PumgyeDecisionsUnavailable
+          expr: sum by (namespace) (rate(pumgye_decisions_total{ {{- $pumgye -}} ,outcome="unavailable"}[10m])) / sum by (namespace) (rate(pumgye_decisions_total{ {{- $pumgye -}} }[10m])) > {{ $r.decisionUnavailableRatio }}
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Share of Pumgye decisions answered unavailable above {{ $r.decisionUnavailableRatio }}
+        - alert: PumgyeTLSReloadFailing
+          expr: max by (namespace, pod, name) (pumgye_tls_reload_failing{ {{- $pumgye -}} }) == 1
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Pumgye rejected rotated TLS material; previous certificate still in use
+        - alert: PumgyeCertificateExpiringSoon
+          expr: min by (namespace, pod, name) (pumgye_tls_leaf_expiry_seconds{ {{- $pumgye -}} }) < {{ $expiry }}
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Pumgye certificate expires within {{ $r.certificateExpiryDays }} days
+        {{- if .Values.pumgye.hopaeOwner.enabled }}
+        - alert: PumgyeHopaeFeedStale
+          expr: max by (namespace, pod, feed) (pumgye_hopae_staleness_seconds{ {{- $pumgye -}} }) > {{ $projection }}
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Pumgye's Hopae {{ "{{ $labels.feed }}" }} feed is older than {{ $projection }} s
+        {{- end }}
+        - alert: PumgyeShadowMismatchUnexplained
+          expr: increase(pumgye_shadow_mismatches_total{ {{- $pumgye -}} ,explained="false"}[30m]) > 0
+          labels: {severity: info}
+          annotations:
+            summary: Unexplained v1/v2 shadow decision mismatch
+    {{- end }}
+    {{- if .Values.sumunjang.enabled }}
+    - name: hangang-world.sumunjang
+      rules:
+        - alert: SumunjangNotReady
+          expr: max by (namespace, pod) (sumunjang_ready{ {{- $sumunjang -}} }) == 0
+          for: 2m
+          labels: {severity: critical}
+          annotations:
+            summary: Sumunjang is not ready; gateway admission fails closed
+        - alert: SumunjangCheckpointStale
+          expr: max by (namespace, pod) (sumunjang_checkpoint_age_seconds{ {{- $sumunjang -}} }) > {{ $r.checkpointAgeSeconds }}
+          for: 2m
+          labels: {severity: warning}
+          annotations:
+            summary: Sumunjang durable checkpoint older than {{ $r.checkpointAgeSeconds }} s
+        - alert: SumunjangDecisionsUnavailable
+          expr: sum by (namespace) (rate(sumunjang_decisions_unavailable_total{ {{- $sumunjang -}} }[10m])) / (sum by (namespace) (rate(sumunjang_decisions_total{ {{- $sumunjang -}} }[10m])) + sum by (namespace) (rate(sumunjang_decisions_unavailable_total{ {{- $sumunjang -}} }[10m]))) > {{ $r.decisionUnavailableRatio }}
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Share of Sumunjang decisions answered unavailable above {{ $r.decisionUnavailableRatio }}
+        - alert: SumunjangTLSReloadFailing
+          expr: max by (namespace, pod) (sumunjang_tls_reload_consecutive_failures{ {{- $sumunjang -}} }) > 0 or increase(sumunjang_tls_reload_failures_total{ {{- $sumunjang -}} }[15m]) > 0
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Sumunjang rejected rotated TLS material; previous certificate still in use
+        - alert: SumunjangCertificateExpiringSoon
+          expr: min by (namespace, pod) (sumunjang_tls_leaf_expiry_seconds{ {{- $sumunjang -}} }) < {{ $expiry }}
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Sumunjang certificate expires within {{ $r.certificateExpiryDays }} days
+        - alert: SumunjangEvidenceDropped
+          expr: increase(sumunjang_evidence_dropped_capacity_total{ {{- $sumunjang -}} }[15m]) > 0 or increase(sumunjang_history_dropped_total{ {{- $sumunjang -}} }[15m]) > 0
+          labels: {severity: info}
+          annotations:
+            summary: Sumunjang dropped evidence or history at capacity
+    {{- end }}
+    {{- if and $r.certManagerExpiry (eq .Values.tls.mode "certManager") }}
+    - name: hangang-world.certificates
+      rules:
+        - alert: WorldCertificateExpiringSoon
+          expr: min by (namespace, name) (certmanager_certificate_expiration_timestamp_seconds{namespace={{ $ns | quote }},name=~{{ printf "%s-.*" $prefix | quote }}} - time()) < {{ $expiry }}
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Certificate {{ "{{ $labels.name }}" }} expires within {{ $r.certificateExpiryDays }} days
+            description: cert-manager should have renewed it (renewBefore); check the Certificate and Issuer status.
+        - alert: WorldCertificateNotReady
+          expr: max by (namespace, name) (certmanager_certificate_ready_status{namespace={{ $ns | quote }},name=~{{ printf "%s-.*" $prefix | quote }},condition="False"}) == 1
+          for: 15m
+          labels: {severity: warning}
+          annotations:
+            summary: Certificate {{ "{{ $labels.name }}" }} is not Ready
+    {{- end }}
+{{- end }}

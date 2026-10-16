@@ -55,9 +55,13 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `hangang.service.type` / `port` / `nodePort` | `LoadBalancer` / `80` / `null` | Public Service |
 | `hangang.clientAddress.mode` / `proxyProtocolFrom` | `serviceLocal` / `[]` | Client address preservation |
 | `hangang.admin.exposeMetrics` | `false` | Serve the admin API (TLS) on the Pod network for metrics |
+| `hangang.maxStalenessSeconds` | `300` | ADR 0022 bounded staleness: beyond it protected routes answer 503 (`kubernetes-authority-stale`), public routes keep last-good |
+| `hangang.readiness` | `snapshot` | `snapshot`: ready while serving an activated snapshot; `fresh`: not ready while a watch is stale |
+| `<component>.tlsReloadSeconds` | `10` | Certificate/key/CA content polling; rotated material is used without a restart (Pumgye 1–3600, others 0 = off) |
+| `hopae.authentication.reloadIntervalMs` | `1000` | Live reconciliation of profiles and projection plans in `config` mode (0 off, 200–60000); these keys do not roll the Pod |
 | `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC); `postgresql` is refused until Hopae ships its PostgreSQL store |
 | `hopae.authentication.source` | `config` | `config`: values own the authentication profiles and every rollout reconciles Hopae's store (Hopae PR #13); `store`: values bootstrap an empty store only |
-| `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway`, `authentication` are chart-owned |
+| `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway`, `authentication`, `reload` are chart-owned |
 | `hopae.extraSecretEnv` | `[]` | Environment variables from Secrets (provider client secrets) |
 | `hopae.admin.enabled` | `false` | Hopae admin listener 8702 with mutual TLS, ClusterIP-only `-admin` Service, own server certificate (`tls.existingSecrets.hopaeAdmin` when BYO); NetworkPolicy admits only Hangang and Pumgye |
 | `hopae.admin.publicUrl` / `untrustedPeers` / `serviceAudience` | in-cluster admin Service / `as_client` / `""` | Console origin callers must address; `service_audience` needs Hopae with service credentials (PR #10) |
@@ -66,7 +70,10 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `pumgye.bootstrapPolicy` / `sumunjang.bootstrapPolicy` | minimal | Used only when the database is empty |
 | `<component>.persistence.size` / `storageClassName` / `existingClaim` | `1Gi` / `""` / `""` | State volume |
 | `networkPolicy.enabled` / `publicFrom` / `metricsFrom` | `true` / `[]` / `[]` | NetworkPolicies |
-| `monitoring.serviceMonitor.*` | disabled | Prometheus Operator scrape of the gateway |
+| `monitoring.serviceMonitor.*` | disabled | ServiceMonitors for Hangang (admin bearer), Pumgye and Sumunjang (mutual TLS + read-only metrics bearer); Hopae has no `/metrics` |
+| `monitoring.serviceMonitor.clientCertificate.existingSecret` | `""` | Scrape client certificate for the mutual-TLS listeners; issued by the chart with cert-manager |
+| `credentials.keys.pumgyeMetricsToken` / `guardMetricsToken` | `pumgye-metrics-token` / `guard-metrics-token` | Read-only scrape credentials, read while ServiceMonitors are enabled |
+| `monitoring.prometheusRule.*` | disabled | Recommended alerts (TLS reload failing, certificate expiry, staleness, checkpoint age, projection freshness, decision availability) |
 | `tests.enabled` / `tests.image` | `true` / busybox | `helm test` Pod (needs `sh`, `nc`, `wget`; digest required) |
 
 Profiles used by CI live in [`ci/`](ci): `minimal`, `ha` (gateway ×3 behind PROXY v2, ClusterIssuer, ServiceMonitor, cluster scope) and `byo-certs`, plus `admin` (Hopae admin listener and Pumgye owner). The chart was also qualified on a disposable local cluster; see the [install guide](../../docs/HELM_INSTALL.md#qualification--disposable-local-cluster-2026-10-17).

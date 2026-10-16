@@ -49,9 +49,19 @@ spec:
           image: {{ include "world.image" (dict "image" $v.image "component" "sumunjang") }}
           imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
           args:
+            # Management API (and /metrics) on the Pod network over mandatory
+            # client-certificate HTTPS with the decision TLS identity.
             - --management-tls
             - --listen
             - 0.0.0.0:9080
+            # Probe-only plain HTTP: /readyz (source freshness, checkpoint)
+            # and /healthz; no management routes, not in the Service.
+            - --readiness-listen
+            - 0.0.0.0:9083
+            # Poll the decision TLS files by content; rotated material is
+            # swapped into all three listeners without a restart.
+            - --tls-reload-seconds
+            - {{ $v.tlsReloadSeconds | quote }}
             - --decision-listen
             - 0.0.0.0:9081
             - --grpc-listen
@@ -71,20 +81,29 @@ spec:
           env:
             {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_COLLECTOR_TOKEN" "key" "guardCollectorToken") | nindent 12 }}
             {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_ADMIN_TOKEN" "key" "guardAdminToken") | nindent 12 }}
+            {{- if .Values.monitoring.serviceMonitor.enabled }}
+            # Read-only /metrics credential (opens nothing else).
+            {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_METRICS_TOKEN" "key" "guardMetricsToken") | nindent 12 }}
+            {{- end }}
           ports:
             - {name: management, containerPort: 9080, protocol: TCP}
             - {name: binary-mtls, containerPort: 9081, protocol: TCP}
             - {name: grpc-mtls, containerPort: 9082, protocol: TCP}
+            - {name: readiness, containerPort: 9083, protocol: TCP}
           readinessProbe:
-            tcpSocket:
-              port: grpc-mtls
+            httpGet:
+              path: /readyz
+              port: readiness
             periodSeconds: 2
+            timeoutSeconds: 1
             failureThreshold: 2
           livenessProbe:
-            tcpSocket:
-              port: grpc-mtls
+            httpGet:
+              path: /healthz
+              port: readiness
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 2
           resources:
             {{- toYaml $v.resources | nindent 12 }}
           securityContext:

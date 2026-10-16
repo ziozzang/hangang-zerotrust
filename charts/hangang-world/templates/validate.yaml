@@ -18,8 +18,14 @@
 {{- if and (eq $v.hangang.clientAddress.mode "serviceLocal") (eq $v.hangang.service.type "ClusterIP") -}}
 {{- fail "hangang.clientAddress.mode=serviceLocal needs hangang.service.type LoadBalancer or NodePort (externalTrafficPolicy: Local)" -}}
 {{- end -}}
-{{- if and $v.monitoring.serviceMonitor.enabled (not $v.hangang.admin.exposeMetrics) -}}
+{{- if and $v.monitoring.serviceMonitor.enabled $v.hangang.enabled (not $v.hangang.admin.exposeMetrics) -}}
 {{- fail "monitoring.serviceMonitor.enabled needs hangang.admin.exposeMetrics=true" -}}
+{{- end -}}
+{{- if and $v.monitoring.serviceMonitor.enabled (eq $v.tls.mode "existingSecrets") (or $v.pumgye.enabled $v.sumunjang.enabled) (not $v.monitoring.serviceMonitor.clientCertificate.existingSecret) -}}
+{{- fail "monitoring.serviceMonitor with tls.mode=existingSecrets needs monitoring.serviceMonitor.clientCertificate.existingSecret (client certificate for the mutual-TLS management listeners)" -}}
+{{- end -}}
+{{- if and $v.hangang.enabled (lt (int $v.hangang.maxStalenessSeconds) (int $v.hangang.staleSeconds)) -}}
+{{- fail "hangang.maxStalenessSeconds must be at least hangang.staleSeconds" -}}
 {{- end -}}
 {{- if and $v.tests.enabled (not $v.tests.image.digest) -}}
 {{- fail "tests.image.digest is required while tests.enabled (or set tests.enabled=false)" -}}

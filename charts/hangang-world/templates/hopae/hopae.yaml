@@ -11,7 +11,8 @@
   "state_dir" "/state"
   "store" (ternary (dict "kind" "postgres" "url_env" "HOPAE_STORE_URL") (dict "kind" "sqlite") $postgres)
   "gateway" (dict "kind" "hangang" "caller_key_env" "HOPAE_GATEWAY_KEY")
-  "authentication" (dict "source" $v.authentication.source) }}
+  "authentication" (dict "source" $v.authentication.source "reload_interval_ms" (int $v.authentication.reloadIntervalMs))
+  "reload" (dict "tls_interval_secs" (int $v.tlsReloadSeconds)) }}
 {{- $admin := $v.admin }}
 {{- if $admin.enabled }}
 {{- $_ := set $owned.listen "admin" "0.0.0.0:8702" }}
@@ -24,6 +25,13 @@
 {{- $_ := set $owned "admin" $console }}
 {{- end }}
 {{- $config := merge $owned (deepCopy $v.config) }}
+{{- /* In config mode Hopae reconciles authentication profiles and projection
+       plans live from the mounted file, so those keys must not roll the Pod;
+       every other key still needs a restart and does. */}}
+{{- $restartKeys := $config }}
+{{- if eq $v.authentication.source "config" }}
+{{- $restartKeys = omit $config "authentication_gateway" "credential_projection" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -63,7 +71,7 @@ spec:
         {{- include "world.labels" $ctx | nindent 8 }}
         {{- with $v.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
       annotations:
-        checksum/config: {{ toJson $config | sha256sum }}
+        checksum/config: {{ toJson $restartKeys | sha256sum }}
         {{- with $v.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
     spec:
       serviceAccountName: {{ include "world.name" $ctx }}
@@ -145,6 +153,9 @@ spec:
               readOnly: true
             {{- end }}
       volumes:
+        # Mounted as a directory, never subPath: the kubelet then replaces the
+        # file (symlink swap) when the ConfigMap changes and Hopae's poller
+        # picks it up; a subPath mount would never be updated.
         - name: config
           configMap:
             name: {{ include "world.name" $ctx }}-config

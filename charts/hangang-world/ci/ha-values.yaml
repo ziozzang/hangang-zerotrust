@@ -19,6 +19,9 @@ monitoring:
   serviceMonitor:
     enabled: true
     labels: {release: prometheus}
+  prometheusRule:
+    enabled: true
+    labels: {release: prometheus}
 tests:
   image:
     digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -27,6 +30,9 @@ hangang:
   watchScope: Cluster
   publishAddress: gateway.example.test
   kubernetesTls: true
+  maxStalenessSeconds: 600
+  readiness: snapshot
+  tlsReloadSeconds: 30
   service:
     type: LoadBalancer
     port: 443

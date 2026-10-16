@@ -95,7 +95,7 @@ schema = obj({
     'credentials': obj({
         'existingSecret': {'type': 'string', 'minLength': 1, 'maxLength': 253, 'pattern': DNS_SUBDOMAIN,
                            'description': 'Pre-created Secret with the shared API credentials. Inline secret values are not accepted.'},
-        'keys': obj({k: KEY for k in ['hangangAdminToken', 'hopaeGatewayKey', 'guardCollectorToken', 'guardAdminToken', 'pumgyeDecisionToken', 'pumgyeAdminToken']},
+        'keys': obj({k: KEY for k in ['hangangAdminToken', 'hopaeGatewayKey', 'guardCollectorToken', 'guardAdminToken', 'pumgyeDecisionToken', 'pumgyeAdminToken', 'pumgyeMetricsToken', 'guardMetricsToken']},
                     required=['hangangAdminToken', 'hopaeGatewayKey', 'guardCollectorToken', 'guardAdminToken', 'pumgyeDecisionToken', 'pumgyeAdminToken']),
     }, required=['existingSecret', 'keys']),
     'tls': obj({
@@ -114,8 +114,18 @@ schema = obj({
         'publicFrom': {'type': 'array', 'maxItems': 64, 'items': {'type': 'object'}},
         'metricsFrom': {'type': 'array', 'maxItems': 64, 'items': {'type': 'object'}},
     }, required=['enabled']),
-    'monitoring': obj({'serviceMonitor': obj({
-        'enabled': {'type': 'boolean'}, 'interval': DURATION, 'scrapeTimeout': DURATION, 'labels': string_map()})}),
+    'monitoring': obj({
+        'serviceMonitor': obj({
+            'enabled': {'type': 'boolean'}, 'interval': DURATION, 'scrapeTimeout': DURATION, 'labels': string_map(),
+            'clientCertificate': obj({'existingSecret': SECRET_NAME})}),
+        'prometheusRule': obj({
+            'enabled': {'type': 'boolean'}, 'labels': string_map(),
+            'certificateExpiryDays': {'type': 'integer', 'minimum': 1, 'maximum': 365},
+            'certManagerExpiry': {'type': 'boolean'},
+            'checkpointAgeSeconds': {'type': 'integer', 'minimum': 1, 'maximum': 86400},
+            'projectionStalenessSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 604800},
+            'decisionUnavailableRatio': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 1}}),
+    }),
     'tests': obj({'enabled': {'type': 'boolean'}, 'image': obj({
         'repository': {'type': 'string', 'minLength': 1, 'maxLength': 255},
         'tag': {'type': 'string', 'maxLength': 128},
@@ -127,6 +137,10 @@ schema = obj({
         'publishAddress': {'type': 'string', 'maxLength': 253, 'pattern': '^$|^[0-9a-fA-F:.]+$|' + DNS_SUBDOMAIN},
         'kubernetesTls': {'type': 'boolean'},
         'staleSeconds': {'type': 'integer', 'minimum': 31, 'maximum': 3600},
+        'maxStalenessSeconds': {'type': 'integer', 'minimum': 60, 'maximum': 3600,
+                                'description': 'ADR 0022 bounded staleness; at least staleSeconds.'},
+        'readiness': {'enum': ['snapshot', 'fresh']},
+        'tlsReloadSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 3600},
         'protection': obj({
             'enabled': {'type': 'boolean'},
             'requireProtection': {'type': 'boolean'},
@@ -160,9 +174,13 @@ schema = obj({
     'hopae': component('Hopae', {
         'storage': storage(['sqlite', 'postgresql']),
         'persistence': PERSISTENCE,
-        'authentication': obj({'source': {'enum': ['config', 'store']}}, required=['source']),
-        'config': obj({}, extra=True, description='Hopae configuration minus the chart-owned listen, state_dir, store, gateway and authentication.',
-                      **{'not': {'anyOf': [{'required': [k]} for k in ['listen', 'state_dir', 'store', 'gateway', 'authentication']]}}),
+        'authentication': obj({'source': {'enum': ['config', 'store']},
+                               'reloadIntervalMs': {'type': 'integer', 'minimum': 0, 'maximum': 60000,
+                                                    'not': {'type': 'integer', 'exclusiveMinimum': 0, 'exclusiveMaximum': 200}}},
+                              required=['source']),
+        'tlsReloadSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 3600},
+        'config': obj({}, extra=True, description='Hopae configuration minus the chart-owned listen, state_dir, store, gateway, authentication and reload.',
+                      **{'not': {'anyOf': [{'required': [k]} for k in ['listen', 'state_dir', 'store', 'gateway', 'authentication', 'reload']]}}),
         'extraSecretEnv': {'type': 'array', 'maxItems': 64, 'items': obj({
             'name': {'type': 'string', 'pattern': '^[A-Z_][A-Z0-9_]{0,127}$'},
             'secretName': {'type': 'string', 'pattern': DNS_SUBDOMAIN, 'maxLength': 253},
@@ -196,12 +214,14 @@ schema = obj({
                 'poll_interval_secs': {'type': 'integer', 'minimum': 1, 'maximum': 3600},
                 'reconcile_interval_secs': {'type': 'integer', 'minimum': 1, 'maximum': 604800}})]},
         }, required=['enabled']),
+        'tlsReloadSeconds': {'type': 'integer', 'minimum': 1, 'maximum': 3600},
     }, required=['storage', 'persistence', 'bootstrapPolicy'], replicas_max=1),
     'sumunjang': component('Sumunjang', {
         'storage': storage(['sqlite']),
         'persistence': PERSISTENCE,
         'bootstrapPolicy': free_object('Sumunjang bootstrap policy, used only when the database is empty.'),
         'threads': {'type': 'integer', 'minimum': 1, 'maximum': 64},
+        'tlsReloadSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 3600},
     }, required=['storage', 'persistence', 'bootstrapPolicy'], replicas_max=1),
 }, required=['global', 'credentials', 'tls', 'networkPolicy', 'hangang', 'hopae', 'pumgye', 'sumunjang'])
 schema['$schema'] = 'https://json-schema.org/draft-07/schema#'

@@ -83,6 +83,15 @@ spec:
             - /tls/tls.key
             - --client-ca
             - /tls/ca.crt
+            # Poll certificate/key/CA files of every listener and outbound
+            # client by content and swap rotated material without a restart.
+            - --tls-reload-interval-secs
+            - {{ $v.tlsReloadSeconds | quote }}
+            {{- if .Values.monitoring.serviceMonitor.enabled }}
+            # Read-only /metrics credential (opens nothing else).
+            - --metrics-token-env
+            - PUMGYE_METRICS_TOKEN
+            {{- end }}
             {{- if $v.hopaeOwner.enabled }}
             - --hopae-owner
             - /config/hopae-owner.json
@@ -90,6 +99,9 @@ spec:
           env:
             {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_ADMIN_TOKEN" "key" "pumgyeAdminToken") | nindent 12 }}
             {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_DECISION_TOKEN" "key" "pumgyeDecisionToken") | nindent 12 }}
+            {{- if .Values.monitoring.serviceMonitor.enabled }}
+            {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_METRICS_TOKEN" "key" "pumgyeMetricsToken") | nindent 12 }}
+            {{- end }}
             {{- if $v.hopaeOwner.enabled }}
             - name: PUMGYE_HOPAE_TOKEN
               valueFrom:

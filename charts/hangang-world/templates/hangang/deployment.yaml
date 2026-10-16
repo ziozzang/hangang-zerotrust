@@ -71,6 +71,15 @@ spec:
             - {{ $h.ingressClass.name | quote }}
             - --kubernetes-stale-seconds
             - {{ $h.staleSeconds | quote }}
+            # ADR 0022 bounded staleness and snapshot-based readiness.
+            - --kubernetes-max-staleness-seconds
+            - {{ $h.maxStalenessSeconds | quote }}
+            - --kubernetes-readiness
+            - {{ $h.readiness | quote }}
+            # Poll certificate files by content; rotated material is used
+            # for new connections without a restart.
+            - --tls-reload-seconds
+            - {{ $h.tlsReloadSeconds | quote }}
             {{- with $h.publishAddress }}
             - --kubernetes-publish-address
             - {{ . | quote }}
@@ -151,9 +160,10 @@ spec:
               containerPort: 9000
               protocol: TCP
             {{- end }}
-          # Readiness follows controller authority (fresh, complete API caches
-          # and a published snapshot); liveness stays a socket check so a
-          # replica cut off from the API drains instead of restarting.
+          # Readiness follows the published, activated snapshot (readiness:
+          # snapshot) or controller authority (readiness: fresh); liveness
+          # stays a socket check so a replica cut off from the API keeps
+          # serving instead of restarting.
           readinessProbe:
             {{- if $tls }}
             # SNI-only TLS: a probe without a server name cannot complete the

@@ -90,7 +90,7 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **Hangang 버전.** ProtectionPolicy 지원(Hangang PR #21)이 digest가 가리키는 릴리스 이미지에 들어 있어야 합니다.
 - **Hopae PostgreSQL.** Hopae의 PostgreSQL 저장소는 계획(Hopae ADR-0002, M2)되어 있으나 릴리스되지 않았습니다(Hopae 0.0.10은 `store.url_env`를 거부). 그 기능이 나올 때까지 차트는 `hopae.storage.backend: postgresql`을 거부하므로 Hopae는 SQLite 단일 복제본으로 실행됩니다.
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
-- **실제 검증.** 로컬 클러스터 실행은 보호된 요청 체인, 거부, 장애, 업그레이드와 되돌리기를 다룹니다. ADR 0022의 철회 SLO, 10분 API 중단, 재시작 없는 인증서 회전, 다중 노드 동작은 아직 검증하지 않았습니다.
+- **실제 검증.** 로컬·원격 실행은 보호된 체인, 철회, 10분 API 중단, 인증서 회전, 노드 drain을 다룹니다. 남은 결함: Hopae/Pumgye/Sumunjang의 인증서 무중단 재로드 없음, Hangang의 API 중단 시 실패 시 닫힘 한도 없음, Hopae 선언형 철회의 롤아웃 의존.
 
 ## Hopae 인증 프로필(설정 권위 모드)
 
@@ -164,6 +164,23 @@ Hangang은 API에 접속하기 전에 생성된 보호 설정을 읽고 검증�
 거부했습니다). Hopae 소유자 API로 변경하십시오. 단일 기록자를 재시작하면 설계대로 몇 초
 동안 보호된 트래픽이 실패 시 닫힙니다. 이후 클러스터, 빌드·다운로드한 모든 이미지와
 빌드 디렉터리를 제거했습니다.
+
+## 검증 기록 — 원격 k3s 게이트 (2026-10-17)
+
+ADR 0022의 남은 게이트를 소유자 승인 아래 사용자 지정 원격 k3s 테스트 클러스터(노드 2개, k3s v1.37.1)에서 실행했습니다. 먼저 새 콜드 백업을 만들고 원격·오프호스트 사본의 크기, 전체 SHA-256, 아카이브 목록이 일치함을 확인했습니다. 이미지: Hangang `a8e15e6`(PR #21), Hopae `integrate/identity-platform` + #10 + #13 로컬 병합, Pumgye `00f0d00`, Sumunjang `321eb6d` 정적 빌드를 레지스트리 없이 두 노드에 적재했습니다. cert-manager v1.15.3을 임시로 설치했고, CRD 차트는 `rbac.aggregatedRoles=false`로 실행했습니다.
+
+| 게이트 | 결과 |
+| --- | --- |
+| Pumgye 권한 철회/복원 20회, 70–90 ms 프로브 | 커밋 후 첫 거부/허용 p50 0.03초, 최대 0.05초, 0.2초 이후 불일치 표본 없음 |
+| 클라이언트에 대한 Sumunjang 차단/해제 20회 | p50 0.02초, 최대 0.05초, 거부된 요청은 백엔드에 도달하지 않음 |
+| `authentication.source: config`에서 Hopae 키 철회(values 변경 + 롤아웃) | `helm upgrade` 시작 4.8초 후 첫 401, 단일 Hopae Pod 재생성 중 503(실패 시 닫힘), 복원 3.7초. 실시간 철회 경로가 아닌 롤아웃이며 2초 목표를 넘음 |
+| API 서버 600초 일시 정지 | 데이터 평면 8005/8005 요청 처리, 60초 staleness 이후 게이트웨이 not ready, API 복귀 7초 후 다시 authoritative, API 복귀 직후 약 0.2초 동안 4건 실패, 노드 5초 내 Ready, 기존 Pod 무변화 |
+| 모든 구성 요소 인증서의 cert-manager 강제 갱신 | 새 인증서가 Pod 볼륨에 반영됨, Hopae(8703), Pumgye(9084/9087), Sumunjang(9080/9082)은 5분 넘게 이전 인증서 제공, 트래픽 2443/2443 정상, 새 인증서 제공에는 rollout restart 필요 |
+| 게이트웨이 PDB를 둔 두 번째 노드 drain | PDB가 축출 1회 거부, 410/410 요청 정상, 게이트웨이 재배치 후 uncordon |
+| `helm test` | 성공 |
+
+구성 요소별 결함: **Hangang**은 API 중단 동안 마지막 정상 설정으로 무기한 서비스하며(준비 상태는 60초 후 철회), ADR 0022의 제한된 staleness를 넘으면 실패 시 닫히도록 하지 않습니다. API 복귀 시 요청 4건이 실패했고, 클라이언트 인증서 재로드는 관찰할 수 없었습니다. **Hopae**, **Pumgye**, **Sumunjang**은 재시작 없이 회전된 인증서를 다시 읽지 않습니다. **Hopae**의 선언형 철회는 롤아웃에 묶이며, #10+#13 병합 트리는 충돌 해소와 이벤트 개수 테스트(46→47, 52→53) 갱신이 필요합니다. cert-manager cainjector는 API 복귀 직후 잠시 CrashLoop 후 자동 복구됐습니다. 만든 객체, 이미지, 네임스페이스는 모두 제거했고, 노드, CRD, RBAC, webhook, IngressClass, PV 목록, HTTP 점검이 실행 전 기준선과 같으며 기존 Pod의 UID와 재시작 수가 유지됐습니다.
+
 
 ## 검증
 

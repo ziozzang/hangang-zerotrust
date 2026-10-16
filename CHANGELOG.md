@@ -29,5 +29,9 @@
   certificate and an `hsc1` service credential). Qualified offline against
   Hopae `60b3a60`/PR #10 and Pumgye `775e6b9`; Pumgye must still send
   `X-Hopae-Audience`.
+- Qualify the remaining ADR 0022 gates on the remote k3s test cluster after a
+  verified off-host backup: revocation latency (Pumgye/Sumunjang p99 ≤ 0.05 s),
+  10-minute API pause, cert-manager rotation (no live reload in Hopae, Pumgye,
+  Sumunjang) and a PDB-guarded node drain; full cleanup to baseline.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

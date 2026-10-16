@@ -90,7 +90,7 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Hangang version.** ProtectionPolicy support (Hangang PR #21) must be in the released Hangang image the digest points to.
 - **Hopae PostgreSQL.** Hopae's PostgreSQL store is planned (Hopae ADR-0002, M2) but not released (Hopae 0.0.10 refuses `store.url_env`); the chart refuses `hopae.storage.backend: postgresql` until it ships, so Hopae runs as one SQLite replica.
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
-- **Live qualification.** The local cluster run covers the protected request chain, refusals, outages, upgrade and rollback; the ADR 0022 revocation SLO, 10-minute API outage, certificate rotation without restart and multi-node behaviour remain unqualified.
+- **Live qualification.** The local and remote runs cover the protected chain, revocation, a 10-minute API outage, certificate rotation and a node drain; open defects: no certificate hot reload in Hopae/Pumgye/Sumunjang, Hangang has no fail-closed bound for API outages, Hopae declarative revocation is rollout-bound.
 
 ## Hopae authentication profiles (configuration-authoritative)
 
@@ -167,6 +167,23 @@ does not apply (Hopae then refused to start until the stored document was
 replaced). Change them through Hopae's owner API. Single-writer restarts make
 protected traffic fail closed for a few seconds, as designed. The cluster, all
 built and pulled images and the build directories were removed afterwards.
+
+## Qualification — remote k3s gates (2026-10-17)
+
+The remaining ADR 0022 gates ran on the user-designated remote k3s test cluster (2 nodes, k3s v1.37.1) with owner approval, after a fresh cold backup whose remote and off-host copies matched in size, full SHA-256 and archive listing. Images: Hangang `a8e15e6` (PR #21), Hopae local merge of `integrate/identity-platform` + #10 + #13, Pumgye `00f0d00`, Sumunjang `321eb6d`, static builds loaded into both nodes without a registry. cert-manager v1.15.3 was installed temporarily; the CRD chart ran with `rbac.aggregatedRoles=false`.
+
+| Gate | Result |
+| --- | --- |
+| Pumgye grant revoke/restore, 20 cycles, 70–90 ms probe | first refusal/allow after the commit: p50 0.03 s, max 0.05 s; no inconsistent sample later than 0.2 s |
+| Sumunjang block/unblock of the client, 20 cycles | p50 0.02 s, max 0.05 s; refused requests never reached the backend |
+| Hopae key revocation in `authentication.source: config` (values change + rollout) | first 401 4.8 s after `helm upgrade` started, 503 (fail-closed) while the single Hopae Pod was recreated; restore 3.7 s. This is a rollout, not a live revocation path, and misses the 2 s target |
+| API server paused 600 s | data plane served 8005/8005 requests; gateways reported not ready after the 60 s staleness bound and authoritative again 7 s after the API returned; 4 requests (about 0.2 s) failed right after the API returned; nodes Ready within 5 s; pre-existing Pods unchanged |
+| cert-manager forced renewal of all component certificates | new certificates reached the Pod volumes; Hopae (8703), Pumgye (9084/9087) and Sumunjang (9080/9082) kept serving the previous certificate for 5+ minutes; traffic stayed 2443/2443 OK; a rollout restart was needed to serve the new certificate |
+| Drain of the second node with the gateway PDB | one eviction refused by the PDB, 410/410 requests OK, gateways rescheduled; uncordoned |
+| `helm test` | Succeeded |
+
+Defects recorded per component: **Hangang** keeps serving last-good indefinitely during an API outage (readiness is withdrawn after 60 s) instead of failing closed beyond ADR 0022's bounded staleness, and dropped 4 requests at API recovery; reload of its client certificates was not observable. **Hopae**, **Pumgye** and **Sumunjang** do not reload rotated certificates without a restart. **Hopae** declarative revocation is rollout-bound; the merged #10+#13 tree needs the conflict resolution and the event-count tests (46→47, 52→53) updated. cert-manager's cainjector crash-looped briefly after the API returned and recovered. All created objects, images and namespaces were removed; nodes, CRDs, RBAC, webhooks, ingress classes, PV list and HTTP checks matched the pre-run baseline, and pre-existing Pods kept their UIDs and restart counts.
+
 
 ## Validation
 

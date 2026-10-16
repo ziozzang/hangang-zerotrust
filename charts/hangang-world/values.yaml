@@ -1,0 +1,266 @@
+# Hangang World — values.
+#
+# Every value is validated by values.schema.json; unknown keys are refused.
+# Images are pinned by digest (tags are informational). Secret values never
+# appear here: the chart only references Secrets you create beforehand.
+
+global:
+  # SPIFFE trust domain for component certificate URI SANs
+  # (spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>).
+  trustDomain: cluster.local
+  # [{name: regcred}] — pull secrets for private registries.
+  imagePullSecrets: []
+  # Shared HA backend (ADR 0022 Decision 6). Required before any stateful
+  # component (Hopae) runs more than one replica. Pumgye and Sumunjang have no
+  # PostgreSQL adapter yet and stay single-replica.
+  ha:
+    backend: none            # none | postgresql
+    postgresql:
+      # Secret holding a libpq connection URL (sslmode=verify-full recommended).
+      existingSecret: ""
+      urlKey: url
+
+# One pre-created Secret with the shared API credentials. Create it with
+# random values of at least 32 bytes, for example:
+#   kubectl create secret generic hangang-world-credentials \
+#     --from-literal=hangang-admin-token=$(openssl rand -hex 32) ...
+credentials:
+  existingSecret: ""
+  keys:
+    hangangAdminToken: hangang-admin-token
+    hopaeGatewayKey: hopae-gateway-key
+    guardCollectorToken: guard-collector-token
+    guardAdminToken: guard-admin-token
+    pumgyeDecisionToken: pumgye-decision-token
+    pumgyeAdminToken: pumgye-admin-token
+
+# Mutual TLS between components (Service DNS + SPIFFE URI SAN per component).
+tls:
+  # certManager: the chart creates Certificates (cert-manager >= 1.12).
+  # existingSecrets: bring your own kubernetes.io/tls Secrets with tls.crt,
+  # tls.key and ca.crt; each certificate needs serverAuth and clientAuth and
+  # the SANs listed in the README.
+  mode: certManager
+  certManager:
+    # Empty name: the chart bootstraps a private CA (self-signed Issuer ->
+    # CA Certificate -> CA Issuer) in the release namespace. Set an Issuer or
+    # ClusterIssuer of your PKI for production.
+    issuerRef:
+      name: ""
+      kind: Issuer           # Issuer | ClusterIssuer
+      group: cert-manager.io
+    duration: 720h
+    renewBefore: 240h
+    caDuration: 87600h
+    privateKey:
+      algorithm: ECDSA       # ECDSA | Ed25519 | RSA
+      size: 256
+  existingSecrets:
+    hangang: ""
+    hopae: ""
+    pumgye: ""
+    sumunjang: ""
+
+networkPolicy:
+  # Default-deny ingress for every World Pod plus the exact component-to-
+  # component flows. Requires a CNI that enforces NetworkPolicy.
+  enabled: true
+  # Peers allowed to reach the public Hangang listener; empty allows any.
+  # Example: [{ipBlock: {cidr: 0.0.0.0/0}}]
+  publicFrom: []
+  # Peers allowed to scrape metrics (ServiceMonitor); empty allows none.
+  metricsFrom: []
+
+monitoring:
+  serviceMonitor:
+    # Requires the monitoring.coreos.com/v1 CRDs and hangang.admin.exposeMetrics.
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+tests:
+  # `helm test`: connectivity and readiness of every enabled component.
+  # The image needs /bin/sh, nc and wget (for example a busybox digest).
+  enabled: true
+  image:
+    repository: docker.io/library/busybox
+    tag: "1.36.1"
+    digest: ""
+
+hangang:
+  enabled: true
+  replicas: 2
+  image:
+    repository: ghcr.io/ziozzang/hangang
+    tag: "0.3.7"
+    digest: ""
+    pullPolicy: IfNotPresent
+  # Ingress class this controller selects (spec.ingressClassName).
+  ingressClass:
+    name: hangang
+    create: true
+    default: false
+  # Namespace: watch only the release namespace (Role). Cluster: every
+  # namespace (ClusterRole) — review hostname ownership in docs/KUBERNETES.md.
+  watchScope: Namespace
+  # Address written to admitted Ingress status (load balancer IP or DNS name).
+  publishAddress: ""
+  # Watch Ingress TLS Secrets (kubernetes.io/tls only) and terminate TLS.
+  kubernetesTls: false
+  staleSeconds: 60
+  protection:
+    # ProtectionPolicy reconciliation (requires hangang-world-crds, Hopae and Pumgye).
+    enabled: true
+    # Withhold Ingresses without an effective policy. Turn off only during
+    # migration (docs/KUBERNETES_PROTECTION.md in the Hangang repository).
+    requireProtection: true
+    # Identity profiles tenants may reference from spec.identity.profileRef.
+    # The chart fills in the in-cluster Hopae endpoint, mTLS and caller key.
+    identityProfiles:
+      default:
+        namespaces: []
+        requestHeaders: [authorization, cookie]
+        forwardResponse: true
+    # Optional: Pumgye service ID -> namespaces allowed to bind it.
+    pumgyeServices: {}
+  # Sumunjang admission at the gateway (fail-closed query mode over gRPC mTLS).
+  guard:
+    enabled: true
+    timeoutMs: 100
+  service:
+    type: LoadBalancer       # ClusterIP | NodePort | LoadBalancer
+    port: 80
+    nodePort: null
+    annotations: {}
+    loadBalancerSourceRanges: []
+  # How the gateway sees the real client address (required for network-
+  # conditioned policies):
+  #   serviceLocal  - Service externalTrafficPolicy: Local (LoadBalancer/NodePort)
+  #   proxyProtocol - PROXY protocol v2 from proxyProtocolFrom CIDRs only
+  #   hostNetwork   - Pods on the host network (bare-metal edge)
+  #   none          - not preserved; network-conditioned policies are withheld
+  clientAddress:
+    mode: serviceLocal
+    proxyProtocolFrom: []
+  admin:
+    # Bind the administration listener (bearer-token protected) on the Pod
+    # network for metrics scraping; otherwise it stays on loopback.
+    exposeMetrics: false
+  resources:
+    requests: {cpu: 200m, memory: 128Mi}
+    limits: {memory: 512Mi}
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  priorityClassName: ""
+  terminationGracePeriodSeconds: 40
+
+hopae:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/ziozzang/hopae
+    tag: "0.0.8"
+    digest: ""
+    pullPolicy: IfNotPresent
+  # sqlite: single replica on a PVC. postgresql: shared store for replicas > 1
+  # (requires global.ha.backend: postgresql and a Hopae release with the
+  # PostgreSQL store).
+  storage:
+    backend: sqlite
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+    existingClaim: ""
+  # Hopae configuration (docs/CONFIG.md in the Hopae repository): portal,
+  # apps, providers, authentication_gateway, ... The chart owns listen,
+  # state_dir, store and gateway; setting them here is refused.
+  config:
+    portal:
+      public_url: https://auth.example.test
+    apps: []
+    providers: []
+  # Extra environment from Secrets, e.g. provider client secrets:
+  # [{name: HOPAE_PROVIDER_GOOGLE_CLIENT_SECRET, secretName: hopae-providers, key: google}]
+  extraSecretEnv: []
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""
+
+pumgye:
+  enabled: true
+  # Single writer (SQLite). Kubernetes-mode stateless replicas arrive with
+  # signed snapshot distribution (ADR 0022 Decision 3).
+  replicas: 1
+  image:
+    repository: ghcr.io/ziozzang/pumgye
+    tag: "0.1.7"
+    digest: ""
+    pullPolicy: IfNotPresent
+  storage:
+    backend: sqlite
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+    existingClaim: ""
+  # Bootstrap policy used only when the database is empty.
+  bootstrapPolicy:
+    revision: 0
+    policy:
+      version: 1
+      information_classes: [internal]
+      services: {}
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""
+
+sumunjang:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/ziozzang/sumunjang
+    tag: "0.3.5"
+    digest: ""
+    pullPolicy: IfNotPresent
+  storage:
+    backend: sqlite
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+    existingClaim: ""
+  # Bootstrap policy used only when the database is empty.
+  bootstrapPolicy:
+    mode: enforce
+    allow: []
+  threads: 2
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""

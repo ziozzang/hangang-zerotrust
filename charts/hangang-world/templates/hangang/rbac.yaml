@@ -1,0 +1,69 @@
+{{- if .Values.hangang.enabled }}
+{{- $ctx := dict "root" . "component" "hangang" }}
+{{- $h := .Values.hangang }}
+{{- $cluster := eq $h.watchScope "Cluster" }}
+# Least privilege for the Ingress controller: read Services and Ingresses,
+# TLS Secrets only with kubernetesTls, Ingress status only with
+# publishAddress, ProtectionPolicy only with protection.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ ternary "ClusterRole" "Role" $cluster }}
+metadata:
+  name: {{ include "world.name" $ctx }}{{ if $cluster }}-{{ .Release.Namespace }}{{ end }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+  {{- if $h.kubernetesTls }}
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+  {{- end }}
+  {{- if $h.publishAddress }}
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses/status"]
+    verbs: ["get", "patch", "update"]
+  {{- end }}
+  {{- if $h.protection.enabled }}
+  - apiGroups: ["world.hangang.dev"]
+    resources: ["protectionpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["world.hangang.dev"]
+    resources: ["protectionpolicies/status"]
+    verbs: ["get", "patch"]
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ ternary "ClusterRoleBinding" "RoleBinding" $cluster }}
+metadata:
+  name: {{ include "world.name" $ctx }}{{ if $cluster }}-{{ .Release.Namespace }}{{ end }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "world.name" $ctx }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ ternary "ClusterRole" "Role" $cluster }}
+  name: {{ include "world.name" $ctx }}{{ if $cluster }}-{{ .Release.Namespace }}{{ end }}
+{{- if $h.ingressClass.create }}
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: {{ $h.ingressClass.name }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+  {{- if $h.ingressClass.default }}
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+  {{- end }}
+spec:
+  controller: hangang.dev/ingress-controller
+{{- end }}
+{{- end }}

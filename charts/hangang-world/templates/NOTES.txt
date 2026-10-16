@@ -1,0 +1,39 @@
+Hangang World {{ .Chart.Version }} — release {{ .Release.Name }} in {{ .Release.Namespace }}.
+{{- $root := . }}
+
+Components:
+{{- range $c := list "hangang" "hopae" "pumgye" "sumunjang" }}
+{{- $v := index $root.Values $c }}
+  {{ printf "%-10s" $c }} {{ ternary (printf "enabled  replicas=%v  %s" $v.replicas (include "world.host" (dict "root" $root "component" $c))) "disabled" $v.enabled }}
+{{- end }}
+
+Mutual TLS: {{ .Values.tls.mode }}{{ if and (eq .Values.tls.mode "certManager") (not .Values.tls.certManager.issuerRef.name) }} (chart-bootstrapped private CA; set tls.certManager.issuerRef for production){{ end }}
+{{- if .Values.hangang.enabled }}
+
+Gateway:
+  kubectl -n {{ .Release.Namespace }} get service {{ include "world.name" (dict "root" . "component" "hangang") }}
+  Ingress class: {{ .Values.hangang.ingressClass.name }} (watch scope: {{ .Values.hangang.watchScope }})
+  Client address: {{ .Values.hangang.clientAddress.mode }}
+{{- if eq .Values.hangang.clientAddress.mode "none" }}
+  WARNING: the client address is not preserved. ProtectionPolicies with
+  network.enforcement: Required are withheld (ClientAddressUnavailable).
+{{- end }}
+{{- if .Values.hangang.protection.enabled }}
+  ProtectionPolicy: enabled, requireProtection={{ .Values.hangang.protection.requireProtection }}
+  The controller stays NOT READY until the hangang-world-crds chart is installed:
+    helm upgrade --install world-crds oci://<registry>/charts/hangang-world-crds --version {{ .Chart.Version }}
+{{- if .Values.hangang.protection.requireProtection }}
+  Ingresses without a ProtectionPolicy are withheld (not published). See:
+    kubectl -n {{ .Release.Namespace }} get protectionpolicies
+{{- end }}
+{{- end }}
+{{- end }}
+
+Verify:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- if .Values.tests.enabled }}
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+{{- end }}
+
+State: PVCs carry helm.sh/resource-policy=keep and survive `helm uninstall`.
+Back them up before every upgrade (single-writer SQLite).

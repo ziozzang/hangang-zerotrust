@@ -1,0 +1,27 @@
+# Bring-your-own certificates (no cert-manager) and NodePort with Local policy.
+credentials:
+  existingSecret: hangang-world-credentials
+tls:
+  mode: existingSecrets
+  existingSecrets:
+    hangang: world-hangang-tls
+    hopae: world-hopae-tls
+    pumgye: world-pumgye-tls
+    sumunjang: world-sumunjang-tls
+tests:
+  enabled: false
+hangang:
+  service:
+    type: NodePort
+    nodePort: 30080
+  image:
+    digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+hopae:
+  image:
+    digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+pumgye:
+  image:
+    digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+sumunjang:
+  image:
+    digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd

@@ -1,0 +1,122 @@
+{{- if .Values.pumgye.enabled }}
+{{- $ctx := dict "root" . "component" "pumgye" }}
+{{- $v := .Values.pumgye }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" $ctx }}-bootstrap
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+data:
+  # Applied only when the database is empty; later changes go through the
+  # management API (CAS) or a future World source mode.
+  policy.json: {{ toJson $v.bootstrapPolicy | quote }}
+---
+{{ include "world.pvc" $ctx }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  # Single writer (SQLite): replicas is capped at 1 by the values schema.
+  replicas: {{ $v.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "world.labels" $ctx | nindent 8 }}
+        {{- with $v.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
+      annotations:
+        checksum/bootstrap: {{ toJson $v.bootstrapPolicy | sha256sum }}
+        {{- with $v.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
+    spec:
+      serviceAccountName: {{ include "world.name" $ctx }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- include "world.podSecurityContext" . | nindent 8 }}
+      {{- include "world.podCommon" (dict "root" . "values" $v) | nindent 6 }}
+      containers:
+        - name: pumgye
+          image: {{ include "world.image" (dict "image" $v.image "component" "pumgye") }}
+          imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - --listen
+            - 0.0.0.0:9084
+            - --decision-listen
+            - 0.0.0.0:9085
+            - --grpc-listen
+            - 0.0.0.0:9087
+            - --readiness-listen
+            - 0.0.0.0:9086
+            - --database
+            - /state/pumgye.sqlite3
+            - --policy
+            - /config/policy.json
+            - --tls-cert
+            - /tls/tls.crt
+            - --tls-key
+            - /tls/tls.key
+            - --client-ca
+            - /tls/ca.crt
+          env:
+            {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_ADMIN_TOKEN" "key" "pumgyeAdminToken") | nindent 12 }}
+            {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_DECISION_TOKEN" "key" "pumgyeDecisionToken") | nindent 12 }}
+          ports:
+            - {name: management, containerPort: 9084, protocol: TCP}
+            - {name: ppg1, containerPort: 9085, protocol: TCP}
+            - {name: readiness, containerPort: 9086, protocol: TCP}
+            - {name: grpc, containerPort: 9087, protocol: TCP}
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: readiness
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 2
+          livenessProbe:
+            tcpSocket:
+              port: management
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            - {name: state, mountPath: /state}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "world.name" $ctx }}-bootstrap
+        {{- include "world.tlsVolume" $ctx | nindent 8 }}
+        - name: state
+          persistentVolumeClaim:
+            claimName: {{ include "world.stateClaim" $ctx }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - {name: management, port: 9084, targetPort: management, protocol: TCP}
+    - {name: ppg1, port: 9085, targetPort: ppg1, protocol: TCP}
+    - {name: grpc, port: 9087, targetPort: grpc, protocol: TCP}
+{{- end }}

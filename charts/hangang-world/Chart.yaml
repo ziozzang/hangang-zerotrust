@@ -1,0 +1,22 @@
+apiVersion: v2
+name: hangang-world
+description: >-
+  Hangang World: the Hangang gateway (Kubernetes Ingress controller with
+  ProtectionPolicy enforcement), Hopae identity, Pumgye authorization and
+  Sumunjang network admission as one integrated zero-trust package, wired with
+  mutual TLS over Service DNS. Install hangang-world-crds of the same version first.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.27.0-0"
+keywords: [hangang, hopae, pumgye, sumunjang, zero-trust, ingress, gateway]
+home: https://github.com/ziozzang/hangang-zerotrust
+sources:
+  - https://github.com/ziozzang/hangang
+  - https://github.com/ziozzang/hopae
+  - https://github.com/ziozzang/pumgye
+  - https://github.com/ziozzang/sumunjang
+annotations:
+  hangang.dev/adr: "0022"
+  hangang.dev/crd-chart: hangang-world-crds
+  hangang.dev/crd-chart-version: "0.1.0"

@@ -1,0 +1,26 @@
+# Smallest complete install: one replica each, chart-bootstrapped CA.
+credentials:
+  existingSecret: hangang-world-credentials
+tests:
+  image:
+    digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+hangang:
+  replicas: 1
+  image:
+    digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+hopae:
+  image:
+    digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  config:
+    portal:
+      public_url: https://auth.example.test
+    apps:
+      - app_id: app
+        display_name: Example application
+        hosts: [app.example.test]
+pumgye:
+  image:
+    digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+sumunjang:
+  image:
+    digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd

@@ -1,0 +1,156 @@
+{{- if .Values.hopae.enabled }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+{{- $v := .Values.hopae }}
+{{- $postgres := eq $v.storage.backend "postgresql" }}
+{{- $owned := dict
+  "listen" (dict
+    "portal" "0.0.0.0:8700"
+    "gateway" "127.0.0.1:8701"
+    "grpc_gateway" "0.0.0.0:8703"
+    "native_gateway_tls" (dict "certificate" "/tls/tls.crt" "key" "/tls/tls.key" "client_ca" "/tls/ca.crt"))
+  "state_dir" "/state"
+  "store" (ternary (dict "kind" "postgres" "url_env" "HOPAE_STORE_URL") (dict "kind" "sqlite") $postgres)
+  "gateway" (dict "kind" "hangang" "caller_key_env" "HOPAE_GATEWAY_KEY") }}
+{{- $config := merge $owned (deepCopy $v.config) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" $ctx }}-config
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+data:
+  hopae.json: {{ toJson $config | quote }}
+---
+{{- if not $postgres }}
+{{ include "world.pvc" $ctx }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  replicas: {{ $v.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    {{- if $postgres }}
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+    {{- else }}
+    # SQLite single writer: never two Pods on one database.
+    type: Recreate
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "world.labels" $ctx | nindent 8 }}
+        {{- with $v.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
+      annotations:
+        checksum/config: {{ toJson $config | sha256sum }}
+        {{- with $v.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
+    spec:
+      serviceAccountName: {{ include "world.name" $ctx }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- include "world.podSecurityContext" . | nindent 8 }}
+      {{- include "world.podCommon" (dict "root" . "values" $v) | nindent 6 }}
+      containers:
+        - name: hopae
+          image: {{ include "world.image" (dict "image" $v.image "component" "hopae") }}
+          imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
+          args: ["run", "--config", "/config/hopae.json"]
+          env:
+            {{- include "world.secretEnv" (dict "root" . "name" "HOPAE_GATEWAY_KEY" "key" "hopaeGatewayKey") | nindent 12 }}
+            {{- if $postgres }}
+            - name: HOPAE_STORE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.ha.postgresql.existingSecret }}
+                  key: {{ .Values.global.ha.postgresql.urlKey }}
+            {{- end }}
+            {{- range $v.extraSecretEnv }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .key }}
+            {{- end }}
+          ports:
+            - name: portal
+              containerPort: 8700
+              protocol: TCP
+            - name: grpc
+              containerPort: 8703
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: portal
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            tcpSocket:
+              port: portal
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: state
+              mountPath: /state
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "world.name" $ctx }}-config
+        {{- include "world.tlsVolume" $ctx | nindent 8 }}
+        - name: state
+          {{- if $postgres }}
+          emptyDir: {sizeLimit: 256Mi}
+          {{- else }}
+          persistentVolumeClaim:
+            claimName: {{ include "world.stateClaim" $ctx }}
+          {{- end }}
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: portal
+      port: 8700
+      targetPort: portal
+      protocol: TCP
+    - name: grpc
+      port: 8703
+      targetPort: grpc
+      protocol: TCP
+{{- with (include "world.pdb" $ctx) }}
+---
+{{ . }}
+{{- end }}
+{{- end }}

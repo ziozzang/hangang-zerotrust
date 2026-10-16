@@ -1,0 +1,40 @@
+{{- /* Cross-field rules that JSON Schema cannot express. Renders nothing. */ -}}
+{{- $v := .Values -}}
+{{- if not (or $v.hangang.enabled $v.hopae.enabled $v.pumgye.enabled $v.sumunjang.enabled) -}}
+{{- fail "enable at least one component" -}}
+{{- end -}}
+{{- if and $v.hangang.enabled $v.hangang.protection.enabled (not (and $v.hopae.enabled $v.pumgye.enabled)) -}}
+{{- fail "hangang.protection.enabled needs hopae.enabled and pumgye.enabled: protected routes authenticate with Hopae and authorize with Pumgye" -}}
+{{- end -}}
+{{- if and $v.hangang.enabled $v.hangang.guard.enabled (not $v.sumunjang.enabled) -}}
+{{- fail "hangang.guard.enabled needs sumunjang.enabled (or set hangang.guard.enabled=false; network-conditioned policies are then withheld)" -}}
+{{- end -}}
+{{- if and (eq $v.hangang.clientAddress.mode "proxyProtocol") (not $v.hangang.clientAddress.proxyProtocolFrom) -}}
+{{- fail "hangang.clientAddress.mode=proxyProtocol needs hangang.clientAddress.proxyProtocolFrom (the load balancer source CIDRs)" -}}
+{{- end -}}
+{{- if and (ne $v.hangang.clientAddress.mode "proxyProtocol") $v.hangang.clientAddress.proxyProtocolFrom -}}
+{{- fail "hangang.clientAddress.proxyProtocolFrom is only valid with mode=proxyProtocol" -}}
+{{- end -}}
+{{- if and (eq $v.hangang.clientAddress.mode "serviceLocal") (eq $v.hangang.service.type "ClusterIP") -}}
+{{- fail "hangang.clientAddress.mode=serviceLocal needs hangang.service.type LoadBalancer or NodePort (externalTrafficPolicy: Local)" -}}
+{{- end -}}
+{{- if and $v.monitoring.serviceMonitor.enabled (not $v.hangang.admin.exposeMetrics) -}}
+{{- fail "monitoring.serviceMonitor.enabled needs hangang.admin.exposeMetrics=true" -}}
+{{- end -}}
+{{- if and $v.tests.enabled (not $v.tests.image.digest) -}}
+{{- fail "tests.image.digest is required while tests.enabled (or set tests.enabled=false)" -}}
+{{- end -}}
+{{- /* HA guard: a SQLite single writer never runs more than one replica. */ -}}
+{{- if and $v.hopae.enabled (gt (int $v.hopae.replicas) 1) (ne $v.hopae.storage.backend "postgresql") -}}
+{{- fail "hopae.replicas > 1 needs hopae.storage.backend=postgresql (SQLite is single-writer)" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled (eq $v.hopae.storage.backend "postgresql") (or (ne $v.global.ha.backend "postgresql") (not $v.global.ha.postgresql.existingSecret)) -}}
+{{- fail "hopae.storage.backend=postgresql needs global.ha.backend=postgresql and global.ha.postgresql.existingSecret" -}}
+{{- end -}}
+{{- if eq $v.tls.mode "existingSecrets" -}}
+{{- range $component := list "hangang" "hopae" "pumgye" "sumunjang" -}}
+{{- if and (index $v $component).enabled (not (index $v.tls.existingSecrets $component)) -}}
+{{- fail (printf "tls.mode=existingSecrets needs tls.existingSecrets.%s" $component) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

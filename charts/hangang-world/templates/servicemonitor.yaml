@@ -1,0 +1,34 @@
+{{- if and .Values.hangang.enabled .Values.monitoring.serviceMonitor.enabled }}
+{{- $ctx := dict "root" . "component" "hangang" }}
+{{- $sm := .Values.monitoring.serviceMonitor }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    {{- with $sm.labels }}{{ toYaml . | nindent 4 }}{{ end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+      hangang.dev/endpoint: admin
+  endpoints:
+    - port: admin
+      path: /metrics
+      scheme: https
+      tlsConfig:
+        serverName: {{ include "world.host" $ctx }}
+        ca:
+          secret:
+            name: {{ include "world.tlsSecret" $ctx }}
+            key: ca.crt
+      interval: {{ $sm.interval }}
+      scrapeTimeout: {{ $sm.scrapeTimeout }}
+      # The administration API requires the bearer token for /metrics.
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ .Values.credentials.existingSecret }}
+          key: {{ .Values.credentials.keys.hangangAdminToken }}
+{{- end }}

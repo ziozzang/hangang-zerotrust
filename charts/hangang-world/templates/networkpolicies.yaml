@@ -1,0 +1,79 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $root := . }}
+{{- $test := dict "matchLabels" (dict "app.kubernetes.io/name" "world-test" "app.kubernetes.io/instance" .Release.Name) }}
+# Default deny: no ingress to any World Pod unless a policy below allows it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "world.fullname" . }}-default-deny
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "network") | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: hangang-world
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: ["Ingress"]
+{{- if .Values.hangang.enabled }}
+{{- $ctx := dict "root" . "component" "hangang" }}
+---
+# Public gateway listener (and the bearer-protected admin port for metrics).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - ports:
+        - {port: {{ ternary 8443 8080 .Values.hangang.kubernetesTls }}, protocol: TCP}
+      {{- with .Values.networkPolicy.publicFrom }}
+      from:
+        {{- toYaml . | nindent 8 }}
+        - podSelector: {{ toJson $test }}
+      {{- end }}
+    {{- if and .Values.hangang.admin.exposeMetrics .Values.networkPolicy.metricsFrom }}
+    - ports:
+        - {port: 9000, protocol: TCP}
+      from:
+        {{- toYaml .Values.networkPolicy.metricsFrom | nindent 8 }}
+    {{- end }}
+{{- end }}
+{{- $flows := list
+  (dict "component" "hopae" "ports" (list 8700 8703) "from" (list "hangang"))
+  (dict "component" "pumgye" "ports" (list 9084 9085 9087) "from" (list "hangang"))
+  (dict "component" "sumunjang" "ports" (list 9080 9081 9082) "from" (list "hangang" "pumgye")) }}
+{{- range $flow := $flows }}
+{{- $ctx := dict "root" $root "component" $flow.component }}
+{{- if (index $root.Values $flow.component).enabled }}
+---
+# {{ $flow.component }}: reachable only from the components that call it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - ports:
+        {{- range $flow.ports }}
+        - {port: {{ . }}, protocol: TCP}
+        {{- end }}
+      from:
+        {{- range $flow.from }}
+        {{- include "world.peer" (dict "root" $root "component" .) | nindent 8 }}
+        {{- end }}
+        - podSelector: {{ toJson $test }}
+{{- end }}
+{{- end }}
+{{- end }}

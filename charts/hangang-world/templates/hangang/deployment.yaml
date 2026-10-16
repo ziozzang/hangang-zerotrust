@@ -1,0 +1,262 @@
+{{- if .Values.hangang.enabled }}
+{{- $ctx := dict "root" . "component" "hangang" }}
+{{- $h := .Values.hangang }}
+{{- $tls := $h.kubernetesTls }}
+{{- $port := ternary 8443 8080 $tls }}
+{{- $sumunjang := dict "root" . "component" "sumunjang" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  replicas: {{ $h.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Never drop below the requested capacity during an upgrade.
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "world.labels" $ctx | nindent 8 }}
+        {{- with $h.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
+      annotations:
+        {{- if $h.protection.enabled }}
+        checksum/protection: {{ include (print $.Template.BasePath "/hangang/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with $h.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
+    spec:
+      serviceAccountName: {{ include "world.name" $ctx }}
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ $h.terminationGracePeriodSeconds }}
+      {{- if eq $h.clientAddress.mode "hostNetwork" }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      securityContext:
+        {{- include "world.podSecurityContext" . | nindent 8 }}
+      {{- include "world.podCommon" (dict "root" . "values" $h) | nindent 6 }}
+      {{- if $h.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml $h.topologySpreadConstraints | nindent 8 }}
+      {{- else }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "world.selectorLabels" $ctx | nindent 14 }}
+      {{- end }}
+      containers:
+        - name: hangang
+          image: {{ include "world.image" (dict "image" $h.image "component" "hangang") }}
+          imagePullPolicy: {{ $h.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - --supervised
+            - --kubernetes-controller
+            {{- if eq $h.watchScope "Namespace" }}
+            - --kubernetes-namespace
+            - $(POD_NAMESPACE)
+            {{- end }}
+            - --ingress-class
+            - {{ $h.ingressClass.name | quote }}
+            - --kubernetes-stale-seconds
+            - {{ $h.staleSeconds | quote }}
+            {{- with $h.publishAddress }}
+            - --kubernetes-publish-address
+            - {{ . | quote }}
+            {{- end }}
+            {{- if $tls }}
+            - --kubernetes-tls
+            {{- end }}
+            {{- if $h.protection.enabled }}
+            - --kubernetes-protection-config
+            - /etc/hangang/protection/settings.json
+            {{- end }}
+            {{- if $h.guard.enabled }}
+            # Sumunjang admission: per-request gRPC decisions over mTLS,
+            # fail-closed. The --guard-url origin is not contacted for decisions.
+            - --guard-url
+            - http://127.0.0.1:9
+            - --guard-decision-tcp
+            - {{ printf "%s:9082" (include "world.host" $sumunjang) }}
+            - --guard-decision-grpc
+            - --guard-decision-server-name
+            - {{ include "world.host" $sumunjang }}
+            - --guard-decision-ca
+            - /tls/ca.crt
+            - --guard-decision-cert
+            - /tls/tls.crt
+            - --guard-decision-key
+            - /tls/tls.key
+            - --guard-mode
+            - query
+            - --guard-failure-mode
+            - deny
+            - --guard-timeout-ms
+            - {{ $h.guard.timeoutMs | quote }}
+            {{- end }}
+            {{- with $h.clientAddress.proxyProtocolFrom }}
+            - --proxy-protocol-from
+            - {{ join "," . | quote }}
+            {{- end }}
+            - --config
+            - /data/hangang.json
+            - --listen
+            - {{ printf "0.0.0.0:%d" $port | quote }}
+            - --admin
+            - {{ ternary "0.0.0.0:9000" "127.0.0.1:9000" $h.admin.exposeMetrics | quote }}
+            {{- if $h.admin.exposeMetrics }}
+            # Off loopback the administration API is served over TLS only.
+            - --admin-tls-cert
+            - /tls/tls.crt
+            - --admin-tls-key
+            - /tls/tls.key
+            {{- end }}
+            - --health-path
+            - /-/ready
+            - --lame-duck-seconds
+            - "10"
+            - --drain-seconds
+            - "20"
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_ADMIN_TOKEN" "key" "hangangAdminToken") | nindent 12 }}
+            {{- if $h.guard.enabled }}
+            {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_COLLECTOR_TOKEN" "key" "guardCollectorToken") | nindent 12 }}
+            {{- end }}
+            {{- if $h.protection.enabled }}
+            {{- include "world.secretEnv" (dict "root" . "name" "HOPAE_GATEWAY_KEY" "key" "hopaeGatewayKey") | nindent 12 }}
+            {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_DECISION_TOKEN" "key" "pumgyeDecisionToken") | nindent 12 }}
+            {{- include "world.secretEnv" (dict "root" . "name" "PUMGYE_ADMIN_TOKEN" "key" "pumgyeAdminToken") | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: {{ ternary "https" "http" $tls }}
+              containerPort: {{ $port }}
+              protocol: TCP
+            {{- if $h.admin.exposeMetrics }}
+            - name: admin
+              containerPort: 9000
+              protocol: TCP
+            {{- end }}
+          # Readiness follows controller authority (fresh, complete API caches
+          # and a published snapshot); liveness stays a socket check so a
+          # replica cut off from the API drains instead of restarting.
+          readinessProbe:
+            {{- if $tls }}
+            # SNI-only TLS: a probe without a server name cannot complete the
+            # handshake, so TLS mode falls back to a socket check.
+            tcpSocket:
+              port: {{ $port }}
+            {{- else }}
+            httpGet:
+              path: /-/ready
+              port: {{ $port }}
+            {{- end }}
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            tcpSocket:
+              port: {{ $port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          startupProbe:
+            tcpSocket:
+              port: {{ $port }}
+            periodSeconds: 2
+            failureThreshold: 30
+          resources:
+            {{- toYaml $h.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            {{- if $h.protection.enabled }}
+            - name: protection
+              mountPath: /etc/hangang/protection
+              readOnly: true
+            {{- end }}
+      volumes:
+        # Controller mode keeps no durable routing state: routes come from the
+        # Kubernetes API. Administrator accounts here are per Pod.
+        - name: data
+          emptyDir:
+            sizeLimit: 256Mi
+        {{- include "world.tlsVolume" $ctx | nindent 8 }}
+        {{- if $h.protection.enabled }}
+        - name: protection
+          configMap:
+            name: {{ include "world.name" $ctx }}-protection
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+  {{- with $h.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $h.service.type }}
+  {{- if ne $h.service.type "ClusterIP" }}
+  # Local keeps the client source address (no kube-proxy SNAT) and only sends
+  # traffic to nodes with a ready gateway Pod.
+  externalTrafficPolicy: {{ ternary "Local" "Cluster" (eq $h.clientAddress.mode "serviceLocal") }}
+  {{- end }}
+  {{- with $h.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: {{ ternary "https" "http" $tls }}
+      port: {{ $h.service.port }}
+      targetPort: {{ $port }}
+      protocol: TCP
+      {{- if and $h.service.nodePort (ne $h.service.type "ClusterIP") }}
+      nodePort: {{ $h.service.nodePort }}
+      {{- end }}
+{{- if $h.admin.exposeMetrics }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}-admin
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    hangang.dev/endpoint: admin
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: admin
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+{{- end }}
+{{- with (include "world.pdb" $ctx) }}
+---
+{{ . }}
+{{- end }}
+{{- end }}

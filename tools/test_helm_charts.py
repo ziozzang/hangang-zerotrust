@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""Offline render tests for charts/hangang-world and charts/hangang-world-crds.
+
+Needs `helm` (v3) on PATH or HELM=/path/to/helm; skipped otherwise. No cluster is
+contacted. Set WORLD_KUBECONFORM=1 (with kubeconform on PATH) to also validate
+the rendered objects against the Kubernetes, cert-manager and Prometheus
+Operator schemas; that fetches schemas over the network.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+WORLD = ROOT / 'charts/hangang-world'
+CRDS = ROOT / 'charts/hangang-world-crds'
+PROFILES = ['minimal', 'ha', 'byo-certs']
+HELM = os.environ.get('HELM') or shutil.which('helm') or str(Path.home() / '.local/bin/helm')
+KUBECONFORM = shutil.which('kubeconform') or str(Path.home() / '.local/bin/kubeconform')
+DIGEST = 'sha256:' + 'e' * 64
+
+
+def helm(*argv, check=True):
+    # Never let helm discover a cluster from the caller's kubeconfig.
+    env = dict(os.environ, KUBECONFIG=os.devnull, HELM_KUBECONTEXT='')
+    result = subprocess.run([HELM, *argv], capture_output=True, text=True, timeout=120, env=env)
+    if check and result.returncode:
+        raise AssertionError(result.stderr)
+    return result
+
+
+def render(*overrides, profile='minimal', chart=WORLD, namespace='world'):
+    argv = ['template', 'w', str(chart), '-n', namespace]
+    if chart == WORLD:
+        argv += ['-f', str(WORLD / 'ci' / f'{profile}-values.yaml')]
+    for override in overrides:
+        argv += ['--set-json' if override.startswith('json:') else '--set', override.removeprefix('json:')]
+    return [doc for doc in yaml.safe_load_all(helm(*argv).stdout) if doc]
+
+
+def refused(*overrides, profile='minimal'):
+    argv = ['template', 'w', str(WORLD), '-n', 'world', '-f', str(WORLD / 'ci' / f'{profile}-values.yaml')]
+    for override in overrides:
+        argv += ['--set-json' if override.startswith('json:') else '--set', override.removeprefix('json:')]
+    result = helm(*argv, check=False)
+    return result.returncode != 0, result.stderr
+
+
+def notes(*overrides):
+    """Render NOTES.txt offline: `helm install --dry-run` would contact a cluster."""
+    with tempfile.TemporaryDirectory() as directory:
+        copy = Path(directory) / 'hangang-world'
+        shutil.copytree(WORLD, copy)
+        source = (copy / 'templates/NOTES.txt').read_text()
+        (copy / 'templates/NOTES.txt').unlink()
+        (copy / 'templates/_notes.tpl').write_text('{{- define "test.notes" -}}' + source + '{{- end -}}')
+        (copy / 'templates/zz-notes.yaml').write_text(
+            'apiVersion: v1\nkind: ConfigMap\nmetadata: {name: notes}\ndata:\n  notes: {{ include "test.notes" . | toJson }}\n')
+        argv = ['template', 'w', str(copy), '-n', 'world', '-f', str(WORLD / 'ci/minimal-values.yaml'),
+                '--show-only', 'templates/zz-notes.yaml']
+        for override in overrides:
+            argv += ['--set', override]
+        return yaml.safe_load(helm(*argv).stdout)['data']['notes']
+
+
+def by_kind(docs, kind):
+    return [doc for doc in docs if doc['kind'] == kind]
+
+
+def named(docs, kind, suffix):
+    matches = [doc for doc in by_kind(docs, kind) if doc['metadata']['name'].endswith(suffix)]
+    assert len(matches) == 1, (kind, suffix, [d['metadata']['name'] for d in by_kind(docs, kind)])
+    return matches[0]
+
+
+@unittest.skipUnless(Path(HELM).exists(), 'helm is not installed')
+class WorldChart(unittest.TestCase):
+    def test_schema_file_is_generated_from_the_builder(self):
+        with tempfile.TemporaryDirectory() as directory:
+            current = (WORLD / 'values.schema.json').read_text()
+            subprocess.run([sys.executable, str(ROOT / 'tools/helm/build_world_schema.py')], check=True, capture_output=True)
+            self.assertEqual(current, (WORLD / 'values.schema.json').read_text(), 'run tools/helm/build_world_schema.py')
+            del directory
+
+    def test_lint_every_profile_and_the_crd_chart(self):
+        for profile in PROFILES:
+            helm('lint', '--strict', str(WORLD), '-f', str(WORLD / 'ci' / f'{profile}-values.yaml'))
+        helm('lint', '--strict', str(CRDS))
+
+    def test_default_values_refuse_to_install_without_digests_and_credentials(self):
+        result = helm('template', 'w', str(WORLD), check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('digest', result.stderr)
+
+    def test_pod_hardening_and_digest_pinning(self):
+        for profile in PROFILES:
+            docs = render(profile=profile)
+            pods = [d['spec']['template']['spec'] for d in by_kind(docs, 'Deployment')]
+            pods += [d['spec'] for d in by_kind(docs, 'Pod')]
+            self.assertTrue(pods)
+            for pod in pods:
+                security = pod['securityContext']
+                self.assertTrue(security['runAsNonRoot'])
+                self.assertEqual(security['seccompProfile']['type'], 'RuntimeDefault')
+                for container in pod['containers'] + pod.get('initContainers', []):
+                    context = container['securityContext']
+                    self.assertTrue(context['readOnlyRootFilesystem'], container['name'])
+                    self.assertFalse(context['allowPrivilegeEscalation'])
+                    self.assertEqual(context['capabilities']['drop'], ['ALL'])
+                    self.assertRegex(container['image'], r'@sha256:[a-f0-9]{64}$')
+                    self.assertIn('limits', container['resources'])
+                    if pod in pods[:-1] or 'readinessProbe' in container:
+                        self.assertIn('readinessProbe', container)
+            self.assertFalse(by_kind(docs, 'Secret'), 'the chart never renders Secret values')
+
+    def test_minimal_profile_wiring(self):
+        docs = render()
+        names = {d['metadata']['name'] for d in by_kind(docs, 'Deployment')}
+        self.assertEqual(names, {f'w-hangang-world-{c}' for c in ['hangang', 'hopae', 'pumgye', 'sumunjang']})
+        gateway = named(docs, 'Deployment', '-hangang')['spec']['template']['spec']
+        args = gateway['containers'][0]['args']
+        self.assertIn('--kubernetes-protection-config', args)
+        self.assertIn('w-hangang-world-sumunjang.world.svc:9082', args)
+        self.assertEqual(args[args.index('--guard-failure-mode') + 1], 'deny')
+        self.assertEqual(args[args.index('--admin') + 1], '127.0.0.1:9000')
+        self.assertEqual(args[args.index('--kubernetes-namespace') + 1], '$(POD_NAMESPACE)')
+        settings = json.loads(named(docs, 'ConfigMap', '-hangang-protection')['data']['settings.json'])
+        self.assertTrue(settings['require_protection'])
+        self.assertEqual(settings['client_address'], {'mode': 'service_local', 'namespace': 'world', 'name': 'w-hangang-world-hangang'})
+        auth = settings['identity_profiles']['default']['auth']
+        self.assertEqual(auth['native']['address'], 'w-hangang-world-hopae.world.svc:8703')
+        self.assertEqual(auth['native']['tls']['server_name'], 'w-hangang-world-hopae.world.svc')
+        self.assertIn('x-hopae-aal', auth['response_headers'])
+        authority = settings['pumgye_authority']
+        self.assertEqual((authority['transport'], authority['decision_address']), ('grpc', 'w-hangang-world-pumgye.world.svc:9087'))
+        service = named(docs, 'Service', '-hangang')['spec']
+        self.assertEqual((service['type'], service['externalTrafficPolicy']), ('LoadBalancer', 'Local'))
+        hopae = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual(hopae['listen']['grpc_gateway'], '0.0.0.0:8703')
+        self.assertEqual(hopae['store'], {'kind': 'sqlite'})
+        self.assertEqual(hopae['apps'][0]['app_id'], 'app')
+        self.assertEqual(len(by_kind(docs, 'PersistentVolumeClaim')), 3)
+        for claim in by_kind(docs, 'PersistentVolumeClaim'):
+            self.assertEqual(claim['metadata']['annotations']['helm.sh/resource-policy'], 'keep')
+        for deployment in by_kind(docs, 'Deployment'):
+            if not deployment['metadata']['name'].endswith('-hangang'):
+                self.assertEqual(deployment['spec']['strategy']['type'], 'Recreate')
+                self.assertFalse(deployment['spec']['template']['spec']['automountServiceAccountToken'])
+        self.assertFalse(by_kind(docs, 'PodDisruptionBudget'), 'single replicas get no PDB that would block drains')
+        test = by_kind(docs, 'Pod')[0]
+        self.assertEqual(test['metadata']['annotations']['helm.sh/hook'], 'test')
+
+    def test_certificates_cover_service_dns_and_spiffe_identity(self):
+        docs = render()
+        issuers = {d['metadata']['name'] for d in by_kind(docs, 'Issuer')}
+        self.assertEqual(issuers, {'w-hangang-world-selfsigned', 'w-hangang-world-ca'})
+        certificate = named(docs, 'Certificate', '-pumgye')['spec']
+        self.assertIn('w-hangang-world-pumgye.world.svc', certificate['dnsNames'])
+        self.assertEqual(certificate['uris'], ['spiffe://cluster.local/ns/world/sa/w-hangang-world-pumgye'])
+        self.assertEqual(set(certificate['usages']), {'server auth', 'client auth', 'digital signature', 'key encipherment'})
+        self.assertEqual(certificate['issuerRef']['name'], 'w-hangang-world-ca')
+        ha = render(profile='ha')
+        self.assertFalse(by_kind(ha, 'Issuer'), 'an external issuer replaces the bootstrap CA')
+        self.assertEqual(named(ha, 'Certificate', '-hopae')['spec']['issuerRef']['kind'], 'ClusterIssuer')
+        byo = render(profile='byo-certs')
+        self.assertFalse(by_kind(byo, 'Certificate'))
+        volumes = named(byo, 'Deployment', '-hopae')['spec']['template']['spec']['volumes']
+        self.assertEqual(next(v for v in volumes if v['name'] == 'tls')['secret']['secretName'], 'world-hopae-tls')
+
+    def test_least_privilege_rbac(self):
+        docs = render()
+        role = by_kind(docs, 'Role')[0]
+        self.assertFalse(by_kind(docs, 'ClusterRole'))
+        resources = {r for rule in role['rules'] for r in rule['resources']}
+        self.assertEqual(resources, {'services', 'ingresses', 'protectionpolicies', 'protectionpolicies/status'})
+        for rule in role['rules']:
+            self.assertNotIn('*', rule['verbs'] + rule['resources'] + rule['apiGroups'])
+            self.assertNotIn('create', rule['verbs'])
+            self.assertNotIn('delete', rule['verbs'])
+        ha = render(profile='ha')
+        cluster = by_kind(ha, 'ClusterRole')[0]
+        resources = {r for rule in cluster['rules'] for r in rule['resources']}
+        self.assertIn('secrets', resources, 'kubernetesTls reads TLS Secrets')
+        self.assertIn('ingresses/status', resources, 'publishAddress writes Ingress status')
+        self.assertEqual(by_kind(ha, 'ClusterRoleBinding')[0]['subjects'][0]['namespace'], 'world')
+        accounts = {d['metadata']['name']: d.get('automountServiceAccountToken') for d in by_kind(docs, 'ServiceAccount')}
+        self.assertEqual(sum(1 for value in accounts.values() if value), 1)
+
+    def test_network_policies_restrict_component_flows(self):
+        docs = render()
+        policies = {d['metadata']['name']: d['spec'] for d in by_kind(docs, 'NetworkPolicy')}
+        self.assertEqual(policies['w-hangang-world-default-deny'].get('ingress'), None)
+        pumgye = policies['w-hangang-world-pumgye']['ingress'][0]
+        sources = [peer['podSelector']['matchLabels'].get('app.kubernetes.io/name') for peer in pumgye['from']]
+        self.assertEqual(sources, ['hangang', 'world-test'])
+        sumunjang = policies['w-hangang-world-sumunjang']['ingress'][0]
+        self.assertEqual([p['podSelector']['matchLabels']['app.kubernetes.io/name'] for p in sumunjang['from']], ['hangang', 'pumgye', 'world-test'])
+        ha = render(profile='ha')
+        gateway = next(d['spec'] for d in by_kind(ha, 'NetworkPolicy') if d['metadata']['name'].endswith('-hangang'))
+        self.assertEqual(gateway['ingress'][0]['from'][0], {'ipBlock': {'cidr': '10.0.0.0/8'}})
+        self.assertEqual(gateway['ingress'][1]['ports'], [{'port': 9000, 'protocol': 'TCP'}])
+        self.assertFalse(by_kind(render('networkPolicy.enabled=false'), 'NetworkPolicy'))
+
+    def test_ha_profile(self):
+        docs = render(profile='ha')
+        gateway = named(docs, 'Deployment', '-hangang')
+        self.assertEqual(gateway['spec']['replicas'], 3)
+        self.assertEqual(gateway['spec']['strategy']['rollingUpdate'], {'maxUnavailable': 0, 'maxSurge': 1})
+        args = gateway['spec']['template']['spec']['containers'][0]['args']
+        self.assertEqual(args[args.index('--proxy-protocol-from') + 1], '10.0.0.0/24')
+        self.assertNotIn('--kubernetes-namespace', args)
+        self.assertIn('--admin-tls-cert', args)
+        settings = json.loads(named(docs, 'ConfigMap', '-hangang-protection')['data']['settings.json'])
+        self.assertEqual(settings['client_address'], {'mode': 'proxy_protocol'})
+        self.assertEqual(settings['pumgye_services'], {'orders': ['shop']})
+        self.assertEqual(settings['identity_profiles']['corp-sso']['namespaces'], ['shop', 'payroll'])
+        hopae = named(docs, 'Deployment', '-hopae')
+        self.assertEqual((hopae['spec']['replicas'], hopae['spec']['strategy']['type']), (2, 'RollingUpdate'))
+        env = {e['name']: e['valueFrom']['secretKeyRef'] for e in hopae['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(env['HOPAE_STORE_URL'], {'name': 'hangang-world-postgres', 'key': 'url'})
+        self.assertEqual(env['HOPAE_PROVIDER_CORP_CLIENT_SECRET'], {'name': 'hopae-providers', 'key': 'corp'})
+        config = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual(config['store'], {'kind': 'postgres', 'url_env': 'HOPAE_STORE_URL'})
+        claims = {d['metadata']['name'] for d in by_kind(docs, 'PersistentVolumeClaim')}
+        self.assertEqual(claims, {'w-hangang-world-pumgye-state'}, 'Hopae on PostgreSQL and a restored Sumunjang claim need no new PVC')
+        pdbs = {d['metadata']['name'] for d in by_kind(docs, 'PodDisruptionBudget')}
+        self.assertEqual(pdbs, {'w-hangang-world-hangang', 'w-hangang-world-hopae'})
+        monitor = by_kind(docs, 'ServiceMonitor')[0]['spec']['endpoints'][0]
+        self.assertEqual((monitor['scheme'], monitor['authorization']['credentials']['key']), ('https', 'hangang-admin-token'))
+
+    def test_invalid_values_are_refused(self):
+        cases = {
+            'missing digest': ['hopae.image.digest='],
+            'tag-only image': ['hangang.image.digest=latest'],
+            'inline secret value': ['credentials.token=abc'],
+            'unknown key': ['hangang.replica=2'],
+            'sqlite with replicas': ['hopae.replicas=2'],
+            'single-writer Pumgye scaled': ['pumgye.replicas=2'],
+            'postgres without HA backend': ['hopae.storage.backend=postgresql'],
+            'proxy protocol without CIDRs': ['hangang.clientAddress.mode=proxyProtocol'],
+            'serviceLocal on ClusterIP': ['hangang.service.type=ClusterIP'],
+            'chart-owned Hopae key': ['json:hopae.config={"listen":{"portal":"0.0.0.0:1"}}'],
+            'metrics without admin listener': ['monitoring.serviceMonitor.enabled=true'],
+            'protection without Pumgye': ['pumgye.enabled=false'],
+            'guard without Sumunjang': ['sumunjang.enabled=false'],
+            'existing secrets unnamed': ['tls.mode=existingSecrets'],
+            'test image without digest': ['tests.image.digest='],
+            'invalid CIDR': ['hangang.clientAddress.mode=proxyProtocol', 'hangang.clientAddress.proxyProtocolFrom[0]=not-a-cidr'],
+            'stale threshold below watch timeout': ['hangang.staleSeconds=30'],
+        }
+        for label, overrides in cases.items():
+            failed, error = refused(*overrides)
+            self.assertTrue(failed, label)
+        # Disabling a component also lifts its digest requirement.
+        docs = render('hangang.protection.enabled=false', 'hangang.guard.enabled=false',
+                      'hopae.enabled=false', 'pumgye.enabled=false', 'sumunjang.enabled=false', 'hopae.image.digest=')
+        self.assertEqual({d['metadata']['name'] for d in by_kind(docs, 'Deployment')}, {'w-hangang-world-hangang'})
+
+    def test_client_address_modes(self):
+        docs = render('hangang.clientAddress.mode=hostNetwork', 'hangang.service.type=ClusterIP')
+        pod = named(docs, 'Deployment', '-hangang')['spec']['template']['spec']
+        self.assertTrue(pod['hostNetwork'])
+        self.assertEqual(pod['dnsPolicy'], 'ClusterFirstWithHostNet')
+        docs = render('hangang.clientAddress.mode=none')
+        settings = json.loads(named(docs, 'ConfigMap', '-hangang-protection')['data']['settings.json'])
+        self.assertEqual(settings['client_address'], {'mode': 'none'})
+        self.assertEqual(named(docs, 'Service', '-hangang')['spec']['externalTrafficPolicy'], 'Cluster')
+        self.assertIn('client address is not preserved', notes('hangang.clientAddress.mode=none'))
+        self.assertNotIn('client address is not preserved', notes())
+
+    @unittest.skipUnless(os.environ.get('WORLD_KUBECONFORM') and Path(KUBECONFORM).exists(), 'set WORLD_KUBECONFORM=1 with kubeconform installed')
+    def test_rendered_objects_match_published_schemas(self):
+        for profile in PROFILES:
+            rendered = helm('template', 'w', str(WORLD), '-n', 'world', '-f', str(WORLD / 'ci' / f'{profile}-values.yaml')).stdout
+            with tempfile.NamedTemporaryFile('w', suffix='.yaml') as manifest:
+                manifest.write(rendered)
+                manifest.flush()
+                result = subprocess.run([KUBECONFORM, '-strict', '-summary', '-kubernetes-version', '1.29.0',
+                                         '-schema-location', 'default', '-schema-location',
+                                         'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json',
+                                         manifest.name],
+                                        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=300)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('Invalid: 0, Errors: 0, Skipped: 0', result.stdout)
+
+
+@unittest.skipUnless(Path(HELM).exists(), 'helm is not installed')
+class CrdChart(unittest.TestCase):
+    def test_crds_are_kept_and_roles_aggregate(self):
+        docs = render(chart=CRDS)
+        crd = by_kind(docs, 'CustomResourceDefinition')[0]
+        self.assertEqual(crd['metadata']['name'], 'protectionpolicies.world.hangang.dev')
+        self.assertEqual(crd['metadata']['annotations']['helm.sh/resource-policy'], 'keep')
+        self.assertNotIn('x-kubernetes-preserve-unknown-fields', json.dumps(crd))
+        roles = {d['metadata']['name']: d for d in by_kind(docs, 'ClusterRole')}
+        self.assertEqual(set(roles), {'world-admin', 'world-editor', 'world-viewer'})
+        self.assertEqual(roles['world-viewer']['metadata']['labels']['rbac.authorization.k8s.io/aggregate-to-view'], 'true')
+        editor_resources = {r for rule in roles['world-editor']['rules'] for r in rule['resources']}
+        self.assertNotIn('protectionpolicies/status', editor_resources, 'status belongs to the controller')
+
+    def test_crd_matches_the_hangang_source_schema_rules(self):
+        crd = by_kind(render(chart=CRDS), 'CustomResourceDefinition')[0]
+        spec = crd['spec']['versions'][0]['schema']['openAPIV3Schema']['properties']['spec']
+        self.assertIn('x-kubernetes-validations', spec)
+        actions = spec['properties']['authorization']['properties']['pumgye']['properties']['actions']
+        self.assertEqual(actions['x-kubernetes-list-type'], 'map')
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -39,6 +39,27 @@ flowchart LR
   D[Device/workload ADR — open] -.-> P
 ```
 
+## Authorization model and Kubernetes package track (proposed)
+
+Proposed by [ADR 0021](adr/0021-pumgye-authorization-model-revision.md) and
+[ADR 0022](adr/0022-kubernetes-native-world-package.md); product-grade gates, not
+proof-of-concept checks. Status: designed.
+
+- **P0:** Pumgye policy v2 (principal/group/template/binding, deny, zone references,
+  clearance ceilings, validity, explain with trace parity, v1→v2 converter and shadow);
+  Hopae groups, membership projection, subject lifecycle feed, offline JWKS workload
+  verification with tombstones; Sumunjang `NetworkZone`/`NetworkControl`;
+  `world.hangang.dev` v1alpha1 CRDs and `hangang-world-controller` with signed snapshots,
+  bounded staleness and fast revocation; Hangang Gateway API + `ProtectionPolicy` with
+  client IP preservation; cert-manager mTLS; Helm/OCI charts with digest-pinned signed
+  images. Gate: chart-installed functional acceptance on the designated remote k3s
+  after a fresh verified backup; no load tests until functional gates pass.
+- **P1:** HA (PostgreSQL, N≥2, PDBs), upgrade/rollback, v1beta1 + conversion, CNI policy
+  generation, SPIFFE SVIDs, console and decision events (ADR 0019/0020), backup/restore
+  drill, Gateway API conformance.
+- **P2:** JIT access and reviews, multi-cluster World, east-west L7, SAR authorizer
+  redesign, 10k/100k full-chain load qualification.
+
 ## Concrete next deliverables
 
 - Native plugin manifest/API/lifecycle specification and adversarial fixtures.

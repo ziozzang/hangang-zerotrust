@@ -37,3 +37,7 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 [ADR 0016: decision cores and metadata adapters](0016-decision-core-metadata-adapters.md) ([한국어](../ko/0016-decision-core-metadata-adapters.md)).
 
 [ADR 0018: draft authority-relative time observations](0018-authority-time-observations.md) ([한국어](../ko/0018-authority-time-observations.md)).
+
+[ADR 0021 (proposed): Pumgye authorization model revision — principals, Hopae groups, role templates, deny, zones, explain API](0021-pumgye-authorization-model-revision.md) ([한국어](../ko/0021-pumgye-authorization-model-revision.md)).
+
+[ADR 0022 (proposed): Kubernetes-native Hangang World package — `world.hangang.dev` CRDs, world controller, Gateway API, Helm/OCI, HA](0022-kubernetes-native-world-package.md) ([한국어](../ko/0022-kubernetes-native-world-package.md)). Supersedes ADR 0015 in part.

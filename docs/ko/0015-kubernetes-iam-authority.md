@@ -2,6 +2,8 @@
 
 [English](../adr/0015-kubernetes-iam-authority.md)
 
+[ADR 0022](0022-kubernetes-native-world-package.md)(제안)가 일부를 대체합니다.
+
 상태: 채택한 방향이며 일부 구현되었습니다. 한강은 Ingress 컨트롤러와
 오프라인 가져오기를 지원합니다. 호패는 TokenReview와 실제 ServiceAccount/Pod
 UID 조회로 Pod에 바인딩된 자격을 검증합니다. 품계에는 명시적 앱 권한 매핑과

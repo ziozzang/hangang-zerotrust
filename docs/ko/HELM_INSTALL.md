@@ -232,6 +232,22 @@ ADR 0022의 남은 게이트를 소유자 승인 아래 사용자 지정 원격 
 구성 요소별 결함: **Hangang**은 API 중단 동안 마지막 정상 설정으로 무기한 서비스하며(준비 상태는 60초 후 철회), ADR 0022의 제한된 staleness를 넘으면 실패 시 닫히도록 하지 않습니다. API 복귀 시 요청 4건이 실패했고, 클라이언트 인증서 재로드는 관찰할 수 없었습니다. **Hopae**, **Pumgye**, **Sumunjang**은 재시작 없이 회전된 인증서를 다시 읽지 않습니다. **Hopae**의 선언형 철회는 롤아웃에 묶이며, #10+#13 병합 트리는 충돌 해소와 이벤트 개수 테스트(46→47, 52→53) 갱신이 필요합니다. cert-manager cainjector는 API 복귀 직후 잠시 CrashLoop 후 자동 복구됐습니다. 만든 객체, 이미지, 네임스페이스는 모두 제거했고, 노드, CRD, RBAC, webhook, IngressClass, PV 목록, HTTP 점검이 실행 전 기준선과 같으며 기존 Pod의 UID와 재시작 수가 유지됐습니다.
 
 
+## 검증 기록 — 인증서 교체 재실행 (2026-10-17)
+
+같은 원격 k3s 테스트 클러스터에서 구성 요소 수정본으로 게이트 3을 다시 실행했습니다. 먼저 새 콜드 백업(3,824,806,818바이트)을 만들고 원격·오프호스트 사본의 크기, 전체 SHA-256, 아카이브 목록이 일치함을 확인했습니다. 이미지: Hangang `229b85b`(PR #23), Hopae `be56e61`(`integrate/identity-platform` + #14 로컬 병합), Pumgye `a135176`(PR #7), Sumunjang `400acea`(`feat/asn-proposals`). 차트는 `466c1b9`이며 기본 10초 TLS 폴링과 `hangang.admin.exposeMetrics`를 썼습니다.
+
+| 확인 | 결과 |
+| --- | --- |
+| 네 구성 요소 인증서 cert-manager 강제 재발급(revision 2) | 모든 리스너가 약 2분 안에 새 일련번호를 제공, 재시작 없음(같은 Pod, 재시작 0) |
+| Hangang 관리 리스너 9000, 3복제본 | 재발급 후 12–32초에 새 일련번호, `TLS listener certificate reloaded serial=…`와 `upstream-client`·`guard-decision`의 `TLS client material reloaded` 로그, `hangang_tls_reloads_total` 자료마다 1, failing 0 |
+| Hopae gRPC 게이트웨이 8703 | 새 일련번호, `TLS material reloaded name="grpc_gateway"` |
+| Pumgye 9084 / 9085 / 9087 | 세 포트 모두 새 일련번호, 리스너마다 `tls_reloaded`, `pumgye_tls_reloads_total` 1, failing 0 |
+| Sumunjang 9080 / 9081 / 9082 | 세 포트 모두 새 일련번호, `sumunjang_tls_reloads_total` 1, failures 0, 9083의 HTTP `/readyz`·`/healthz` 프로브 |
+| 교체 중 보호 경로 트래픽 | 2028/2028 요청 200 |
+| `helm test` | Succeeded |
+
+실행 후 실행 전 기준선으로 정리했습니다(노드, CRD, RBAC, webhook, IngressClass, 네임스페이스, PV 285개, HTTP 확인 동일, 기존 Pod의 UID와 재시작 수 유지). 새 백업을 검증한 뒤 이전 오프호스트 사본은 삭제했습니다. Hangang 후속 하나는 PR #23에서 고쳤습니다: 동적 공개 리스너가 더 이상 재적재 지표를 보고하지 않습니다. 관찰: Hangang 관리 포트로 `kubectl port-forward`하면 평문 HTTP가 응답하지만 Pod 네트워크 클라이언트는 TLS를 받습니다. 원인은 아직 모릅니다.
+
 ## 검증
 
 ```sh

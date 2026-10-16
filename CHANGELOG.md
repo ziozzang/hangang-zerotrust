@@ -44,5 +44,9 @@
   chart-issued scrape client certificate and read-only metrics tokens from
   the credentials Secret; Hopae has no `/metrics`), metrics NetworkPolicy
   rules, and an optional PrometheusRule with the documented alerts.
+- Re-qualify certificate rotation on the remote k3s cluster with the
+  component fixes: after a forced cert-manager renewal Hangang, Hopae,
+  Pumgye and Sumunjang served the new serial within about 2 minutes without
+  restarts; 2028/2028 protected requests succeeded; cleaned up to baseline.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

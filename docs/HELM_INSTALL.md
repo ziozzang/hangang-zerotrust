@@ -235,6 +235,22 @@ The remaining ADR 0022 gates ran on the user-designated remote k3s test cluster 
 Defects recorded per component: **Hangang** keeps serving last-good indefinitely during an API outage (readiness is withdrawn after 60 s) instead of failing closed beyond ADR 0022's bounded staleness, and dropped 4 requests at API recovery; reload of its client certificates was not observable. **Hopae**, **Pumgye** and **Sumunjang** do not reload rotated certificates without a restart. **Hopae** declarative revocation is rollout-bound; the merged #10+#13 tree needs the conflict resolution and the event-count tests (46→47, 52→53) updated. cert-manager's cainjector crash-looped briefly after the API returned and recovered. All created objects, images and namespaces were removed; nodes, CRDs, RBAC, webhooks, ingress classes, PV list and HTTP checks matched the pre-run baseline, and pre-existing Pods kept their UIDs and restart counts.
 
 
+## Qualification — certificate rotation re-run (2026-10-17)
+
+Gate 3 was repeated on the same remote k3s test cluster with the component fixes, after a fresh cold backup (3,824,806,818 bytes) whose remote and off-host copies matched in size, full SHA-256 and archive listing. Images: Hangang `229b85b` (PR #23), Hopae `be56e61` (local merge of `integrate/identity-platform` + #14), Pumgye `a135176` (PR #7), Sumunjang `400acea` (`feat/asn-proposals`); chart `466c1b9` with the default 10 s TLS polling and `hangang.admin.exposeMetrics`.
+
+| Check | Result |
+| --- | --- |
+| Forced cert-manager renewal of the four component certificates (revision 2) | every listener served the new serial within about 2 minutes, with no restart (same Pods, restart count 0) |
+| Hangang admin listener 9000, 3 replicas | new serial 12–32 s after renewal; logs `TLS listener certificate reloaded serial=…` and `TLS client material reloaded` for `upstream-client` and `guard-decision`; `hangang_tls_reloads_total` 1 per material, failing 0 |
+| Hopae gRPC gateway 8703 | new serial; `TLS material reloaded name="grpc_gateway"` |
+| Pumgye 9084 / 9085 / 9087 | new serial on all three; `tls_reloaded` per listener; `pumgye_tls_reloads_total` 1, failing 0 |
+| Sumunjang 9080 / 9081 / 9082 | new serial on all three; `sumunjang_tls_reloads_total` 1, failures 0; HTTP `/readyz` and `/healthz` probes on 9083 |
+| Protected traffic during the rotation | 2028/2028 requests 200 |
+| `helm test` | Succeeded |
+
+The run was cleaned up to the pre-run baseline (nodes, CRDs, RBAC, webhooks, ingress classes, namespaces, the 285 PVs and HTTP checks identical; pre-existing Pods kept their UIDs and restart counts). The older off-host backup copy was removed after the new one verified. One Hangang follow-up was fixed on PR #23: a dynamic public listener no longer reports a reload metric. Observation: `kubectl port-forward` to the Hangang admin port answered plain HTTP while Pod-network clients get TLS; not yet explained.
+
 ## Validation
 
 ```sh

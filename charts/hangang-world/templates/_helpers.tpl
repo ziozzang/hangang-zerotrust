@@ -184,3 +184,38 @@ spec:
 {{- printf "%s-admin-tls" (include "world.name" (dict "root" . "component" "hopae")) -}}
 {{- end -}}
 {{- end -}}
+
+{{/* Hopae container environment (Deployment and migration Job). */}}
+{{- define "world.hopaeEnv" -}}
+{{- $root := . -}}
+{{ include "world.secretEnv" (dict "root" $root "name" "HOPAE_GATEWAY_KEY" "key" "hopaeGatewayKey") }}
+{{- if (eq $root.Values.hopae.storage.backend "postgresql") }}
+- name: HOPAE_STORE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ $root.Values.global.ha.postgresql.existingSecret }}
+      key: {{ $root.Values.global.ha.postgresql.urlKey }}
+{{- end }}
+{{- if and $root.Values.hopae.admin.enabled $root.Values.hopae.admin.delegation.enabled }}
+- name: HOPAE_CONSOLE_DELEGATION_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ $root.Values.hopae.admin.delegation.keySecret.name }}
+      key: {{ $root.Values.hopae.admin.delegation.keySecret.key }}
+{{- end }}
+{{- if $root.Values.hopae.consoleOperators.enabled }}
+# Ed25519 seed of the operator assertion (Hopae only).
+- name: HOPAE_CONSOLE_ASSERTION_SEED
+  valueFrom:
+    secretKeyRef:
+      name: {{ $root.Values.operatorAssurance.seedSecret.name }}
+      key: {{ $root.Values.operatorAssurance.seedSecret.key }}
+{{- end }}
+{{- range $root.Values.hopae.extraSecretEnv }}
+- name: {{ .name }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .secretName }}
+      key: {{ .key }}
+{{- end }}
+{{- end -}}

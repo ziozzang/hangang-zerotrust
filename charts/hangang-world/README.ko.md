@@ -7,7 +7,7 @@
 | 구성 요소 | 역할 | 워크로드 | 포트(Service) |
 | --- | --- | --- | --- |
 | Hangang | Ingress 컨트롤러이자 강제 게이트웨이, `ProtectionPolicy`를 경로에 컴파일 | Deployment, 무상태, N개 복제본 | 공개 `http`/`https`, 선택적 `admin` 9000(TLS, 지표) |
-| Hopae | 신원, 세션, 네이티브 게이트웨이 검증 | Deployment, SQLite 단일 복제본(Hopae가 PostgreSQL을 제공하면 확장) | `portal` 8700, `grpc` 8703(mTLS) |
+| Hopae | 신원, 세션, 네이티브 게이트웨이 검증 | Deployment: SQLite 단일 복제본, 또는 외부 PostgreSQL 위의 여러 복제본 | `portal` 8700, `grpc` 8703(mTLS) |
 | Pumgye | 인가 결정 | Deployment, 단일 기록자(SQLite) | `management` 9084, `ppg1` 9085, `grpc` 9087(mTLS) |
 | Sumunjang | 네트워크 승인(IP/위험) | Deployment, 단일 기록자(SQLite) | `management` 9080, `binary-mtls` 9081, `grpc-mtls` 9082 |
 
@@ -42,7 +42,7 @@ CRD(`world.hangang.dev`)와 집계 역할 `world-admin`/`world-editor`/`world-vi
 | `tls.existingSecrets.<component>` | `""` | `tls.crt`, `tls.key`, `ca.crt`를 가진 직접 준비한 `kubernetes.io/tls` Secret |
 | `global.trustDomain` | `cluster.local` | SPIFFE 신뢰 도메인 |
 | `global.ha.backend` | `none` | `postgresql`이면 공유 저장소(Hopae) 사용 |
-| `global.ha.postgresql.existingSecret` / `urlKey` | `""` / `url` | 연결 URL을 가진 Secret |
+| `global.ha.postgresql.existingSecret` / `urlKey` / `caSecret` | `""` / `url` / `""` | 연결 URL과 서버 CA를 가진 Secret |
 | `hangang.replicas` | `2` | 게이트웨이 복제본(무상태) |
 | `hangang.watchScope` | `Namespace` | `Namespace`(Role) 또는 `Cluster`(ClusterRole) |
 | `hangang.ingressClass.name` / `create` / `default` | `hangang` / `true` / `false` | 컨트롤러 `hangang.dev/ingress-controller`의 IngressClass |
@@ -59,7 +59,8 @@ CRD(`world.hangang.dev`)와 집계 역할 `world-admin`/`world-editor`/`world-vi
 | `hangang.readiness` | `snapshot` | `snapshot`: 활성화된 스냅샷을 제공하는 동안 준비, `fresh`: 감시가 오래되면 준비되지 않음 |
 | `<component>.tlsReloadSeconds` | `10` | 인증서/키/CA 내용 폴링, 교체 자료를 재시작 없이 사용(Pumgye 1–3600, 나머지는 0이면 끔) |
 | `hopae.authentication.reloadIntervalMs` | `1000` | `config` 모드에서 프로필과 projection 계획 실시간 반영(0이면 끔, 200–60000), 이 키는 Pod를 다시 띄우지 않음 |
-| `hopae.storage.backend` | `sqlite` | `sqlite`(1개 복제본, PVC), Hopae가 PostgreSQL 저장소를 제공할 때까지 `postgresql`은 거부 |
+| `hopae.storage.backend` | `sqlite` | `sqlite`(1개 복제본, PVC) 또는 `postgresql`(복제본 > 1, RollingUpdate, PDB, `global.ha.postgresql` URL·CA Secret) |
+| `hopae.storage.postgresql.*` / `migration.*` | 16 / 5000 / 2000 ms, 꺼짐 | 풀과 시간 제한, pre-upgrade SQLite → PostgreSQL 복사 Job |
 | `hopae.authentication.source` | `config` | `config`: values가 인증 프로필을 소유하고 롤아웃마다 Hopae 저장소를 맞춤(Hopae PR #13), `store`: values는 빈 저장소만 부트스트랩 |
 | `hopae.config` | portal/apps/providers | Hopae 설정, `listen`·`state_dir`·`store`·`gateway`·`authentication`·`reload`는 차트 소유 |
 | `hopae.extraSecretEnv` | `[]` | Secret에서 가져오는 환경 변수(공급자 클라이언트 비밀) |
@@ -84,7 +85,7 @@ CI가 쓰는 프로필은 [`ci/`](ci)에 있습니다. `minimal`, `ha`(PROXY v2 
 
 ## 확장과 HA
 
-Hangang은 컨트롤러 모드에서 무상태이므로 자유롭게 늘릴 수 있습니다. Hopae는 SQLite 단일 복제본으로 유지됩니다. PostgreSQL 저장소가 아직 릴리스되지 않아(Hopae 0.0.10은 `store.url_env`를 거부) 차트가 `storage.backend: postgresql`을 거부합니다. Pumgye와 Sumunjang은 이번 릴리스에서 단일 기록자이며(스키마가 `replicas`를 1로 제한), ADR 0022에 따라 서명된 스냅숏 배포가 생기면 무상태 스냅숏 복제본이 됩니다. 차트는 두 Pod가 데이터베이스 하나를 공유하게 두는 대신 SQLite에서 `replicas > 1`을 거부합니다.
+Hangang은 컨트롤러 모드에서 무상태이므로 자유롭게 늘릴 수 있습니다. Hopae는 SQLite 단일 복제본으로, 또는 외부 PostgreSQL 위의 여러 복제본(`storage.backend: postgresql`, Hopae PR #16)으로 실행합니다. Pumgye와 Sumunjang은 이번 릴리스에서 단일 기록자이며(스키마가 `replicas`를 1로 제한), ADR 0022에 따라 서명된 스냅숏 배포가 생기면 무상태 스냅숏 복제본이 됩니다. 차트는 두 Pod가 데이터베이스 하나를 공유하게 두는 대신 SQLite에서 `replicas > 1`을 거부합니다.
 
 ## 업그레이드와 되돌리기
 

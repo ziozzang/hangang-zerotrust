@@ -53,6 +53,27 @@
                   "minLength": 1,
                   "maxLength": 253,
                   "pattern": "^[-._a-zA-Z0-9]+$"
+                },
+                "caSecret": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 253,
+                      "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                    },
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 253,
+                      "pattern": "^[-._a-zA-Z0-9]+$"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "key"
+                  ]
                 }
               }
             }
@@ -1218,6 +1239,46 @@
                 "sqlite",
                 "postgresql"
               ]
+            },
+            "postgresql": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "poolSize": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 128
+                },
+                "connectTimeoutMs": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 60000
+                },
+                "statementTimeoutMs": {
+                  "type": "integer",
+                  "minimum": 10,
+                  "maximum": 600000
+                }
+              }
+            },
+            "migration": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "fromClaim": {
+                  "type": "string",
+                  "maxLength": 253,
+                  "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                },
+                "timeoutSeconds": {
+                  "type": "integer",
+                  "minimum": 60,
+                  "maximum": 86400
+                }
+              }
             }
           },
           "required": [
@@ -1254,7 +1315,10 @@
               ]
             },
             "reloadIntervalMs": {
-              "type": "integer",
+              "type": [
+                "integer",
+                "null"
+              ],
               "minimum": 0,
               "maximum": 60000,
               "not": {
@@ -1269,7 +1333,10 @@
           ]
         },
         "tlsReloadSeconds": {
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 0,
           "maximum": 3600
         },

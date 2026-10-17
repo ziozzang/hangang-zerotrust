@@ -65,7 +65,7 @@ This guide installs the integrated Hangang World package (ADR 0022 P0 packaging)
 ## Scaling and high availability
 
 - Hangang is stateless in controller mode: raise `hangang.replicas`; a PodDisruptionBudget and topology spread are added automatically.
-- Hopae stays at one SQLite replica: its PostgreSQL store is not released, and the chart refuses more than one SQLite replica.
+- Hopae runs one SQLite replica (Recreate) or, with `hopae.storage.backend: postgresql`, several replicas on a shared external PostgreSQL (RollingUpdate with `maxUnavailable: 0` and a PDB); see [Hopae on PostgreSQL](#hopae-on-postgresql). The chart refuses more than one SQLite replica.
 - Pumgye and Sumunjang are single writers in this release; the schema caps them at one replica. Their state lives on a PVC that survives uninstall.
 
 ## Certificate rotation without restarts
@@ -140,6 +140,29 @@ The cert-manager rules need cert-manager's own metrics in Prometheus (`monitorin
 
 Configuration files are mounted as whole directories (never `subPath`), root-owned and readable through `fsGroup` (`0440`), which `hangang-console` accepts for Kubernetes volumes. Administrator accounts and console sessions are per replica (the Service uses ClientIP affinity). The console binary must be present in the Hangang image (`hangang.console.command`).
 
+## Hopae on PostgreSQL
+
+`hopae.storage.backend: postgresql` (with `global.ha.backend: postgresql`) stores Hopae in an external PostgreSQL that every replica shares (Hopae ADR-0020, PR #16):
+
+- `global.ha.postgresql.existingSecret`/`urlKey`: a Secret with the libpq URL (`postgresql://user@host:5432/db?sslmode=verify-full`, password included or from the server's auth method), passed as `HOPAE_STORE_URL`.
+- `global.ha.postgresql.caSecret`: the CA of the server certificate, mounted at `/pg-ca/ca.crt` (`store.postgres.ca_file`); Hopae refuses a non-loopback database without it.
+- `hopae.storage.postgresql.poolSize` (16 per replica), `connectTimeoutMs` (5000) and `statementTimeoutMs` (2000 per transaction).
+- `hopae.replicas` > 1 is allowed only here. Deployments roll with `maxUnavailable: 0, maxSurge: 1` and a PDB; each replica keeps a private `state_dir` on an emptyDir and no PVC is created.
+- Publications (authentication profiles, projection plans) reach every replica within about one second (LISTEN/NOTIFY plus a 1 s poll). Login-transaction and handoff-failure rate limits are counted in the store and shared; the other limits are per replica, so the effective cluster limit is the per-replica value times the replica count.
+- All replicas must run the same configuration; a replica on an older policy stops qualifying native Human sessions until it restarts.
+
+### Migrating from SQLite
+
+The copy is one way (`hopae store migrate-to-postgres`): Hopae opens the SQLite file read-only, refuses a PostgreSQL store that holds any row, compares per-table row counts and SHA-256 digests before it commits, and records a `store.migrated` event. The SQLite volume is kept (`helm.sh/resource-policy: keep`) and is the rollback artefact.
+
+1. Create an empty database and a role for Hopae, the URL Secret and the CA Secret. Run the new Hopae image once on SQLite so the file is at that binary's schema.
+2. Back up the Hopae PVC.
+3. Scale Hopae to zero (`kubectl scale deploy/<release>-hangang-world-hopae --replicas=0`); the migration takes the SQLite instance lock.
+4. `helm upgrade` with `hopae.storage.backend: postgresql`, the `global.ha.postgresql` settings and `hopae.storage.migration.enabled: true`. The pre-upgrade hook Job mounts the old SQLite claim (`hopae.storage.migration.fromClaim`, default the chart's own) and runs the copy; if it fails, for example because the target is not empty, the upgrade stops and nothing is changed.
+5. Check the Job log (per-table report), then raise `hopae.replicas` and set `hopae.storage.migration.enabled: false` for later upgrades.
+
+Rollback: `helm upgrade` back to `hopae.storage.backend: sqlite` with one replica; the kept SQLite claim is reused. Sessions, grants and audit events written on PostgreSQL after the migration are not copied back.
+
 ## Upgrade and rollback
 
 Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
@@ -160,7 +183,7 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Images.** No component image is published to a registry yet; the default repositories (`ghcr.io/ziozzang/…`) are placeholders until signed releases are pushed. `tools/package_component.py` builds the scratch images locally only.
 - **Signing and provenance.** No cosign signature, SBOM or SLSA attestation exists, so admission verification (policy-controller, Kyverno) cannot be enforced yet.
 - **Hangang version.** ProtectionPolicy support (Hangang PR #21) must be in the released Hangang image the digest points to.
-- **Hopae PostgreSQL.** Hopae's PostgreSQL store is planned (Hopae ADR-0002, M2) but not released (Hopae 0.0.10 refuses `store.url_env`); the chart refuses `hopae.storage.backend: postgresql` until it ships, so Hopae runs as one SQLite replica.
+- **Hopae PostgreSQL.** Serving on PostgreSQL is in Hopae PR #16 (stacked on #11) and needs a build with the `postgres` feature. That branch predates Hopae's live reload, metrics and console-operator work; until they are combined, keep `hopae.tlsReloadSeconds` and `hopae.authentication.reloadIntervalMs` unset (the chart then omits those keys).
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
 - **Live qualification.** The local and remote runs cover the protected chain, revocation, a 10-minute API outage, certificate rotation and a node drain. The component fixes for certificate hot reload, bounded staleness and live Hopae reconciliation are in open component pull requests (Hangang #23, Pumgye #7, Hopae #14, Sumunjang `feat/asn-proposals`) and must be released before the digests can point at them.
 

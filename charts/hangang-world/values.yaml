@@ -16,9 +16,14 @@ global:
   ha:
     backend: none            # none | postgresql
     postgresql:
-      # Secret holding a libpq connection URL (sslmode=verify-full recommended).
+      # Secret holding a libpq connection URL (sslmode=verify-full).
       existingSecret: ""
       urlKey: url
+      # Secret with the CA that signed the server certificate (Hopae
+      # verifies it; without a CA only loopback would be allowed).
+      caSecret:
+        name: ""
+        key: ca.crt
 
 # One pre-created Secret with the shared API credentials. Create it with
 # random values of at least 32 bytes, for example:
@@ -286,10 +291,26 @@ hopae:
     tag: "0.0.8"
     digest: ""
     pullPolicy: IfNotPresent
-  # sqlite: single replica on a PVC. postgresql is refused until Hopae ships
-  # its PostgreSQL store (Hopae 0.0.10 rejects store.url_env).
+  # sqlite: single replica on a PVC (Recreate).
+  # postgresql: shared external PostgreSQL (global.ha.postgresql), several
+  # replicas, RollingUpdate and a PDB; needs a Hopae build with the postgres
+  # feature (Hopae PR #16). Rate limits that are counted in the store
+  # (login transactions, handoff failures) are shared by the replicas; the
+  # in-memory ones are per replica.
   storage:
     backend: sqlite
+    postgresql:
+      poolSize: 16             # 1..128 per replica
+      connectTimeoutMs: 5000   # 100..60000
+      statementTimeoutMs: 2000 # 10..600000, per transaction
+    # One-way copy of the existing SQLite store into the empty PostgreSQL
+    # database as a pre-upgrade hook (`hopae store migrate-to-postgres`).
+    # Scale Hopae to 0 first; enable for that one upgrade only.
+    migration:
+      enabled: false
+      # SQLite state claim of the previous release; empty: the chart's own.
+      fromClaim: ""
+      timeoutSeconds: 600
   persistence:
     size: 1Gi
     storageClassName: ""
@@ -302,11 +323,14 @@ hopae:
     source: config
     # config mode: how often a running Hopae polls its configuration file and
     # reconciles changed authentication profiles or projection plans live
-    # (milliseconds; 0 off, otherwise 200-60000). The ConfigMap is mounted
+    # (milliseconds; 0 off, otherwise 200-60000; null keeps Hopae's default
+    # of 1000 and omits the key for builds without live reload). The ConfigMap is mounted
     # as a directory (never subPath), so edits reach the Pod without a
     # restart, after the kubelet's ConfigMap propagation delay (sync period
     # plus cache TTL, about a minute by default).
-    reloadIntervalMs: 1000
+    # null keeps Hopae's default (1000) and omits the key, for Hopae builds
+    # without live reload.
+    reloadIntervalMs: null
   # Console operators (Hopae ADR-0021): operators of the console application
   # must sign in with a passkey (or AAL 3); allowed verifies carry the signed
   # x-hopae-operator-assertion (Ed25519). Needs operatorAssurance.seedSecret,
@@ -332,8 +356,9 @@ hopae:
       name: ""
       key: hopae-metrics-token
   # Seconds between content polls of Hopae's TLS files (native/gRPC gateway,
-  # admin listener, projection clients); 0 off, at most 3600.
-  tlsReloadSeconds: 10
+  # admin listener, projection clients); 0 off, at most 3600; null keeps
+  # Hopae's default (10) and omits the key.
+  tlsReloadSeconds: null
   # Hopae configuration (docs/CONFIG.md in the Hopae repository): portal,
   # apps, providers, authentication_gateway, ... The chart owns listen,
   # state_dir, store, gateway, authentication, reload and console_operators;

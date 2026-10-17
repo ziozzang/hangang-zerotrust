@@ -147,11 +147,11 @@ class WorldChart(unittest.TestCase):
         hopae = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
         self.assertEqual(hopae['listen']['grpc_gateway'], '0.0.0.0:8703')
         self.assertEqual(hopae['store'], {'kind': 'sqlite'})
-        self.assertEqual(hopae['authentication'], {'source': 'config', 'reload_interval_ms': 1000}, 'values own the authentication profiles by default')
-        self.assertEqual(hopae['reload'], {'tls_interval_secs': 10})
+        self.assertEqual(hopae['authentication'], {'source': 'config'}, 'values own the authentication profiles by default')
+        self.assertNotIn('reload', hopae, 'Hopae defaults apply; builds without live reload accept the file')
         self.assertEqual(hopae['apps'][0]['app_id'], 'app')
         store = json.loads(named(render('hopae.authentication.source=store'), 'ConfigMap', '-hopae-config')['data']['hopae.json'])
-        self.assertEqual(store['authentication'], {'source': 'store', 'reload_interval_ms': 1000})
+        self.assertEqual(store['authentication'], {'source': 'store'})
         self.assertEqual(len(by_kind(docs, 'PersistentVolumeClaim')), 3)
         for claim in by_kind(docs, 'PersistentVolumeClaim'):
             self.assertEqual(claim['metadata']['annotations']['helm.sh/resource-policy'], 'keep')
@@ -228,15 +228,15 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(settings['pumgye_services'], {'orders': ['shop']})
         self.assertEqual(settings['identity_profiles']['corp-sso']['namespaces'], ['shop', 'payroll'])
         hopae = named(docs, 'Deployment', '-hopae')
-        self.assertEqual((hopae['spec']['replicas'], hopae['spec']['strategy']['type']), (1, 'Recreate'))
+        self.assertEqual((hopae['spec']['replicas'], hopae['spec']['strategy']['type']), (2, 'RollingUpdate'))
         env = {e['name']: e['valueFrom']['secretKeyRef'] for e in hopae['spec']['template']['spec']['containers'][0]['env']}
         self.assertEqual(env['HOPAE_PROVIDER_CORP_CLIENT_SECRET'], {'name': 'hopae-providers', 'key': 'corp'})
         config = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
-        self.assertEqual(config['store'], {'kind': 'sqlite'})
+        self.assertEqual(config['store']['kind'], 'postgres')
         claims = {d['metadata']['name'] for d in by_kind(docs, 'PersistentVolumeClaim')}
-        self.assertEqual(claims, {'w-hangang-world-pumgye-state', 'w-hangang-world-hopae-state'}, 'a restored Sumunjang claim needs no new PVC')
+        self.assertEqual(claims, {'w-hangang-world-pumgye-state'}, 'Hopae on PostgreSQL and a restored Sumunjang claim need no PVC')
         pdbs = {d['metadata']['name'] for d in by_kind(docs, 'PodDisruptionBudget')}
-        self.assertEqual(pdbs, {'w-hangang-world-hangang'})
+        self.assertEqual(pdbs, {'w-hangang-world-hangang', 'w-hangang-world-hopae'})
         monitor = named(docs, 'ServiceMonitor', '-hangang')['spec']['endpoints'][0]
         self.assertEqual((monitor['scheme'], monitor['authorization']['credentials']['key']), ('https', 'hangang-admin-token'))
         args = gateway['spec']['template']['spec']['containers'][0]['args']
@@ -252,8 +252,10 @@ class WorldChart(unittest.TestCase):
             'sqlite with replicas': ['hopae.replicas=2'],
             'single-writer Pumgye scaled': ['pumgye.replicas=2'],
             'postgres without HA backend': ['hopae.storage.backend=postgresql'],
-            'unreleased Hopae PostgreSQL store': ['hopae.storage.backend=postgresql', 'global.ha.backend=postgresql',
-                                                  'global.ha.postgresql.existingSecret=pg', 'hopae.replicas=2'],
+            'Hopae PostgreSQL without a CA': ['hopae.storage.backend=postgresql', 'global.ha.backend=postgresql',
+                                              'global.ha.postgresql.existingSecret=pg', 'hopae.replicas=2'],
+            'migration on SQLite': ['hopae.storage.migration.enabled=true'],
+            'PostgreSQL pool too large': ['hopae.storage.postgresql.poolSize=500'],
             'proxy protocol without CIDRs': ['hangang.clientAddress.mode=proxyProtocol'],
             'serviceLocal on ClusterIP': ['hangang.service.type=ClusterIP'],
             'chart-owned Hopae key': ['json:hopae.config={"listen":{"portal":"0.0.0.0:1"}}'],
@@ -528,6 +530,37 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(len(named(plain, 'Deployment', '-hangang')['spec']['template']['spec']['containers']), 1)
         self.assertNotIn('console_operators', json.loads(named(plain, 'ConfigMap', '-hopae-config')['data']['hopae.json']))
         self.assertNotIn('native_gateway', json.loads(named(plain, 'ConfigMap', '-hopae-config')['data']['hopae.json'])['listen'])
+
+    def test_hopae_postgresql_high_availability(self):
+        pg = ['hopae.storage.backend=postgresql', 'global.ha.backend=postgresql', 'global.ha.postgresql.existingSecret=hopae-pg',
+              'global.ha.postgresql.caSecret.name=hopae-pg-ca', 'hopae.replicas=2']
+        docs = render(*pg)
+        deployment = named(docs, 'Deployment', '-hopae')
+        self.assertEqual(deployment['spec']['replicas'], 2)
+        self.assertEqual(deployment['spec']['strategy'], {'type': 'RollingUpdate', 'rollingUpdate': {'maxUnavailable': 0, 'maxSurge': 1}})
+        self.assertEqual(named(docs, 'PodDisruptionBudget', '-hopae')['spec']['maxUnavailable'], 1)
+        config = json.loads(named(docs, 'ConfigMap', '-hopae-config')['data']['hopae.json'])
+        self.assertEqual(config['store'], {'kind': 'postgres', 'postgres': {'url_env': 'HOPAE_STORE_URL', 'ca_file': '/pg-ca/ca.crt',
+                                                                         'pool_size': 16, 'connect_timeout_ms': 5000, 'statement_timeout_ms': 2000}})
+        pod = deployment['spec']['template']['spec']
+        env = {e['name']: e['valueFrom']['secretKeyRef'] for e in pod['containers'][0]['env']}
+        self.assertEqual(env['HOPAE_STORE_URL'], {'name': 'hopae-pg', 'key': 'url'})
+        volumes = {v['name']: v for v in pod['volumes']}
+        self.assertIn('emptyDir', volumes['state'])
+        self.assertEqual(volumes['pg-ca']['secret']['secretName'], 'hopae-pg-ca')
+        self.assertNotIn('w-hangang-world-hopae-state', {d['metadata']['name'] for d in by_kind(docs, 'PersistentVolumeClaim')})
+        self.assertFalse([d for d in by_kind(docs, 'Job')], 'no migration unless asked')
+        migrate = render(*pg, 'hopae.storage.migration.enabled=true')
+        job = named(migrate, 'Job', '-hopae-migrate')
+        self.assertEqual(job['metadata']['annotations']['helm.sh/hook'], 'pre-upgrade')
+        container = job['spec']['template']['spec']['containers'][0]
+        self.assertEqual(container['args'], ['--config', '/config/hopae.json', 'store', 'migrate-to-postgres', '--from', '/sqlite/hopae.db'])
+        self.assertEqual(job['spec']['backoffLimit'], 0)
+        claims = {v['name']: v for v in job['spec']['template']['spec']['volumes']}
+        self.assertEqual(claims['sqlite']['persistentVolumeClaim']['claimName'], 'w-hangang-world-hopae-state')
+        hook = named(migrate, 'ConfigMap', '-hopae-migrate')
+        self.assertEqual(json.loads(hook['data']['hopae.json'])['state_dir'], '/sqlite')
+        self.assertLess(int(hook['metadata']['annotations']['helm.sh/hook-weight']), int(job['metadata']['annotations']['helm.sh/hook-weight']))
 
     def test_client_address_modes(self):
         docs = render('hangang.clientAddress.mode=hostNetwork', 'hangang.service.type=ClusterIP')

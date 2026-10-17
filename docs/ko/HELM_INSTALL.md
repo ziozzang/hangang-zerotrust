@@ -65,7 +65,7 @@
 ## 확장과 고가용성
 
 - Hangang은 컨트롤러 모드에서 무상태입니다. `hangang.replicas`를 늘리면 PodDisruptionBudget과 토폴로지 분산이 자동으로 추가됩니다.
-- Hopae는 SQLite 단일 복제본으로 유지됩니다. PostgreSQL 저장소가 릴리스되지 않았고, 차트는 SQLite 복제본을 둘 이상 두는 것을 거부합니다.
+- Hopae는 SQLite 단일 복제본(Recreate)으로 실행하거나, `hopae.storage.backend: postgresql`이면 공유 외부 PostgreSQL에서 여러 복제본(`maxUnavailable: 0` RollingUpdate와 PDB)으로 실행합니다. [PostgreSQL 위의 Hopae](#postgresql-위의-hopae)를 참조하세요. 차트는 SQLite 복제본을 둘 이상 두는 것을 거부합니다.
 - Pumgye와 Sumunjang은 이번 릴리스에서 단일 기록자이며 스키마가 복제본을 하나로 제한합니다. 상태는 삭제 후에도 남는 PVC에 있습니다.
 
 ## 재시작 없는 인증서 교체
@@ -140,6 +140,29 @@ cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합�
 
 설정 파일은 `subPath` 없이 디렉터리째 마운트하며, root 소유이고 `fsGroup`(`0440`)으로 읽을 수 있습니다. `hangang-console`은 Kubernetes 볼륨의 이 형태를 받아들입니다. 관리자 계정과 콘솔 세션은 복제본별입니다(Service는 ClientIP 친화성 사용). 콘솔 바이너리는 Hangang 이미지에 있어야 합니다(`hangang.console.command`).
 
+## PostgreSQL 위의 Hopae
+
+`hopae.storage.backend: postgresql`(`global.ha.backend: postgresql`과 함께)은 모든 복제본이 공유하는 외부 PostgreSQL에 Hopae를 저장합니다(Hopae ADR-0020, PR #16).
+
+- `global.ha.postgresql.existingSecret`/`urlKey`: libpq URL(`postgresql://user@host:5432/db?sslmode=verify-full`, 비밀번호 포함 또는 서버 인증 방식)을 담은 Secret이며 `HOPAE_STORE_URL`로 전달됩니다.
+- `global.ha.postgresql.caSecret`: 서버 인증서의 CA로 `/pg-ca/ca.crt`(`store.postgres.ca_file`)에 마운트됩니다. Hopae는 이것 없이 loopback이 아닌 데이터베이스를 거부합니다.
+- `hopae.storage.postgresql.poolSize`(복제본당 16), `connectTimeoutMs`(5000), `statementTimeoutMs`(트랜잭션당 2000).
+- `hopae.replicas` > 1은 여기서만 허용됩니다. Deployment는 `maxUnavailable: 0, maxSurge: 1`과 PDB로 롤링하고, 각 복제본은 emptyDir에 자기 `state_dir`을 두며 PVC를 만들지 않습니다.
+- 게시(인증 프로필, projection 계획)는 약 1초 안에 모든 복제본에 반영됩니다(LISTEN/NOTIFY와 1초 폴링). 로그인 트랜잭션과 handoff 실패 속도 제한은 저장소에서 세므로 공유되고, 나머지 제한은 복제본별이라 클러스터 전체 한도는 복제본 값 × 복제본 수입니다.
+- 모든 복제본은 같은 설정으로 실행해야 합니다. 이전 정책의 복제본은 재시작할 때까지 네이티브 Human 세션을 인정하지 않습니다.
+
+### SQLite에서 옮기기
+
+복사는 한 방향입니다(`hopae store migrate-to-postgres`). Hopae는 SQLite 파일을 읽기 전용으로 열고, 행이 하나라도 있는 PostgreSQL 저장소를 거부하며, 커밋 전에 테이블별 행 수와 SHA-256 다이제스트를 비교하고 `store.migrated` 이벤트를 남깁니다. SQLite 볼륨은 유지되며(`helm.sh/resource-policy: keep`) 되돌리기 자료가 됩니다.
+
+1. Hopae용 빈 데이터베이스와 역할, URL Secret, CA Secret을 만듭니다. 파일이 그 바이너리의 스키마가 되도록 새 Hopae 이미지를 SQLite로 한 번 실행합니다.
+2. Hopae PVC를 백업합니다.
+3. Hopae를 0으로 줄입니다(`kubectl scale deploy/<release>-hangang-world-hopae --replicas=0`). 이전 작업은 SQLite 인스턴스 잠금을 잡습니다.
+4. `hopae.storage.backend: postgresql`, `global.ha.postgresql` 설정, `hopae.storage.migration.enabled: true`로 `helm upgrade`합니다. pre-upgrade 훅 Job이 이전 SQLite claim(`hopae.storage.migration.fromClaim`, 기본은 차트 자신의 것)을 마운트해 복사합니다. 대상이 비어 있지 않은 경우처럼 실패하면 업그레이드가 멈추고 아무것도 바뀌지 않습니다.
+5. Job 로그(테이블별 보고)를 확인한 뒤 `hopae.replicas`를 늘리고, 이후 업그레이드에서는 `hopae.storage.migration.enabled: false`로 둡니다.
+
+되돌리기: 복제본 하나와 `hopae.storage.backend: sqlite`로 다시 `helm upgrade`하면 유지된 SQLite claim을 다시 씁니다. 이전 뒤 PostgreSQL에 쓰인 세션, 권한, 감사 이벤트는 되돌려 복사되지 않습니다.
+
 ## 업그레이드와 되돌리기
 
 Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
@@ -160,7 +183,7 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **이미지.** 어떤 구성 요소 이미지도 아직 레지스트리에 게시되지 않았습니다. 기본 저장소(`ghcr.io/ziozzang/…`)는 서명된 릴리스가 올라가기 전까지 자리표시자입니다. `tools/package_component.py`는 scratch 이미지를 로컬에서만 빌드합니다.
 - **서명과 출처.** cosign 서명, SBOM, SLSA 증명이 없으므로 승인 단계 검증(policy-controller, Kyverno)을 아직 강제할 수 없습니다.
 - **Hangang 버전.** ProtectionPolicy 지원(Hangang PR #21)이 digest가 가리키는 릴리스 이미지에 들어 있어야 합니다.
-- **Hopae PostgreSQL.** Hopae의 PostgreSQL 저장소는 계획(Hopae ADR-0002, M2)되어 있으나 릴리스되지 않았습니다(Hopae 0.0.10은 `store.url_env`를 거부). 그 기능이 나올 때까지 차트는 `hopae.storage.backend: postgresql`을 거부하므로 Hopae는 SQLite 단일 복제본으로 실행됩니다.
+- **Hopae PostgreSQL.** PostgreSQL 위의 서비스는 Hopae PR #16(#11 위에 쌓임)에 있으며 `postgres` feature로 빌드해야 합니다. 이 브랜치는 Hopae의 실시간 재적재, 지표, 콘솔 운영자 작업보다 앞서 있으므로, 합쳐지기 전까지 `hopae.tlsReloadSeconds`와 `hopae.authentication.reloadIntervalMs`를 비워 두세요(차트가 그 키를 생략합니다).
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
 - **실제 검증.** 로컬·원격 실행은 보호된 체인, 철회, 10분 API 중단, 인증서 회전, 노드 drain을 다룹니다. 인증서 무중단 재적재, 제한된 오래됨, Hopae 실시간 반영을 고친 구성 요소 변경은 열린 PR(Hangang #23, Pumgye #7, Hopae #14, Sumunjang `feat/asn-proposals`)에 있으며, digest가 이를 가리키려면 먼저 릴리스되어야 합니다.
 

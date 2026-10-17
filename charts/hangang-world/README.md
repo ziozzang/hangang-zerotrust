@@ -7,7 +7,7 @@ One release installs the four Hangang World components as an integrated zero-tru
 | Component | Role | Workload | Ports (Service) |
 | --- | --- | --- | --- |
 | Hangang | Ingress controller and enforcement gateway; compiles `ProtectionPolicy` into routes | Deployment, stateless, N replicas | public `http`/`https`, optional `admin` 9000 (TLS, metrics) |
-| Hopae | Identity, sessions, native gateway verification | Deployment, single SQLite replica (PostgreSQL once Hopae ships it) | `portal` 8700, `grpc` 8703 (mTLS) |
+| Hopae | Identity, sessions, native gateway verification | Deployment: one SQLite replica, or several on external PostgreSQL | `portal` 8700, `grpc` 8703 (mTLS) |
 | Pumgye | Authorization decisions | Deployment, single writer (SQLite) | `management` 9084, `ppg1` 9085, `grpc` 9087 (mTLS) |
 | Sumunjang | Network admission (IP/risk) | Deployment, single writer (SQLite) | `management` 9080, `binary-mtls` 9081, `grpc-mtls` 9082 |
 
@@ -42,7 +42,7 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `tls.existingSecrets.<component>` | `""` | BYO `kubernetes.io/tls` Secret with `tls.crt`, `tls.key`, `ca.crt` |
 | `global.trustDomain` | `cluster.local` | SPIFFE trust domain |
 | `global.ha.backend` | `none` | `postgresql` enables the shared store (Hopae) |
-| `global.ha.postgresql.existingSecret` / `urlKey` | `""` / `url` | Secret holding the connection URL |
+| `global.ha.postgresql.existingSecret` / `urlKey` / `caSecret` | `""` / `url` / `""` | Secrets with the connection URL and the server CA |
 | `hangang.replicas` | `2` | Gateway replicas (stateless) |
 | `hangang.watchScope` | `Namespace` | `Namespace` (Role) or `Cluster` (ClusterRole) |
 | `hangang.ingressClass.name` / `create` / `default` | `hangang` / `true` / `false` | IngressClass with controller `hangang.dev/ingress-controller` |
@@ -59,7 +59,8 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `hangang.readiness` | `snapshot` | `snapshot`: ready while serving an activated snapshot; `fresh`: not ready while a watch is stale |
 | `<component>.tlsReloadSeconds` | `10` | Certificate/key/CA content polling; rotated material is used without a restart (Pumgye 1–3600, others 0 = off) |
 | `hopae.authentication.reloadIntervalMs` | `1000` | Live reconciliation of profiles and projection plans in `config` mode (0 off, 200–60000); these keys do not roll the Pod |
-| `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC); `postgresql` is refused until Hopae ships its PostgreSQL store |
+| `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC) or `postgresql` (replicas > 1, RollingUpdate, PDB; `global.ha.postgresql` URL and CA Secrets) |
+| `hopae.storage.postgresql.*` / `migration.*` | 16 / 5000 / 2000 ms; off | Pool and timeouts; pre-upgrade SQLite → PostgreSQL copy Job |
 | `hopae.authentication.source` | `config` | `config`: values own the authentication profiles and every rollout reconciles Hopae's store (Hopae PR #13); `store`: values bootstrap an empty store only |
 | `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway`, `authentication`, `reload` are chart-owned |
 | `hopae.extraSecretEnv` | `[]` | Environment variables from Secrets (provider client secrets) |
@@ -84,7 +85,7 @@ Profiles used by CI live in [`ci/`](ci): `minimal`, `ha` (gateway ×3 behind PRO
 
 ## Scaling and HA
 
-Hangang is stateless in controller mode and scales freely. Hopae stays a single SQLite replica: its PostgreSQL store is not released yet (Hopae 0.0.10 refuses `store.url_env`), so the chart refuses `storage.backend: postgresql`. Pumgye and Sumunjang are single writers in this release (`replicas` is capped at 1 by the schema); ADR 0022 makes them stateless snapshot replicas once signed snapshot distribution exists. The chart refuses `replicas > 1` on SQLite rather than letting two Pods share one database.
+Hangang is stateless in controller mode and scales freely. Hopae runs one SQLite replica, or several replicas on an external PostgreSQL (`storage.backend: postgresql`, Hopae PR #16). Pumgye and Sumunjang are single writers in this release (`replicas` is capped at 1 by the schema); ADR 0022 makes them stateless snapshot replicas once signed snapshot distribution exists. The chart refuses `replicas > 1` on SQLite rather than letting two Pods share one database.
 
 ## Upgrades and rollback
 

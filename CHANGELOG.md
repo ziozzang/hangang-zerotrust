@@ -59,5 +59,10 @@
   Hopae SSO over HOP1 mTLS, `operator_policy` pinning the assertion public
   keys (rotation via `nextKey`), `--disable-local-login`, the operator audit
   store and `--audit-log`. All off by default.
+- Enable `hopae.storage.backend: postgresql` (Hopae PR #16): external
+  PostgreSQL with URL and CA Secrets, pool and timeouts, replicas > 1 with
+  RollingUpdate and a PDB, an optional pre-upgrade SQLite → PostgreSQL
+  migration Job, and the migration procedure (EN/KO). Hopae live-reload keys
+  are now emitted only when set, so builds without them accept the file.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

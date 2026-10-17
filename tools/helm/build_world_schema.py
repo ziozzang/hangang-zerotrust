@@ -89,7 +89,8 @@ schema = obj({
         'imagePullSecrets': {'type': 'array', 'maxItems': 16, 'items': obj({'name': {'type': 'string', 'pattern': DNS_SUBDOMAIN}}, required=['name'])},
         'ha': obj({
             'backend': {'enum': ['none', 'postgresql']},
-            'postgresql': obj({'existingSecret': SECRET_NAME, 'urlKey': KEY}),
+            'postgresql': obj({'existingSecret': SECRET_NAME, 'urlKey': KEY,
+                               'caSecret': obj({'name': SECRET_NAME, 'key': KEY}, required=['name', 'key'])}),
         }, required=['backend']),
     }, required=['trustDomain', 'ha']),
     'credentials': obj({
@@ -205,13 +206,20 @@ schema = obj({
         'terminationGracePeriodSeconds': {'type': 'integer', 'minimum': 15, 'maximum': 600},
     }, required=['ingressClass', 'watchScope', 'protection', 'guard', 'service', 'clientAddress']),
     'hopae': component('Hopae', {
-        'storage': storage(['sqlite', 'postgresql']),
+        'storage': obj({
+            'backend': {'enum': ['sqlite', 'postgresql']},
+            'postgresql': obj({'poolSize': {'type': 'integer', 'minimum': 1, 'maximum': 128},
+                               'connectTimeoutMs': {'type': 'integer', 'minimum': 100, 'maximum': 60000},
+                               'statementTimeoutMs': {'type': 'integer', 'minimum': 10, 'maximum': 600000}}),
+            'migration': obj({'enabled': {'type': 'boolean'}, 'fromClaim': SECRET_NAME,
+                              'timeoutSeconds': {'type': 'integer', 'minimum': 60, 'maximum': 86400}}),
+        }, required=['backend']),
         'persistence': PERSISTENCE,
         'authentication': obj({'source': {'enum': ['config', 'store']},
-                               'reloadIntervalMs': {'type': 'integer', 'minimum': 0, 'maximum': 60000,
+                               'reloadIntervalMs': {'type': ['integer', 'null'], 'minimum': 0, 'maximum': 60000,
                                                     'not': {'type': 'integer', 'exclusiveMinimum': 0, 'exclusiveMaximum': 200}}},
                               required=['source']),
-        'tlsReloadSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 3600},
+        'tlsReloadSeconds': {'type': ['integer', 'null'], 'minimum': 0, 'maximum': 3600},
         'consoleOperators': obj({
             'enabled': {'type': 'boolean'},
             'appId': {'type': 'string', 'pattern': '^[A-Za-z0-9_-]{1,64}$', 'not': {'const': 'default'}},

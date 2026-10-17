@@ -148,7 +148,7 @@ issue, bounded model permissions and private routes. It validates allowed paths,
 paired docs, local links, whitespace and secrets before independent model review
 and a separate hostile audit. Reviews bind to exact head/base/diff. Any base
 change requires rebase and all gates again. Runner alone can push/open/merge PRs;
-workers cannot deploy, push, notify, control services or read private material.
+workers cannot run shell, deploy, push, notify, control services or read private material.
 Malformed review output, unavailable quota, permission rejection, pending CI or
 stale approval never authorizes merge. Three engineering failures hold a task.
 
@@ -156,7 +156,8 @@ Initial lanes: paired documentation and Rust regression coverage with a byte-ide
 production prefix. Rust requires registered fmt/clippy/full tests and successful remote
 CI plus strict up-to-date branch protection before automatic merge. Performance tasks
 require measured benchmarks; correctness-only tests carry an explicit waiver. A docs
-check cannot qualify Rust changes. No fabricated benchmark results or automatic backlog
+check cannot qualify Rust changes. Without strict protection the reviewed Rust PR is
+preserved for the lead, without changing repository settings. No fabricated benchmark results or automatic backlog
 scope expansion. Timer idles after eligible configured tasks finish.
 
 Operating gateway changes require a distinct reviewed release: immutable signed

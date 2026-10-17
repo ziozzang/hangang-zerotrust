@@ -64,12 +64,17 @@ source of truth.
 
 ## Operator assurance and break-glass
 
-Console operators authenticate through Hopae with a passkey (or AAL 3), proven to
-the console by Hopae's signed operator assertion and refreshed for sensitive
-changes; the header shows the operator's level and factor; the local administrator
-sign-in is an audited, disableable break-glass path. Console operator records
-(sign-ins with their assurance, step-ups, changes, break-glass) join the unified
-audit as the "Console operators" source. See
+Status: implemented on branches only, not released or live-gateway qualified.
+Console operators authenticate through Hopae with a passkey (AAL 3 requires a
+qualifying high-assurance passkey), proven by a signed operator assertion and
+refreshed for sensitive changes. A dated, explicitly enabled enrollment grace can
+permit read-only access without a passkey; it never satisfies the passkey policy
+and never permits changes or step-up bypass. Local administrator sign-in is a
+separate audited, disableable break-glass path.
+
+The branch console exposes operator records as the "Console operators" audit
+source. That query/display integration does not establish durable audit storage;
+qualification of the durable account-audit integration remains open. See
 [IDENTITY](IDENTITY.md#console-operator-assurance).
 
 ## Audit and pending Hopae work

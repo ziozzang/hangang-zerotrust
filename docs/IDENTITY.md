@@ -86,11 +86,20 @@ Console operators sign in through Hopae with a phishing-resistant factor. Hopae'
 `console_operators` policy names the console's application and requires the
 configured level (AAL 2 by default, AAL 3 with high-assurance keys) and the
 `webauthn` factor on the whole console host, and a fresh passkey use
-(`step_up_max_age_secs`) on the console's step-up path. Only a passkey meets or
+(`step_up_max_age_secs`) on the console's step-up path. Outside the explicit read-only enrollment exception below, only a passkey meets or
 refreshes these rules; TOTP, external factors and recovery codes do not. An
 operator without a passkey is sent to add one before the first console grant; an
 optional, dated enrollment grace admits operators with no passkey at all, never
-on the step-up path.
+on the step-up path. This is a deliberately weaker read-only onboarding exception,
+not phishing-resistant authentication; keep it disabled for strict deployments.
+
+The assertion is not a standalone authentication credential. The branch console
+re-verifies the native Hopae session cookie on every SSO request over its pinned
+Hopae channel. Signed claims include audience `hangang-console`, application,
+host, subject, session, issuance and expiry; the console checks audience/time and
+matches subject and host against the verification result and configured origin.
+It does not claim a single-use assertion or request nonce: the 60-second lifetime
+bounds replay, while session-cookie and per-request verification remain required.
 
 Every allowed verify for the console application carries Hopae's operator
 assertion (`x-hopae-operator-assertion`): the level, the latest second factor and

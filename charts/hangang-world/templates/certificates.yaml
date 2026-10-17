@@ -1,0 +1,136 @@
+{{- if eq .Values.tls.mode "certManager" }}
+{{- $cm := .Values.tls.certManager }}
+{{- $issuer := $cm.issuerRef }}
+{{- $bootstrap := not $issuer.name }}
+{{- $prefix := include "world.fullname" . }}
+{{- if $bootstrap }}
+# Private CA bootstrap: self-signed Issuer -> CA Certificate -> CA Issuer.
+# Replace with your PKI (tls.certManager.issuerRef) for production.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $prefix }}-selfsigned
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "pki") | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $prefix }}-ca
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "pki") | nindent 4 }}
+spec:
+  isCA: true
+  commonName: {{ printf "%s internal CA" $prefix | quote }}
+  secretName: {{ $prefix }}-ca
+  duration: {{ $cm.caDuration }}
+  privateKey:
+    algorithm: {{ $cm.privateKey.algorithm }}
+    {{- if ne $cm.privateKey.algorithm "Ed25519" }}
+    size: {{ $cm.privateKey.size }}
+    {{- end }}
+    rotationPolicy: Always
+  issuerRef:
+    name: {{ $prefix }}-selfsigned
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ $prefix }}-ca
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "pki") | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ $prefix }}-ca
+{{- end }}
+{{- range $component := list "hangang" "hopae" "pumgye" "sumunjang" }}
+{{- $ctx := dict "root" $ "component" $component }}
+{{- if (index $.Values $component).enabled }}
+---
+# {{ $component }}: one certificate for both directions (server and client
+# authentication), Service DNS names plus the SPIFFE ID of its ServiceAccount.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  secretName: {{ include "world.tlsSecret" $ctx }}
+  secretTemplate:
+    labels:
+      {{- include "world.labels" $ctx | nindent 6 }}
+  duration: {{ $cm.duration }}
+  renewBefore: {{ $cm.renewBefore }}
+  commonName: {{ include "world.host" $ctx }}
+  dnsNames:
+    - {{ include "world.host" $ctx }}
+    - {{ include "world.host" $ctx }}.cluster.local
+  uris:
+    - {{ printf "spiffe://%s/ns/%s/sa/%s" $.Values.global.trustDomain $.Release.Namespace (include "world.name" $ctx) }}
+  usages: ["server auth", "client auth", "digital signature", "key encipherment"]
+  privateKey:
+    algorithm: {{ $cm.privateKey.algorithm }}
+    {{- if ne $cm.privateKey.algorithm "Ed25519" }}
+    size: {{ $cm.privateKey.size }}
+    {{- end }}
+    rotationPolicy: Always
+  issuerRef:
+    {{- if $bootstrap }}
+    name: {{ $prefix }}-ca
+    kind: Issuer
+    group: cert-manager.io
+    {{- else }}
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+    group: {{ $issuer.group }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- if and .Values.hopae.enabled .Values.hopae.admin.enabled }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+{{- $adminHost := regexReplaceAll ":[0-9]+$" (include "world.hopaeAdminUrl" . | trimPrefix "https://") "" }}
+---
+# Hopae admin listener: server certificate for the console host. Clients
+# (Hangang console broker, Pumgye) present their own component certificates,
+# verified against the World CA (ca.crt of the Hopae certificate).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "world.name" $ctx }}-admin
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  secretName: {{ include "world.hopaeAdminTlsSecret" . }}
+  duration: {{ $cm.duration }}
+  renewBefore: {{ $cm.renewBefore }}
+  commonName: {{ $adminHost }}
+  dnsNames:
+    - {{ $adminHost }}
+    {{- $service := printf "%s-admin.%s.svc" (include "world.name" $ctx) .Release.Namespace }}
+    {{- if ne $adminHost $service }}
+    - {{ $service }}
+    {{- end }}
+  usages: ["server auth", "digital signature", "key encipherment"]
+  privateKey:
+    algorithm: {{ $cm.privateKey.algorithm }}
+    {{- if ne $cm.privateKey.algorithm "Ed25519" }}
+    size: {{ $cm.privateKey.size }}
+    {{- end }}
+    rotationPolicy: Always
+  issuerRef:
+    {{- if $bootstrap }}
+    name: {{ $prefix }}-ca
+    kind: Issuer
+    group: cert-manager.io
+    {{- else }}
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+    group: {{ $issuer.group }}
+    {{- end }}
+{{- end }}
+{{- end }}

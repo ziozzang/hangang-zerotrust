@@ -1,0 +1,115 @@
+{{- /* Cross-field rules that JSON Schema cannot express. Renders nothing. */ -}}
+{{- $v := .Values -}}
+{{- if not (or $v.hangang.enabled $v.hopae.enabled $v.pumgye.enabled $v.sumunjang.enabled) -}}
+{{- fail "enable at least one component" -}}
+{{- end -}}
+{{- if and $v.hangang.enabled $v.hangang.protection.enabled (not (and $v.hopae.enabled $v.pumgye.enabled)) -}}
+{{- fail "hangang.protection.enabled needs hopae.enabled and pumgye.enabled: protected routes authenticate with Hopae and authorize with Pumgye" -}}
+{{- end -}}
+{{- if and $v.hangang.enabled $v.hangang.guard.enabled (not $v.sumunjang.enabled) -}}
+{{- fail "hangang.guard.enabled needs sumunjang.enabled (or set hangang.guard.enabled=false; network-conditioned policies are then withheld)" -}}
+{{- end -}}
+{{- if and (eq $v.hangang.clientAddress.mode "proxyProtocol") (not $v.hangang.clientAddress.proxyProtocolFrom) -}}
+{{- fail "hangang.clientAddress.mode=proxyProtocol needs hangang.clientAddress.proxyProtocolFrom (the load balancer source CIDRs)" -}}
+{{- end -}}
+{{- if and (ne $v.hangang.clientAddress.mode "proxyProtocol") $v.hangang.clientAddress.proxyProtocolFrom -}}
+{{- fail "hangang.clientAddress.proxyProtocolFrom is only valid with mode=proxyProtocol" -}}
+{{- end -}}
+{{- if and (eq $v.hangang.clientAddress.mode "serviceLocal") (eq $v.hangang.service.type "ClusterIP") -}}
+{{- fail "hangang.clientAddress.mode=serviceLocal needs hangang.service.type LoadBalancer or NodePort (externalTrafficPolicy: Local)" -}}
+{{- end -}}
+{{- if and $v.monitoring.serviceMonitor.enabled $v.hangang.enabled (not $v.hangang.admin.exposeMetrics) -}}
+{{- fail "monitoring.serviceMonitor.enabled needs hangang.admin.exposeMetrics=true" -}}
+{{- end -}}
+{{- if and $v.monitoring.serviceMonitor.enabled (eq $v.tls.mode "existingSecrets") (or $v.pumgye.enabled $v.sumunjang.enabled) (not $v.monitoring.serviceMonitor.clientCertificate.existingSecret) -}}
+{{- fail "monitoring.serviceMonitor with tls.mode=existingSecrets needs monitoring.serviceMonitor.clientCertificate.existingSecret (client certificate for the mutual-TLS management listeners)" -}}
+{{- end -}}
+{{- if and $v.hangang.enabled (lt (int $v.hangang.maxStalenessSeconds) (int $v.hangang.staleSeconds)) -}}
+{{- fail "hangang.maxStalenessSeconds must be at least hangang.staleSeconds" -}}
+{{- end -}}
+{{- if and $v.tests.enabled (not $v.tests.image.digest) -}}
+{{- fail "tests.image.digest is required while tests.enabled (or set tests.enabled=false)" -}}
+{{- end -}}
+{{- /* HA guard: a SQLite single writer never runs more than one replica. */ -}}
+{{- if and $v.hopae.enabled (gt (int $v.hopae.replicas) 1) (ne $v.hopae.storage.backend "postgresql") -}}
+{{- fail "hopae.replicas > 1 needs hopae.storage.backend=postgresql (SQLite is single-writer)" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled (eq $v.hopae.storage.backend "postgresql") (or (ne $v.global.ha.backend "postgresql") (not $v.global.ha.postgresql.existingSecret)) -}}
+{{- fail "hopae.storage.backend=postgresql needs global.ha.backend=postgresql and global.ha.postgresql.existingSecret" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled (eq $v.hopae.storage.backend "postgresql") (not $v.global.ha.postgresql.caSecret.name) -}}
+{{- fail "hopae.storage.backend=postgresql needs global.ha.postgresql.caSecret.name (the CA of the PostgreSQL server certificate; Hopae allows plaintext only on loopback)" -}}
+{{- end -}}
+{{- if and $v.hopae.storage.migration.enabled (ne $v.hopae.storage.backend "postgresql") -}}
+{{- fail "hopae.storage.migration.enabled needs hopae.storage.backend=postgresql (it copies SQLite into PostgreSQL)" -}}
+{{- end -}}
+{{- if eq $v.tls.mode "existingSecrets" -}}
+{{- range $component := list "hangang" "hopae" "pumgye" "sumunjang" -}}
+{{- if and (index $v $component).enabled (not (index $v.tls.existingSecrets $component)) -}}
+{{- fail (printf "tls.mode=existingSecrets needs tls.existingSecrets.%s" $component) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.admin.enabled $v.hopae.admin.delegation.enabled (not $v.hopae.admin.delegation.keySecret.name) -}}
+{{- fail "hopae.admin.delegation.enabled needs hopae.admin.delegation.keySecret.name (the signed Hangang console delegation key)" -}}
+{{- end -}}
+{{- if and $v.hopae.admin.enabled (not $v.hopae.enabled) -}}
+{{- fail "hopae.admin.enabled needs hopae.enabled" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.admin.enabled (eq $v.tls.mode "existingSecrets") (not $v.tls.existingSecrets.hopaeAdmin) -}}
+{{- fail "tls.mode=existingSecrets with hopae.admin.enabled needs tls.existingSecrets.hopaeAdmin (server certificate for the console host)" -}}
+{{- end -}}
+{{- if and $v.pumgye.enabled $v.pumgye.hopaeOwner.enabled -}}
+{{- if not (and $v.hopae.enabled $v.hopae.admin.enabled) -}}
+{{- fail "pumgye.hopaeOwner.enabled needs hopae.enabled and hopae.admin.enabled (Pumgye reads Hopae's admin listener)" -}}
+{{- end -}}
+{{- if not $v.pumgye.hopaeOwner.tokenSecret.name -}}
+{{- fail "pumgye.hopaeOwner.tokenSecret.name is required: mint the hsc1 token with `hopae admin service-credentials create pumgye-v2 --preset pumgye-v2 --client-san <Pumgye SPIFFE ID>` and store it in a Secret" -}}
+{{- end -}}
+{{- if not (or $v.pumgye.hopaeOwner.projection $v.pumgye.hopaeOwner.lifecycle) -}}
+{{- fail "pumgye.hopaeOwner needs projection and/or lifecycle" -}}
+{{- end -}}
+{{- end -}}
+{{- /* Console adapter and console operator assurance. */ -}}
+{{- $console := $v.hangang.console -}}
+{{- if and $v.hangang.enabled $console.enabled -}}
+{{- if and $console.sso.enabled (not $v.hopae.enabled) -}}
+{{- fail "hangang.console.sso.enabled needs hopae.enabled" -}}
+{{- end -}}
+{{- if and $console.sso.enabled (not $console.sso.publicUrl) -}}
+{{- fail "hangang.console.sso.publicUrl is required (the console origin, https://host/)" -}}
+{{- end -}}
+{{- if and $console.disableLocalLogin (not $console.sso.enabled) -}}
+{{- fail "hangang.console.disableLocalLogin needs hangang.console.sso.enabled (otherwise nobody can sign in)" -}}
+{{- end -}}
+{{- if and $console.sso.operatorPolicy.enabled (not $console.sso.enabled) -}}
+{{- fail "hangang.console.sso.operatorPolicy needs hangang.console.sso.enabled" -}}
+{{- end -}}
+{{- if and $console.sso.operatorPolicy.enabled (not $v.hopae.consoleOperators.enabled) -}}
+{{- fail "hangang.console.sso.operatorPolicy needs hopae.consoleOperators.enabled (Hopae signs the operator assertion)" -}}
+{{- end -}}
+{{- end -}}
+{{- if and (not (and $v.hangang.enabled $console.enabled)) (or $console.sso.enabled $console.disableLocalLogin $console.auditLog) -}}
+{{- fail "hangang.console.* settings need hangang.console.enabled" -}}
+{{- end -}}
+{{- $oa := $v.operatorAssurance -}}
+{{- if and (or (and $v.hopae.enabled $v.hopae.consoleOperators.enabled) (and $console.enabled $console.sso.operatorPolicy.enabled)) (not (and $oa.keyId $oa.publicKey)) -}}
+{{- fail "operatorAssurance.keyId and operatorAssurance.publicKey are required by hopae.consoleOperators and hangang.console.sso.operatorPolicy (the Ed25519 operator assertion key)" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.consoleOperators.enabled (not $oa.seedSecret.name) -}}
+{{- fail "hopae.consoleOperators needs operatorAssurance.seedSecret.name (Secret with the base64 Ed25519 seed)" -}}
+{{- end -}}
+{{- if and $oa.nextKey.keyId (or (not $oa.nextKey.publicKey) (eq $oa.nextKey.keyId $oa.keyId)) -}}
+{{- fail "operatorAssurance.nextKey needs its own keyId and a publicKey" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.metrics.enabled -}}
+{{- if not $v.hopae.admin.enabled -}}
+{{- fail "hopae.metrics.enabled needs hopae.admin.enabled (GET /metrics is served on the admin listener)" -}}
+{{- end -}}
+{{- if not $v.hopae.metrics.tokenSecret.name -}}
+{{- fail "hopae.metrics.tokenSecret.name is required: mint `hopae admin service-credentials create metrics --preset metrics --client-san <scrape client SAN>` and store the hsc1 token in a Secret" -}}
+{{- end -}}
+{{- if and (eq $v.tls.mode "existingSecrets") (not $v.monitoring.serviceMonitor.clientCertificate.existingSecret) $v.monitoring.serviceMonitor.enabled -}}
+{{- fail "hopae.metrics with tls.mode=existingSecrets needs monitoring.serviceMonitor.clientCertificate.existingSecret" -}}
+{{- end -}}
+{{- end -}}

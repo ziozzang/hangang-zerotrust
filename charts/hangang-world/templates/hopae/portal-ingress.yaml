@@ -1,0 +1,59 @@
+{{- if and .Values.hopae.enabled .Values.hopae.portalIngress.enabled }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+{{- $pi := .Values.hopae.portalIngress }}
+{{- $host := $pi.host | default (regexReplaceAll "^https://([^/:]+).*$" .Values.hopae.config.portal.public_url "${1}") }}
+{{- $portal := list
+  (list "/login" "Prefix")
+  (list "/callback/" "Prefix")
+  (list "/stepup/" "Prefix")
+  (list "/security" "Prefix")
+  (list "/assets/" "Prefix")
+  (list "/signed-out" "Exact")
+  (list "/healthz" "Exact") }}
+# Hopae's sign-in portal through this gateway. Its routes must be reachable
+# before anyone is signed in, so the Ingress carries an explicitly public
+# ProtectionPolicy (access: Public) limited to the portal's paths; every
+# other Ingress still needs protection.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "world.name" $ctx }}-portal
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.hangang.ingressClass.name }}
+  {{- with $pi.tlsSecret }}
+  tls:
+    - hosts: [{{ $host | quote }}]
+      secretName: {{ . }}
+  {{- end }}
+  rules:
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          {{- range $portal }}
+          - path: {{ index . 0 }}
+            pathType: {{ index . 1 }}
+            backend:
+              service:
+                name: {{ include "world.name" $ctx }}
+                port:
+                  name: portal
+          {{- end }}
+---
+apiVersion: world.hangang.dev/v1alpha1
+kind: ProtectionPolicy
+metadata:
+  name: {{ include "world.name" $ctx }}-portal-public
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  access: Public
+  targetRefs:
+    - group: networking.k8s.io
+      kind: Ingress
+      name: {{ include "world.name" $ctx }}-portal
+  public:
+    reason: {{ $pi.reason | quote }}
+    paths: ["/login/*", "/callback/*", "/stepup/*", "/security/*", "/assets/*", "/signed-out", "/healthz"]
+{{- end }}

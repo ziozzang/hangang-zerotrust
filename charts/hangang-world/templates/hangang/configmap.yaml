@@ -1,0 +1,49 @@
+{{- if and .Values.hangang.enabled .Values.hangang.protection.enabled }}
+{{- $h := .Values.hangang }}
+{{- $hopae := dict "root" . "component" "hopae" }}
+{{- $pumgye := dict "root" . "component" "pumgye" }}
+{{- $profiles := dict }}
+{{- range $name, $profile := $h.protection.identityProfiles }}
+{{- $auth := dict
+  "url" "http://127.0.0.1:8701/_hopae/verify"
+  "native" (dict "transport" "grpc" "address" (printf "%s:8703" (include "world.host" $hopae)) "tls" (include "world.peerTls" $hopae | fromJson))
+  "request_headers" ($profile.requestHeaders | default (list "authorization" "cookie" "user-agent" "accept" "sec-fetch-dest" "sec-fetch-mode" "sec-fetch-site"))
+  "response_headers" (list "x-forwarded-user" "x-hopae-aal" "x-hopae-principal-kind" "x-hopae-service-id")
+  "forward_response" (ne $profile.forwardResponse false)
+  "timeout_ms" 500
+  "strip_request_cookies" (list "__Host-hopae" "__Host-hopae_bind")
+  "static_request_headers" (dict "x-hopae-gateway-key" (dict "env" "HOPAE_GATEWAY_KEY") "x-hopae-contract" "1") }}
+{{- $entry := dict "auth" $auth }}
+{{- with $profile.namespaces }}{{- $_ := set $entry "namespaces" . }}{{- end }}
+{{- $_ := set $profiles $name $entry }}
+{{- end }}
+{{- $client := dict "mode" "none" }}
+{{- if eq $h.clientAddress.mode "serviceLocal" }}
+{{- $client = dict "mode" "service_local" "namespace" .Release.Namespace "name" (include "world.name" (dict "root" . "component" "hangang")) }}
+{{- else if eq $h.clientAddress.mode "proxyProtocol" }}
+{{- $client = dict "mode" "proxy_protocol" }}
+{{- else if eq $h.clientAddress.mode "hostNetwork" }}
+{{- $client = dict "mode" "host_network" }}
+{{- end }}
+{{- $settings := dict
+  "require_protection" $h.protection.requireProtection
+  "identity_profiles" $profiles
+  "pumgye_authority" (dict
+    "transport" "grpc"
+    "decision_address" (printf "%s:9087" (include "world.host" $pumgye))
+    "management_address" (printf "%s:9084" (include "world.host" $pumgye))
+    "tls" (include "world.peerTls" $pumgye | fromJson)
+    "decision_token_env" "PUMGYE_DECISION_TOKEN"
+    "admin_token_env" "PUMGYE_ADMIN_TOKEN"
+    "timeout_ms" 1000)
+  "client_address" $client }}
+{{- with $h.protection.pumgyeServices }}{{- $_ := set $settings "pumgye_services" . }}{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" (dict "root" . "component" "hangang") }}-protection
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "hangang") | nindent 4 }}
+data:
+  settings.json: {{ toJson $settings | quote }}
+{{- end }}

@@ -1,0 +1,163 @@
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+{{- $sm := .Values.monitoring.serviceMonitor }}
+{{- $prefix := include "world.fullname" . }}
+{{- $client := $sm.clientCertificate.existingSecret | default (printf "%s-metrics-client-tls" $prefix) }}
+{{- if and .Values.hangang.enabled .Values.hangang.admin.exposeMetrics }}
+{{- $ctx := dict "root" . "component" "hangang" }}
+# Hangang: administration listener (TLS); /metrics needs the admin bearer.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    {{- with $sm.labels }}{{ toYaml . | nindent 4 }}{{ end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+      hangang.dev/endpoint: admin
+  endpoints:
+    - port: admin
+      path: /metrics
+      scheme: https
+      tlsConfig:
+        serverName: {{ include "world.host" $ctx }}
+        ca:
+          secret:
+            name: {{ include "world.tlsSecret" $ctx }}
+            key: ca.crt
+      interval: {{ $sm.interval }}
+      scrapeTimeout: {{ $sm.scrapeTimeout }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ .Values.credentials.existingSecret }}
+          key: {{ .Values.credentials.keys.hangangAdminToken }}
+{{- end }}
+{{- range $component := list "pumgye" "sumunjang" }}
+{{- $ctx := dict "root" $ "component" $component }}
+{{- if (index $.Values $component).enabled }}
+---
+# {{ $component }}: management listener over mutual TLS (Prometheus presents
+# the World-CA client certificate) plus the read-only metrics bearer.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    {{- with $sm.labels }}{{ toYaml . | nindent 4 }}{{ end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  endpoints:
+    - port: management
+      path: /metrics
+      scheme: https
+      tlsConfig:
+        serverName: {{ include "world.host" $ctx }}
+        ca:
+          secret:
+            name: {{ include "world.tlsSecret" $ctx }}
+            key: ca.crt
+        cert:
+          secret:
+            name: {{ $client }}
+            key: tls.crt
+        keySecret:
+          name: {{ $client }}
+          key: tls.key
+      interval: {{ $sm.interval }}
+      scrapeTimeout: {{ $sm.scrapeTimeout }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ $.Values.credentials.existingSecret }}
+          key: {{ index $.Values.credentials.keys (ternary "pumgyeMetricsToken" "guardMetricsToken" (eq $component "pumgye")) }}
+{{- end }}
+{{- end }}
+{{- $hopaeMetrics := and .Values.hopae.enabled .Values.hopae.admin.enabled .Values.hopae.metrics.enabled }}
+{{- if $hopaeMetrics }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+{{- $adminHost := regexReplaceAll ":[0-9]+$" (include "world.hopaeAdminUrl" . | trimPrefix "https://") "" }}
+---
+# Hopae: admin listener over mutual TLS. The bearer is an hsc1 service
+# credential (preset metrics) bound to the scrape client certificate; it can
+# read GET /metrics only. No audience header is needed for that route.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    {{- with $sm.labels }}{{ toYaml . | nindent 4 }}{{ end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+      hangang.dev/endpoint: admin
+  endpoints:
+    - port: admin
+      path: /metrics
+      scheme: https
+      tlsConfig:
+        serverName: {{ $adminHost }}
+        ca:
+          secret:
+            name: {{ include "world.hopaeAdminTlsSecret" . }}
+            key: ca.crt
+        cert:
+          secret:
+            name: {{ $client }}
+            key: tls.crt
+        keySecret:
+          name: {{ $client }}
+          key: tls.key
+      interval: {{ $sm.interval }}
+      scrapeTimeout: {{ $sm.scrapeTimeout }}
+      authorization:
+        type: Bearer
+        credentials:
+          name: {{ .Values.hopae.metrics.tokenSecret.name }}
+          key: {{ .Values.hopae.metrics.tokenSecret.key }}
+{{- end }}
+{{- if and (eq .Values.tls.mode "certManager") (not $sm.clientCertificate.existingSecret) (or .Values.pumgye.enabled .Values.sumunjang.enabled $hopaeMetrics) }}
+{{- $cm := .Values.tls.certManager }}
+---
+# Prometheus scrape client: client authentication only, issued by the World
+# CA so the mutual-TLS management listeners accept it. It grants nothing by
+# itself; every scrape still needs the read-only metrics bearer.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $prefix }}-metrics-client
+  labels:
+    {{- include "world.labels" (dict "root" . "component" "metrics") | nindent 4 }}
+spec:
+  secretName: {{ $client }}
+  duration: {{ $cm.duration }}
+  renewBefore: {{ $cm.renewBefore }}
+  commonName: {{ printf "%s-metrics-scraper" $prefix | quote }}
+  uris:
+    - {{ printf "spiffe://%s/ns/%s/metrics-scraper" .Values.global.trustDomain .Release.Namespace }}
+  usages: ["client auth", "digital signature", "key encipherment"]
+  privateKey:
+    algorithm: {{ $cm.privateKey.algorithm }}
+    {{- if ne $cm.privateKey.algorithm "Ed25519" }}
+    size: {{ $cm.privateKey.size }}
+    {{- end }}
+    rotationPolicy: Always
+  issuerRef:
+    {{- if $cm.issuerRef.name }}
+    name: {{ $cm.issuerRef.name }}
+    kind: {{ $cm.issuerRef.kind }}
+    group: {{ $cm.issuerRef.group }}
+    {{- else }}
+    name: {{ $prefix }}-ca
+    kind: Issuer
+    group: cert-manager.io
+    {{- end }}
+{{- end }}
+{{- end }}

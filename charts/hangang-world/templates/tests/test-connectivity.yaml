@@ -1,0 +1,59 @@
+{{- if .Values.tests.enabled }}
+{{- $root := . }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "world.fullname" . }}-test
+  labels:
+    app.kubernetes.io/name: world-test
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: hangang-world-test
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  securityContext:
+    {{- include "world.podSecurityContext" . | nindent 4 }}
+  {{- with .Values.global.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  containers:
+    - name: connectivity
+      image: {{ include "world.image" (dict "image" .Values.tests.image "component" "tests") }}
+      command: ["/bin/sh", "-ec"]
+      args:
+        - |
+          check() { echo "checking $1:$2"; nc -z -w 5 "$1" "$2"; }
+          {{- if .Values.hangang.enabled }}
+          {{- $h := include "world.host" (dict "root" $root "component" "hangang") }}
+          check {{ $h }} {{ .Values.hangang.service.port }}
+          {{- if not .Values.hangang.kubernetesTls }}
+          # Readiness: the controller published a snapshot with fresh caches.
+          wget -q -T 5 -O /dev/null http://{{ $h }}:{{ .Values.hangang.service.port }}/-/ready
+          {{- end }}
+          {{- end }}
+          {{- if .Values.hopae.enabled }}
+          {{- $h := include "world.host" (dict "root" $root "component" "hopae") }}
+          wget -q -T 5 -O /dev/null http://{{ $h }}:8700/healthz
+          check {{ $h }} 8703
+          {{- end }}
+          {{- if .Values.pumgye.enabled }}
+          {{- $h := include "world.host" (dict "root" $root "component" "pumgye") }}
+          check {{ $h }} 9084
+          check {{ $h }} 9087
+          {{- end }}
+          {{- if .Values.sumunjang.enabled }}
+          {{- $h := include "world.host" (dict "root" $root "component" "sumunjang") }}
+          check {{ $h }} 9082
+          {{- end }}
+          echo "Hangang World connectivity: ok"
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+        limits: {memory: 32Mi}
+      securityContext:
+        {{- include "world.containerSecurityContext" . | nindent 8 }}
+{{- end }}

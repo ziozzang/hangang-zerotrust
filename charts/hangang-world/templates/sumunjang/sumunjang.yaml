@@ -1,0 +1,138 @@
+{{- if .Values.sumunjang.enabled }}
+{{- $ctx := dict "root" . "component" "sumunjang" }}
+{{- $v := .Values.sumunjang }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" $ctx }}-bootstrap
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+data:
+  # Applied only when the database is empty.
+  policy.json: {{ toJson $v.bootstrapPolicy | quote }}
+---
+{{ include "world.pvc" $ctx }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  # Single writer (SQLite): replicas is capped at 1 by the values schema.
+  replicas: {{ $v.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "world.labels" $ctx | nindent 8 }}
+        {{- with $v.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
+      annotations:
+        checksum/bootstrap: {{ toJson $v.bootstrapPolicy | sha256sum }}
+        {{- with $v.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
+    spec:
+      serviceAccountName: {{ include "world.name" $ctx }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        {{- include "world.podSecurityContext" . | nindent 8 }}
+      {{- include "world.podCommon" (dict "root" . "values" $v) | nindent 6 }}
+      containers:
+        - name: sumunjang
+          image: {{ include "world.image" (dict "image" $v.image "component" "sumunjang") }}
+          imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            # Management API (and /metrics) on the Pod network over mandatory
+            # client-certificate HTTPS with the decision TLS identity.
+            - --management-tls
+            - --listen
+            - 0.0.0.0:9080
+            # Probe-only plain HTTP: /readyz (source freshness, checkpoint)
+            # and /healthz; no management routes, not in the Service.
+            - --readiness-listen
+            - 0.0.0.0:9083
+            # Poll the decision TLS files by content; rotated material is
+            # swapped into all three listeners without a restart.
+            - --tls-reload-seconds
+            - {{ $v.tlsReloadSeconds | quote }}
+            - --decision-listen
+            - 0.0.0.0:9081
+            - --grpc-listen
+            - 0.0.0.0:9082
+            - --database
+            - /state/sumunjang.sqlite3
+            - --bootstrap-policy
+            - /config/policy.json
+            - --decision-tls-cert
+            - /tls/tls.crt
+            - --decision-tls-key
+            - /tls/tls.key
+            - --decision-client-ca
+            - /tls/ca.crt
+            - --threads
+            - {{ $v.threads | quote }}
+          env:
+            {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_COLLECTOR_TOKEN" "key" "guardCollectorToken") | nindent 12 }}
+            {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_ADMIN_TOKEN" "key" "guardAdminToken") | nindent 12 }}
+            {{- if .Values.monitoring.serviceMonitor.enabled }}
+            # Read-only /metrics credential (opens nothing else).
+            {{- include "world.secretEnv" (dict "root" . "name" "HANGANG_GUARD_METRICS_TOKEN" "key" "guardMetricsToken") | nindent 12 }}
+            {{- end }}
+          ports:
+            - {name: management, containerPort: 9080, protocol: TCP}
+            - {name: binary-mtls, containerPort: 9081, protocol: TCP}
+            - {name: grpc-mtls, containerPort: 9082, protocol: TCP}
+            - {name: readiness, containerPort: 9083, protocol: TCP}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: readiness
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: readiness
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            - {name: state, mountPath: /state}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "world.name" $ctx }}-bootstrap
+        {{- include "world.tlsVolume" $ctx | nindent 8 }}
+        - name: state
+          persistentVolumeClaim:
+            claimName: {{ include "world.stateClaim" $ctx }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - {name: management, port: 9080, targetPort: management, protocol: TCP}
+    - {name: binary-mtls, port: 9081, targetPort: binary-mtls, protocol: TCP}
+    - {name: grpc-mtls, port: 9082, targetPort: grpc-mtls, protocol: TCP}
+{{- end }}

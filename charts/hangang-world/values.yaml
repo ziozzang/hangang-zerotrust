@@ -1,0 +1,508 @@
+# Hangang World — values.
+#
+# Every value is validated by values.schema.json; unknown keys are refused.
+# Images are pinned by digest (tags are informational). Secret values never
+# appear here: the chart only references Secrets you create beforehand.
+
+global:
+  # SPIFFE trust domain for component certificate URI SANs
+  # (spiffe://<trustDomain>/ns/<namespace>/sa/<serviceAccount>).
+  trustDomain: cluster.local
+  # [{name: regcred}] — pull secrets for private registries.
+  imagePullSecrets: []
+  # Shared HA backend (ADR 0022 Decision 6). Required before any stateful
+  # component (Hopae) runs more than one replica. Pumgye and Sumunjang have no
+  # PostgreSQL adapter yet and stay single-replica.
+  ha:
+    backend: none            # none | postgresql
+    postgresql:
+      # Secret holding the connection URL, postgresql://user:password@host:5432/db
+      # without sslmode (Hopae's driver refuses verify-full); with caSecret
+      # Hopae always uses TLS and verifies the server certificate and name.
+      existingSecret: ""
+      urlKey: url
+      # Secret with the CA that signed the server certificate (Hopae
+      # verifies it; without a CA only loopback would be allowed).
+      caSecret:
+        name: ""
+        key: ca.crt
+
+# One pre-created Secret with the shared API credentials. Create it with
+# random values of at least 32 bytes, for example:
+#   kubectl create secret generic hangang-world-credentials \
+#     --from-literal=hangang-admin-token=$(openssl rand -hex 32) ...
+credentials:
+  existingSecret: ""
+  keys:
+    hangangAdminToken: hangang-admin-token
+    hopaeGatewayKey: hopae-gateway-key
+    guardCollectorToken: guard-collector-token
+    guardAdminToken: guard-admin-token
+    pumgyeDecisionToken: pumgye-decision-token
+    pumgyeAdminToken: pumgye-admin-token
+    # Read-only /metrics scrape credentials (16-4096 visible ASCII, distinct
+    # from every other credential). Read only while
+    # monitoring.serviceMonitor.enabled; the keys must then exist.
+    pumgyeMetricsToken: pumgye-metrics-token
+    guardMetricsToken: guard-metrics-token
+
+# Mutual TLS between components (Service DNS + SPIFFE URI SAN per component).
+tls:
+  # certManager: the chart creates Certificates (cert-manager >= 1.12).
+  # existingSecrets: bring your own kubernetes.io/tls Secrets with tls.crt,
+  # tls.key and ca.crt; each certificate needs serverAuth and clientAuth and
+  # the SANs listed in the README.
+  mode: certManager
+  certManager:
+    # Empty name: the chart bootstraps a private CA (self-signed Issuer ->
+    # CA Certificate -> CA Issuer) in the release namespace. Set an Issuer or
+    # ClusterIssuer of your PKI for production.
+    issuerRef:
+      name: ""
+      kind: Issuer           # Issuer | ClusterIssuer
+      group: cert-manager.io
+    duration: 720h
+    renewBefore: 240h
+    caDuration: 87600h
+    privateKey:
+      algorithm: ECDSA       # ECDSA | Ed25519 | RSA
+      size: 256
+  existingSecrets:
+    hangang: ""
+    hopae: ""
+    pumgye: ""
+    sumunjang: ""
+    # Hopae admin listener (server certificate for hopae.admin), when enabled.
+    hopaeAdmin: ""
+
+# Console operator assurance (Hopae ADR-0021): Hopae signs
+# x-hopae-operator-assertion with a dedicated Ed25519 key; the Hangang
+# console holds only the public keys, pinned by key id.
+operatorAssurance:
+  # Hopae only: Secret with the base64 32-byte Ed25519 seed (never given to
+  # the console).
+  seedSecret:
+    name: ""
+    key: operator-assertion-seed
+  # The seed's key id and base64 public key (not secret).
+  keyId: ""
+  publicKey: ""
+  # Rotation: pin the next key here first (console only), then move Hopae to
+  # it (keyId/publicKey/seed) and clear this.
+  nextKey:
+    keyId: ""
+    publicKey: ""
+
+networkPolicy:
+  # Default-deny ingress for every World Pod plus the exact component-to-
+  # component flows. Requires a CNI that enforces NetworkPolicy.
+  enabled: true
+  # Peers allowed to reach the public Hangang listener; empty allows any.
+  # Example: [{ipBlock: {cidr: 0.0.0.0/0}}]
+  publicFrom: []
+  # Peers allowed to scrape metrics (ServiceMonitor); empty allows none.
+  metricsFrom: []
+
+monitoring:
+  # Prometheus Operator scrape of every component that serves /metrics:
+  #   Hangang   - admin listener (TLS, bearer = admin token); needs
+  #               hangang.admin.exposeMetrics
+  #   Pumgye    - management listener 9084 (mutual TLS, bearer = metrics token)
+  #   Sumunjang - management listener 9080 (mutual TLS, bearer = metrics token)
+  #   Hopae     - admin listener 8702 (mutual TLS, bearer = hopae.metrics
+  #               service credential); needs hopae.admin and hopae.metrics
+  serviceMonitor:
+    # Requires the monitoring.coreos.com/v1 CRDs.
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+    # Client certificate Prometheus presents to the mutual-TLS management
+    # listeners (issued by the World CA). certManager mode: the chart issues
+    # it. existingSecrets mode: name a kubernetes.io/tls Secret whose
+    # certificate has clientAuth and chains to the components' ca.crt.
+    clientCertificate:
+      existingSecret: ""
+  # PrometheusRule with the alerts recommended by each component's
+  # documentation (TLS reload failing, certificate expiry, Kubernetes
+  # snapshot staleness, checkpoint age, projection freshness, decision
+  # availability). Requires the monitoring.coreos.com/v1 CRDs.
+  prometheusRule:
+    enabled: false
+    labels: {}
+    # Warn when a serving certificate expires within this many days.
+    certificateExpiryDays: 7
+    # Also alert on cert-manager's certmanager_certificate_expiration_timestamp_seconds
+    # for this release's Certificates (covers Hangang and Hopae, which do not
+    # export leaf expiry). Needs cert-manager metrics in Prometheus.
+    certManagerExpiry: true
+    # Sumunjang durable checkpoint older than this (seconds).
+    checkpointAgeSeconds: 60
+    # Pumgye's Hopae projection/lifecycle feed older than this (seconds);
+    # 0 uses pumgye.hopaeOwner.projection.max_staleness_secs (default 900).
+    projectionStalenessSeconds: 0
+    # Fraction of decisions answered "unavailable" over 10 minutes.
+    decisionUnavailableRatio: 0.01
+
+tests:
+  # `helm test`: connectivity and readiness of every enabled component.
+  # The image needs /bin/sh, nc and wget (for example a busybox digest).
+  enabled: true
+  image:
+    repository: docker.io/library/busybox
+    tag: "1.36.1"
+    digest: ""
+
+hangang:
+  enabled: true
+  replicas: 2
+  image:
+    repository: ghcr.io/ziozzang/hangang
+    tag: "0.3.7"
+    digest: ""
+    pullPolicy: IfNotPresent
+  # Ingress class this controller selects (spec.ingressClassName).
+  ingressClass:
+    name: hangang
+    create: true
+    default: false
+  # Namespace: watch only the release namespace (Role). Cluster: every
+  # namespace (ClusterRole) — review hostname ownership in docs/KUBERNETES.md.
+  watchScope: Namespace
+  # Address written to admitted Ingress status (load balancer IP or DNS name).
+  publishAddress: ""
+  # Watch Ingress TLS Secrets (kubernetes.io/tls only) and terminate TLS.
+  kubernetesTls: false
+  # A watched kind silent this long marks the controller non-authoritative
+  # (logged and exported; withdraws readiness only with readiness=fresh).
+  staleSeconds: 60
+  # ADR 0022 bounded staleness: once the published snapshot is unconfirmed
+  # by the API server for this long, protected routes answer 503
+  # (x-hangang-reason: kubernetes-authority-stale) while public routes keep
+  # the last-good snapshot. 60..3600 and at least staleSeconds.
+  maxStalenessSeconds: 300
+  # snapshot - ready while serving an activated snapshot, so an API-server
+  #            outage does not drain every replica at once (ADR 0022)
+  # fresh    - not ready while any watch is stale or a cache is incomplete
+  readiness: snapshot
+  # Seconds between content polls of certificate files (admin listener,
+  # Hopae/Pumgye/Sumunjang client identities); rotated material is swapped
+  # in without a restart. 0 disables. No inotify is used.
+  tlsReloadSeconds: 10
+  protection:
+    # ProtectionPolicy reconciliation (requires hangang-world-crds, Hopae and Pumgye).
+    enabled: true
+    # Withhold Ingresses without an effective policy. Turn off only during
+    # migration (docs/KUBERNETES_PROTECTION.md in the Hangang repository).
+    requireProtection: true
+    # Identity profiles tenants may reference from spec.identity.profileRef.
+    # The chart fills in the in-cluster Hopae endpoint, mTLS and caller key.
+    identityProfiles:
+      default:
+        namespaces: []
+        # Hopae's gateway contract: cookie and the browser navigation headers
+        # (Hopae sends a sign-in redirect only to a document request; without
+        # accept/sec-fetch-* every unauthenticated browser gets 401).
+        requestHeaders: [authorization, cookie, user-agent, accept, sec-fetch-dest, sec-fetch-mode, sec-fetch-site]
+        forwardResponse: true
+    # Optional: Pumgye service ID -> namespaces allowed to bind it.
+    pumgyeServices: {}
+  # Sumunjang admission at the gateway (fail-closed query mode over gRPC mTLS).
+  guard:
+    enabled: true
+    timeoutMs: 100
+  # Port clients use in URLs (sign-in redirects, X-Forwarded-Port); null uses
+  # service.port. Set it when clients reach the gateway on another port (a
+  # NodePort or an external load balancer port).
+  advertisedPort: null
+  service:
+    type: LoadBalancer       # ClusterIP | NodePort | LoadBalancer
+    port: 80
+    nodePort: null
+    annotations: {}
+    loadBalancerSourceRanges: []
+  # How the gateway sees the real client address (required for network-
+  # conditioned policies):
+  #   serviceLocal  - Service externalTrafficPolicy: Local (LoadBalancer/NodePort)
+  #   proxyProtocol - PROXY protocol v2 from proxyProtocolFrom CIDRs only
+  #   hostNetwork   - Pods on the host network (bare-metal edge)
+  #   none          - not preserved; network-conditioned policies are withheld
+  clientAddress:
+    mode: serviceLocal
+    proxyProtocolFrom: []
+  # Hangang console adapter (hangang-console) as a sidecar of every gateway
+  # replica, over that replica's admin authority. Off by default. Expose it
+  # with an Ingress on this gateway protected by Hopae; administrator accounts
+  # and console sessions are per replica.
+  console:
+    enabled: false
+    # Path of the hangang-console binary in the Hangang image.
+    command: /usr/local/bin/hangang-console
+    # Trusted plugin bindings (docs/CONSOLE_PLUGINS.md in Hangang); pinned
+    # manifests must be present in the image.
+    plugins: []
+    sso:
+      # Sign in with Hopae (needs hopae.enabled; Hopae opens HOP1 on 8704).
+      enabled: false
+      publicUrl: ""            # https://console.example.test/
+      cookie: __Host-hopae
+      # Opaque Hopae user id -> existing Hangang account name.
+      accounts: {}
+      # Require Hopae's signed operator assertion (passkey / AAL); needs
+      # operatorAssurance keys and hopae.consoleOperators.
+      operatorPolicy:
+        enabled: false
+        minimumAal: 2
+        requireFactor: webauthn  # webauthn | any
+        acceptEnrollmentGrace: false
+        sensitiveMaxAgeSeconds: 300
+        stepUpPath: /ui/step-up
+    # Refuse the break-glass local administrator sign-in (needs sso.enabled).
+    disableLocalLogin: false
+    # Console operator audit store (sign-ins, step-ups, changes,
+    # break-glass), read at GET /v1/console/operator-audit. persistent: a
+    # SQLite file on a per-Pod emptyDir (survives container restarts, not Pod
+    # replacement); otherwise in memory.
+    operatorAudit:
+      persistent: true
+      maxRecords: 10000        # 100..1000000
+      retentionDays: 90        # 1..3650
+    # Optional extra sink (JSON lines) under /var/log/hangang-console.
+    auditLog: ""
+    resources:
+      requests: {cpu: 50m, memory: 32Mi}
+      limits: {memory: 128Mi}
+  admin:
+    # Bind the administration listener (TLS + bearer token) on the Pod
+    # network for metrics scraping; otherwise it stays on loopback, still
+    # over TLS (no plaintext even inside the Pod network namespace).
+    exposeMetrics: false
+  resources:
+    requests: {cpu: 200m, memory: 128Mi}
+    limits: {memory: 512Mi}
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  priorityClassName: ""
+  terminationGracePeriodSeconds: 40
+
+hopae:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/ziozzang/hopae
+    tag: "0.0.8"
+    digest: ""
+    pullPolicy: IfNotPresent
+  # sqlite: single replica on a PVC (Recreate).
+  # postgresql: shared external PostgreSQL (global.ha.postgresql), several
+  # replicas, RollingUpdate and a PDB; needs a Hopae build with the postgres
+  # feature (Hopae PR #16). Rate limits that are counted in the store
+  # (login transactions, handoff failures) are shared by the replicas; the
+  # in-memory ones are per replica.
+  storage:
+    backend: sqlite
+    postgresql:
+      poolSize: 16             # 1..128 per replica
+      connectTimeoutMs: 5000   # 100..60000
+      statementTimeoutMs: 2000 # 10..600000, per transaction
+    # One-way copy of the existing SQLite store into the empty PostgreSQL
+    # database as a pre-upgrade hook (`hopae store migrate-to-postgres`).
+    # Scale Hopae to 0 first; enable for that one upgrade only.
+    migration:
+      enabled: false
+      # SQLite state claim of the previous release; empty: the chart's own.
+      fromClaim: ""
+      timeoutSeconds: 600
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+    existingClaim: ""
+  # Who owns authentication profiles and the credential projection plan:
+  # config (default) - this values file; every rollout reconciles Hopae's store
+  #                    to it and console/API edits are refused (Hopae PR #13).
+  # store            - Hopae's database; values only bootstrap an empty store.
+  authentication:
+    source: config
+    # config mode: how often a running Hopae polls its configuration file and
+    # reconciles changed authentication profiles or projection plans live
+    # (milliseconds; 0 off, otherwise 200-60000; null keeps Hopae's default
+    # of 1000 and omits the key for builds without live reload). The ConfigMap is mounted
+    # as a directory (never subPath), so edits reach the Pod without a
+    # restart, after the kubelet's ConfigMap propagation delay (sync period
+    # plus cache TTL, about a minute by default).
+    # null keeps Hopae's default (1000) and omits the key, for Hopae builds
+    # without live reload.
+    reloadIntervalMs: null
+  # Hopae's sign-in portal through the gateway: an Ingress for the portal
+  # host (default: the host of config.portal.public_url) with an explicitly
+  # public ProtectionPolicy (access: Public, Hangang PR #27) limited to the
+  # portal's paths, so hangang.protection.requireProtection stays on. Needs
+  # hangang-world-crds with the access field.
+  portalIngress:
+    enabled: false
+    host: ""
+    # kubernetes.io/tls Secret for the host when hangang.kubernetesTls is on.
+    tlsSecret: ""
+    reason: "Hopae sign-in portal: login, provider callbacks, step-up, self-service security, assets and health"
+  # Console operators (Hopae ADR-0021): operators of the console application
+  # must sign in with a passkey (or AAL 3); allowed verifies carry the signed
+  # x-hopae-operator-assertion (Ed25519). Needs operatorAssurance.seedSecret,
+  # keyId and publicKey, the application in config.apps and
+  # config.webauthn. Off by default.
+  consoleOperators:
+    enabled: false
+    appId: console
+    requireAal: 2              # 2 | 3
+    requireFactor: webauthn    # webauthn | any
+    stepUpPath: /ui/step-up
+    stepUpMaxAgeSecs: 300
+    # Unix seconds; until then operators without a passkey are admitted
+    # without the factor (never on the step-up path). null: no grace.
+    enrollmentGraceUntil: null
+  # Prometheus scrape of GET /metrics on the admin listener (needs
+  # hopae.admin.enabled and monitoring.serviceMonitor.enabled). The bearer is
+  # an hsc1 service credential minted with `--preset metrics` and bound to
+  # the scrape client certificate (see the install guide).
+  metrics:
+    enabled: false
+    tokenSecret:
+      name: ""
+      key: hopae-metrics-token
+  # Seconds a terminating Pod keeps serving after its endpoint is withdrawn
+  # (preStop sleep; needs Kubernetes >= 1.30). 0 disables.
+  preStopSleepSeconds: 10
+  # Seconds between content polls of Hopae's TLS files (native/gRPC gateway,
+  # admin listener, projection clients); 0 off, at most 3600; null keeps
+  # Hopae's default (10) and omits the key.
+  tlsReloadSeconds: null
+  # Hopae configuration (docs/CONFIG.md in the Hopae repository): portal,
+  # apps, providers, authentication_gateway, ... The chart owns listen,
+  # state_dir, store, gateway, authentication, reload and console_operators;
+  # setting them here is refused.
+  config:
+    portal:
+      public_url: https://auth.example.test
+    apps: []
+    providers: []
+  # Extra environment from Secrets, e.g. provider client secrets:
+  # [{name: HOPAE_PROVIDER_GOOGLE_CLIENT_SECRET, secretName: hopae-providers, key: google}]
+  extraSecretEnv: []
+  # Hopae management console / admin listener (mutual TLS, ClusterIP only).
+  # Callers: the Hangang console broker (signed delegation) and Pumgye's
+  # scoped read-only service credential (hopae admin service-credentials).
+  admin:
+    enabled: false
+    # Console origin. Machine callers must address this host, so the default
+    # is the in-cluster admin Service: https://<release>-hangang-world-hopae-admin.<ns>.svc:8702
+    publicUrl: ""
+    # Peers outside trusted_proxies: as_client (mTLS already restricts peers) or refuse.
+    untrustedPeers: as_client
+    # Audience service credentials must name (Hopae with service credentials,
+    # hopae PR #10); empty keeps Hopae's default (the console origin).
+    serviceAudience: ""
+    # Signed Hangang console delegation key (Secret reference).
+    delegation:
+      enabled: true
+      keySecret:
+        name: ""
+        key: hopae-console-delegation-key
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""
+
+pumgye:
+  enabled: true
+  # Single writer (SQLite). Kubernetes-mode stateless replicas arrive with
+  # signed snapshot distribution (ADR 0022 Decision 3).
+  replicas: 1
+  image:
+    repository: ghcr.io/ziozzang/pumgye
+    tag: "0.1.7"
+    digest: ""
+    pullPolicy: IfNotPresent
+  storage:
+    backend: sqlite
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+    existingClaim: ""
+  # Policy model v2 owner inputs from Hopae (--hopae-owner): signed membership
+  # projection and subject lifecycle over Hopae's admin listener with mTLS and
+  # a route-scoped service credential (hsc1 token minted with
+  # `hopae admin service-credentials create ... --preset pumgye-v2`).
+  hopaeOwner:
+    enabled: false
+    tokenSecret:
+      name: ""
+      key: hopae-service-token
+    # {audience, keys: [{issuer_ref, key_epoch, public_key}], max_age_secs, ...}
+    projection: null
+    # {poll_interval_secs, reconcile_interval_secs}
+    lifecycle: null
+  # Seconds between content polls of TLS files (listeners and outbound mTLS
+  # clients); 1-3600.
+  tlsReloadSeconds: 10
+  # Bootstrap policy used only when the database is empty.
+  bootstrapPolicy:
+    revision: 0
+    policy:
+      version: 1
+      information_classes: [internal]
+      services: {}
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""
+
+sumunjang:
+  enabled: true
+  replicas: 1
+  image:
+    repository: ghcr.io/ziozzang/sumunjang
+    tag: "0.3.5"
+    digest: ""
+    pullPolicy: IfNotPresent
+  storage:
+    backend: sqlite
+  persistence:
+    size: 1Gi
+    storageClassName: ""
+    existingClaim: ""
+  # Bootstrap policy used only when the database is empty.
+  bootstrapPolicy:
+    mode: enforce
+    allow: []
+  threads: 2
+  # Seconds between content polls of the decision/management TLS files;
+  # 0 disables, at most 3600.
+  tlsReloadSeconds: 10
+  resources:
+    requests: {cpu: 100m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  priorityClassName: ""

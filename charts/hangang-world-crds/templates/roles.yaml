@@ -1,0 +1,44 @@
+{{- if .Values.rbac.aggregatedRoles }}
+# world-admin: full control of World objects, aggregated into "admin".
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: world-admin
+  labels:
+    {{- include "hangang-world-crds.labels" . | nindent 4 }}
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups: ["world.hangang.dev"]
+    resources: ["protectionpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+  - apiGroups: ["world.hangang.dev"]
+    resources: ["protectionpolicies/status"]
+    verbs: ["get", "list", "watch"]
+---
+# world-editor: create and change World objects, aggregated into "edit".
+# The status subresource is written by the controller only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: world-editor
+  labels:
+    {{- include "hangang-world-crds.labels" . | nindent 4 }}
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+  - apiGroups: ["world.hangang.dev"]
+    resources: ["protectionpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# world-viewer: read World objects and their status, aggregated into "view".
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: world-viewer
+  labels:
+    {{- include "hangang-world-crds.labels" . | nindent 4 }}
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+  - apiGroups: ["world.hangang.dev"]
+    resources: ["protectionpolicies", "protectionpolicies/status"]
+    verbs: ["get", "list", "watch"]
+{{- end }}

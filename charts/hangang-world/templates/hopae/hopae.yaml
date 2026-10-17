@@ -1,0 +1,341 @@
+{{- if .Values.hopae.enabled }}
+{{- $ctx := dict "root" . "component" "hopae" }}
+{{- $v := .Values.hopae }}
+{{- $postgres := eq $v.storage.backend "postgresql" }}
+{{- $owned := dict
+  "listen" (dict
+    "portal" "0.0.0.0:8700"
+    "gateway" "127.0.0.1:8701"
+    "grpc_gateway" "0.0.0.0:8703"
+    "native_gateway_tls" (dict "certificate" "/tls/tls.crt" "key" "/tls/tls.key" "client_ca" "/tls/ca.crt"))
+  "state_dir" "/state"
+  "store" (dict "kind" "sqlite")
+  "gateway" (dict "kind" "hangang" "caller_key_env" "HOPAE_GATEWAY_KEY")
+  "authentication" (dict "source" $v.authentication.source) }}
+{{- if $postgres }}
+{{- $pg := $v.storage.postgresql }}
+{{- $_ := set $owned "store" (dict "kind" "postgres" "postgres" (dict
+  "url_env" "HOPAE_STORE_URL"
+  "ca_file" "/pg-ca/ca.crt"
+  "pool_size" (int $pg.poolSize)
+  "connect_timeout_ms" (int $pg.connectTimeoutMs)
+  "statement_timeout_ms" (int $pg.statementTimeoutMs))) }}
+{{- end }}
+{{- /* Emitted only when set: Hopae builds without live reload refuse the keys. */}}
+{{- if not (kindIs "invalid" $v.authentication.reloadIntervalMs) }}
+{{- $_ := set $owned.authentication "reload_interval_ms" (int $v.authentication.reloadIntervalMs) }}
+{{- end }}
+{{- if not (kindIs "invalid" $v.tlsReloadSeconds) }}
+{{- $_ := set $owned "reload" (dict "tls_interval_secs" (int $v.tlsReloadSeconds)) }}
+{{- end }}
+{{- $admin := $v.admin }}
+{{- if $admin.enabled }}
+{{- $_ := set $owned.listen "admin" "0.0.0.0:8702" }}
+{{- $_ := set $owned.listen "admin_tls" (dict "certificate" "/tls-admin/tls.crt" "key" "/tls-admin/tls.key" "client_ca" "/tls/ca.crt") }}
+{{- $console := dict "public_url" (include "world.hopaeAdminUrl" .) "untrusted_peers" $admin.untrustedPeers }}
+{{- with $admin.serviceAudience }}{{- $_ := set $console "service_audience" . }}{{- end }}
+{{- if $admin.delegation.enabled }}
+{{- $_ := set $console "hangang_delegation" (dict "authority" "hangang" "key_env" "HOPAE_CONSOLE_DELEGATION_KEY") }}
+{{- end }}
+{{- $_ := set $owned "admin" $console }}
+{{- end }}
+{{- $co := $v.consoleOperators }}
+{{- if $co.enabled }}
+{{- $operators := dict "app_id" $co.appId "require_aal" (int $co.requireAal) "require_factor" $co.requireFactor "step_up_path" $co.stepUpPath "step_up_max_age_secs" (int $co.stepUpMaxAgeSecs) "assertion_seed_env" "HOPAE_CONSOLE_ASSERTION_SEED" "assertion_public_key" .Values.operatorAssurance.publicKey "assertion_key_id" .Values.operatorAssurance.keyId }}
+{{- with $co.enrollmentGraceUntil }}{{- $_ := set $operators "enrollment_grace_until" (int64 .) }}{{- end }}
+{{- $_ := set $owned "console_operators" $operators }}
+{{- end }}
+{{- $consoleSso := and .Values.hangang.enabled .Values.hangang.console.enabled .Values.hangang.console.sso.enabled }}
+{{- if $consoleSso }}
+{{- /* HOP1 over mTLS for the Hangang console adapter's SSO checks. */}}
+{{- $_ := set $owned.listen "native_gateway" "0.0.0.0:8704" }}
+{{- end }}
+{{- $config := merge $owned (deepCopy $v.config) }}
+{{- /* In config mode Hopae reconciles authentication profiles and projection
+       plans live from the mounted file, so those keys must not roll the Pod;
+       every other key still needs a restart and does. */}}
+{{- $restartKeys := $config }}
+{{- if eq $v.authentication.source "config" }}
+{{- $restartKeys = omit $config "authentication_gateway" "credential_projection" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" $ctx }}-config
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+data:
+  hopae.json: {{ toJson $config | quote }}
+---
+{{- if not $postgres }}
+{{ include "world.pvc" $ctx }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  replicas: {{ $v.replicas }}
+  revisionHistoryLimit: 5
+  strategy:
+    {{- if $postgres }}
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+    {{- else }}
+    # SQLite single writer: never two Pods on one database.
+    type: Recreate
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "world.selectorLabels" $ctx | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "world.labels" $ctx | nindent 8 }}
+        {{- with $v.podLabels }}{{ toYaml . | nindent 8 }}{{ end }}
+      annotations:
+        checksum/config: {{ toJson $restartKeys | sha256sum }}
+        {{- with $v.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
+    spec:
+      serviceAccountName: {{ include "world.name" $ctx }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ add 30 (int $v.preStopSleepSeconds) }}
+      securityContext:
+        {{- include "world.podSecurityContext" . | nindent 8 }}
+      {{- include "world.podCommon" (dict "root" . "values" $v) | nindent 6 }}
+      containers:
+        - name: hopae
+          image: {{ include "world.image" (dict "image" $v.image "component" "hopae") }}
+          imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
+          args: ["run", "--config", "/config/hopae.json"]
+          {{- if $v.preStopSleepSeconds }}
+          # Stay up while the endpoint is withdrawn, so gateways stop sending
+          # new verifications here before Hopae shuts down (rolling updates
+          # and drains without refused requests).
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ $v.preStopSleepSeconds }}
+          {{- end }}
+          env:
+            {{- include "world.hopaeEnv" . | nindent 12 }}
+          ports:
+            - name: portal
+              containerPort: 8700
+              protocol: TCP
+            - name: grpc
+              containerPort: 8703
+              protocol: TCP
+            {{- if $consoleSso }}
+            - name: hop1
+              containerPort: 8704
+              protocol: TCP
+            {{- end }}
+            {{- if $admin.enabled }}
+            - name: admin
+              containerPort: 8702
+              protocol: TCP
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: portal
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            tcpSocket:
+              port: portal
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: state
+              mountPath: /state
+            - name: tmp
+              mountPath: /tmp
+            {{- if $postgres }}
+            - name: pg-ca
+              mountPath: /pg-ca
+              readOnly: true
+            {{- end }}
+            {{- if $admin.enabled }}
+            - name: admin-tls
+              mountPath: /tls-admin
+              readOnly: true
+            {{- end }}
+      volumes:
+        # Mounted as a directory, never subPath: the kubelet then replaces the
+        # file (symlink swap) when the ConfigMap changes and Hopae's poller
+        # picks it up; a subPath mount would never be updated.
+        - name: config
+          configMap:
+            name: {{ include "world.name" $ctx }}-config
+        {{- include "world.tlsVolume" $ctx | nindent 8 }}
+        - name: state
+          {{- if $postgres }}
+          emptyDir: {sizeLimit: 256Mi}
+          {{- else }}
+          persistentVolumeClaim:
+            claimName: {{ include "world.stateClaim" $ctx }}
+          {{- end }}
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+        {{- if $postgres }}
+        # CA that signed the PostgreSQL server certificate (verify-full).
+        - name: pg-ca
+          secret:
+            secretName: {{ .Values.global.ha.postgresql.caSecret.name }}
+            items: [{key: {{ .Values.global.ha.postgresql.caSecret.key }}, path: ca.crt}]
+            defaultMode: 0440
+        {{- end }}
+        {{- if $admin.enabled }}
+        - name: admin-tls
+          secret:
+            secretName: {{ include "world.hopaeAdminTlsSecret" . }}
+            defaultMode: 0440
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: portal
+      port: 8700
+      targetPort: portal
+      protocol: TCP
+    - name: grpc
+      port: 8703
+      targetPort: grpc
+      protocol: TCP
+    {{- if $consoleSso }}
+    - name: hop1
+      port: 8704
+      targetPort: hop1
+      protocol: TCP
+    {{- end }}
+{{- if $admin.enabled }}
+---
+# Admin listener: ClusterIP only, never exposed through the gateway or a load
+# balancer; NetworkPolicy admits only the Hangang console broker and Pumgye.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}-admin
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    hangang.dev/endpoint: admin
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: admin
+      port: 8702
+      targetPort: admin
+      protocol: TCP
+{{- end }}
+{{- if and $postgres $v.storage.migration.enabled }}
+{{- $migration := merge (dict "state_dir" "/sqlite") (deepCopy $config) }}
+---
+# One-way SQLite -> PostgreSQL copy before the first PostgreSQL rollout
+# (`hopae store migrate-to-postgres`). Scale Hopae to 0 first: the command
+# takes the SQLite instance lock. Hopae refuses a target holding any row and
+# compares per-table counts and digests before committing; the SQLite file
+# is opened read-only and stays the rollback artefact.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" $ctx }}-migrate
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+data:
+  hopae.json: {{ toJson $migration | quote }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "world.name" $ctx }}-migrate
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ $v.storage.migration.timeoutSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "world.labels" (dict "root" . "component" "hopae-migrate") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "world.name" $ctx }}
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- include "world.podSecurityContext" . | nindent 8 }}
+      {{- include "world.podCommon" (dict "root" . "values" $v) | nindent 6 }}
+      containers:
+        - name: migrate
+          image: {{ include "world.image" (dict "image" $v.image "component" "hopae") }}
+          imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
+          args: ["--config", "/config/hopae.json", "store", "migrate-to-postgres", "--from", "/sqlite/hopae.db"]
+          env:
+            {{- include "world.hopaeEnv" . | nindent 12 }}
+          resources:
+            {{- toYaml $v.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            - {name: sqlite, mountPath: /sqlite}
+            - {name: pg-ca, mountPath: /pg-ca, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "world.name" $ctx }}-migrate
+        {{- include "world.tlsVolume" $ctx | nindent 8 }}
+        # The SQLite state volume of the previous release (kept on upgrade).
+        - name: sqlite
+          persistentVolumeClaim:
+            claimName: {{ $v.storage.migration.fromClaim | default (printf "%s-state" (include "world.name" $ctx)) }}
+        - name: pg-ca
+          secret:
+            secretName: {{ .Values.global.ha.postgresql.caSecret.name }}
+            items: [{key: {{ .Values.global.ha.postgresql.caSecret.key }}, path: ca.crt}]
+            defaultMode: 0440
+        - name: tmp
+          emptyDir: {medium: Memory, sizeLimit: 16Mi}
+{{- end }}
+{{- with (include "world.pdb" $ctx) }}
+---
+{{ . }}
+{{- end }}
+{{- end }}

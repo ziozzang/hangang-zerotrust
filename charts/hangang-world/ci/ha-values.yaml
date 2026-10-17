@@ -1,0 +1,92 @@
+# HA profile: gateway x3 with PROXY v2 behind an L4 load balancer, external
+# ClusterIssuer, ServiceMonitor, cluster-wide watch, Hopae x2 on an external
+# PostgreSQL.
+global:
+  ha:
+    backend: postgresql
+    postgresql:
+      existingSecret: hopae-postgresql
+      caSecret: {name: hopae-postgresql-ca, key: ca.crt}
+credentials:
+  existingSecret: hangang-world-credentials
+tls:
+  certManager:
+    issuerRef:
+      name: world-ca
+      kind: ClusterIssuer
+      group: cert-manager.io
+networkPolicy:
+  publicFrom:
+    - ipBlock: {cidr: 10.0.0.0/8}
+  metricsFrom:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: monitoring}
+monitoring:
+  serviceMonitor:
+    enabled: true
+    labels: {release: prometheus}
+  prometheusRule:
+    enabled: true
+    labels: {release: prometheus}
+tests:
+  image:
+    digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+hangang:
+  replicas: 3
+  watchScope: Cluster
+  publishAddress: gateway.example.test
+  kubernetesTls: true
+  maxStalenessSeconds: 600
+  readiness: snapshot
+  tlsReloadSeconds: 30
+  service:
+    type: LoadBalancer
+    port: 443
+  clientAddress:
+    mode: proxyProtocol
+    proxyProtocolFrom: [10.0.0.0/24]
+  admin:
+    exposeMetrics: true
+  protection:
+    identityProfiles:
+      corp-sso:
+        namespaces: [shop, payroll]
+        requestHeaders: [authorization, cookie]
+    pumgyeServices:
+      orders: [shop]
+  image:
+    digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+hopae:
+  replicas: 2
+  storage:
+    backend: postgresql
+  image:
+    digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  extraSecretEnv:
+    - name: HOPAE_PROVIDER_CORP_CLIENT_SECRET
+      secretName: hopae-providers
+      key: corp
+  config:
+    portal:
+      public_url: https://auth.example.test
+    apps:
+      - app_id: shop
+        display_name: Shop
+        hosts: [shop.example.test]
+    providers:
+      - provider_id: corp
+        kind: oidc
+        display_name: Corporate SSO
+        client_id: shop-client
+        client_secret_env: HOPAE_PROVIDER_CORP_CLIENT_SECRET
+pumgye:
+  image:
+    digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  persistence:
+    size: 5Gi
+    storageClassName: fast-ssd
+sumunjang:
+  image:
+    digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+  persistence:
+    existingClaim: sumunjang-state-restored

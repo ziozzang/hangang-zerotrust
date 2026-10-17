@@ -1,0 +1,60 @@
+# Hangang console adapter with Hopae SSO and passkey operator assurance
+# (Hopae ADR-0021), Hopae metrics over its admin listener.
+credentials:
+  existingSecret: hangang-world-credentials
+operatorAssurance:
+  seedSecret: {name: world-operator-assertion, key: seed}
+  keyId: op-2026-10
+  publicKey: h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik=
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true
+networkPolicy:
+  metricsFrom:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: monitoring}
+tests:
+  image:
+    digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
+hangang:
+  replicas: 1
+  admin:
+    exposeMetrics: true
+  image:
+    digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  console:
+    enabled: true
+    sso:
+      enabled: true
+      publicUrl: https://console.example.test/
+      accounts: {u_operator: operator}
+      operatorPolicy:
+        enabled: true
+    disableLocalLogin: true
+    auditLog: /var/log/hangang-console/audit.jsonl
+hopae:
+  image:
+    digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  config:
+    portal: {public_url: https://auth.example.test}
+    apps:
+      - {app_id: console, display_name: Console, hosts: [console.example.test]}
+    webauthn: {rp_id: example.test, rp_name: Example}
+  admin:
+    enabled: true
+    delegation:
+      keySecret: {name: hopae-console-delegation, key: key}
+  consoleOperators:
+    enabled: true
+    appId: console
+  metrics:
+    enabled: true
+    tokenSecret: {name: hopae-metrics-credential, key: token}
+pumgye:
+  image:
+    digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+sumunjang:
+  image:
+    digest: sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd

@@ -43,9 +43,20 @@ spec:
       from:
         {{- toYaml .Values.networkPolicy.metricsFrom | nindent 8 }}
     {{- end }}
+    {{- if .Values.hangang.console.enabled }}
+    # Console adapter: only the gateway itself (the protected console Ingress).
+    - ports:
+        - {port: 19080, protocol: TCP}
+      from:
+        {{- include "world.peer" (dict "root" . "component" "hangang") | nindent 8 }}
+    {{- end }}
+{{- end }}
+{{- $hopaePorts := list 8700 8703 }}
+{{- if and .Values.hangang.enabled .Values.hangang.console.enabled .Values.hangang.console.sso.enabled }}
+{{- $hopaePorts = append $hopaePorts 8704 }}
 {{- end }}
 {{- $flows := list
-  (dict "component" "hopae" "ports" (list 8700 8703) "from" (list "hangang") "metrics" 0)
+  (dict "component" "hopae" "ports" $hopaePorts "from" (list "hangang") "metrics" 0)
   (dict "component" "pumgye" "ports" (list 9084 9085 9087) "from" (list "hangang") "metrics" 9084)
   (dict "component" "sumunjang" "ports" (list 9080 9081 9082) "from" (list "hangang" "pumgye") "metrics" 9080) }}
 {{- range $flow := $flows }}
@@ -109,5 +120,12 @@ spec:
         {{- if and .Values.pumgye.enabled .Values.pumgye.hopaeOwner.enabled }}
         {{- include "world.peer" (dict "root" . "component" "pumgye") | nindent 8 }}
         {{- end }}
+    {{- if and .Values.hopae.metrics.enabled .Values.monitoring.serviceMonitor.enabled .Values.networkPolicy.metricsFrom }}
+    # Metrics scrape (mutual TLS + metrics service credential).
+    - ports:
+        - {port: 8702, protocol: TCP}
+      from:
+        {{- toYaml .Values.networkPolicy.metricsFrom | nindent 8 }}
+    {{- end }}
 {{- end }}
 {{- end }}

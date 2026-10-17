@@ -96,7 +96,15 @@ With `hopae.authentication.source: config`, Hopae polls its configuration file e
 - **Hangang:** the admin listener (TLS, needs `hangang.admin.exposeMetrics`), bearer = the admin token.
 - **Pumgye:** the management listener 9084 over mutual TLS, bearer = `credentials.keys.pumgyeMetricsToken` (passed as `PUMGYE_METRICS_TOKEN`, opens only `/metrics`).
 - **Sumunjang:** the management listener 9080 over mutual TLS (`--management-tls`), bearer = `credentials.keys.guardMetricsToken` (`HANGANG_GUARD_METRICS_TOKEN`). Its probes use the separate probe-only listener 9083 (`/readyz`, `/healthz`), which is not in the Service.
-- **Hopae:** no ServiceMonitor; Hopae has no Prometheus endpoint yet (its counters are in-process only). Its certificate expiry is covered by the cert-manager rule.
+- **Hopae:** with `hopae.metrics.enabled` (needs `hopae.admin.enabled`), the admin listener 8702 over mutual TLS (Hopae PR #19). The bearer is an `hsc1` service credential with the `metrics` preset, which can read only `GET /metrics` and is bound to the scrape client certificate; no audience header is needed. Mint it inside the Hopae Pod for the scraper's SPIFFE ID and store it in the Secret named by `hopae.metrics.tokenSecret`:
+
+  ```sh
+  kubectl -n hangang-world exec deploy/world-hangang-world-hopae -- \\
+    hopae admin service-credentials create metrics --preset metrics \\
+    --client-san spiffe://cluster.local/ns/hangang-world/metrics-scraper \\
+    --config /config/hopae.json > hopae-metrics.token
+  kubectl -n hangang-world create secret generic hopae-metrics-credential --from-file=token=hopae-metrics.token
+  ```
 
 Prometheus presents a client certificate to the mutual-TLS listeners: with cert-manager the chart issues `<release>-hangang-world-metrics-client` (client auth only, from the World issuer); with BYO certificates set `monitoring.serviceMonitor.clientCertificate.existingSecret`. The certificate grants nothing on its own; every scrape still needs the read-only bearer. Add the two metrics tokens (16–4096 visible ASCII characters, distinct from every other credential) to the credentials Secret before enabling the ServiceMonitors, and let the monitoring namespace in through `networkPolicy.metricsFrom`.
 
@@ -113,9 +121,24 @@ Prometheus presents a client certificate to the mutual-TLS listeners: with cert-
 | `PumgyeHopaeFeedStale` | Pumgye's Hopae projection/lifecycle feed older than the projection's `max_staleness_secs` |
 | `PumgyeDecisionsUnavailable`, `SumunjangDecisionsUnavailable` | share of decisions answered unavailable above `decisionUnavailableRatio` (1 %) over 10 minutes |
 | `PumgyeUnavailable`, `SumunjangNotReady` (critical) | the decision service cannot answer |
+| `HopaeStoreDown` (critical), `HopaeTLSReloadFailing`, `HopaeCertificateExpiringSoon`, `HopaeConfigReloadFailing` | Hopae store unreachable, rejected TLS material, leaf expiry, invalid configuration file |
+| `HopaeVerifyCallerUnauthorized`, `HopaeVerifyOverloaded`, `HopaeProviderDegraded`, `HopaeEventDeliveriesFailed` | wrong gateway caller key, verify concurrency limit, identity provider not ok, abandoned event deliveries |
 | `HangangIngressesWithheld`, `PumgyeShadowMismatchUnexplained`, `SumunjangEvidenceDropped` | operational warnings |
 
 The cert-manager rules need cert-manager's own metrics in Prometheus (`monitoring.prometheusRule.certManagerExpiry: false` to omit them).
+
+## Console and operator assurance (optional)
+
+`hangang.console.enabled` adds the Hangang console adapter (`hangang-console`, Hangang PR #25) as a sidecar of every gateway replica, with a ClusterIP `<release>-hangang-world-hangang-console` Service on 19080. Publish it through an Ingress on this gateway whose host is a Hopae application protected by a ProtectionPolicy; the NetworkPolicy admits only the gateway. Settings, all off by default:
+
+- `hangang.console.sso` — sign in with Hopae (`--hopae-sso`). Hopae then opens its HOP1 listener on 8704 with mutual TLS for the console's session checks; `accounts` maps opaque Hopae user IDs to existing Hangang accounts.
+- `hangang.console.sso.operatorPolicy` — require Hopae's HMAC-signed operator assertion (`minimumAal`, `requireFactor`, `acceptEnrollmentGrace`, `sensitiveMaxAgeSeconds`, `stepUpPath`).
+- `hopae.consoleOperators` — Hopae's `console_operators` policy (Hopae PR #18): the console application (`appId`, which must exist in `hopae.config.apps`, with `hopae.config.webauthn` configured) requires a passkey or AAL 3 and signs the assertion. `enrollmentGraceUntil` admits operators without a passkey until a Unix time.
+- `operatorAssurance.keySecret` — the shared assertion key (32–4096 bytes, distinct from every other credential), read by Hopae as `HOPAE_CONSOLE_ASSERTION_KEY` and by the console as `CONSOLE_OPERATOR_ASSERTION_KEY`.
+- `hangang.console.disableLocalLogin` — refuse the break-glass local administrator sign-in (needs SSO).
+- `hangang.console.auditLog` — console audit as JSON lines under `/var/log/hangang-console/` (a per-Pod emptyDir; ship it with a log collector) instead of stderr.
+
+Limits: `hangang-console` reaches its authority only over HTTPS with public roots or literal loopback HTTP, so with the console enabled the gateway's admin API stays on `127.0.0.1:9000` without TLS, and `hangang.admin.exposeMetrics` (and the Hangang ServiceMonitor) cannot be combined with it. Administrator accounts and console sessions are per replica (the Service uses ClientIP affinity). The console binary must be present in the Hangang image (`hangang.console.command`). **Open prerequisite:** `hangang-console` (PR #25 `e9b6208`) accepts its SSO file only with mode `0600`-style permissions (no group or other bits), while Kubernetes ConfigMap and Secret volumes are root-owned and readable by the Pod only through `fsGroup` (`0440`); the real binary refuses the mounted file (`SSO configuration must be a private bounded regular file`), so the console needs that check relaxed for projected files before this mode can run. The rendered SSO and plugin configuration was otherwise accepted by `hangang-console --check`.
 
 ## Upgrade and rollback
 
@@ -140,7 +163,6 @@ Hangang World follows N-1 compatibility (ADR 0022 Decision 6):
 - **Hopae PostgreSQL.** Hopae's PostgreSQL store is planned (Hopae ADR-0002, M2) but not released (Hopae 0.0.10 refuses `store.url_env`); the chart refuses `hopae.storage.backend: postgresql` until it ships, so Hopae runs as one SQLite replica.
 - **Chart distribution.** The charts are not yet packaged, signed or pushed to an OCI registry.
 - **Live qualification.** The local and remote runs cover the protected chain, revocation, a 10-minute API outage, certificate rotation and a node drain. The component fixes for certificate hot reload, bounded staleness and live Hopae reconciliation are in open component pull requests (Hangang #23, Pumgye #7, Hopae #14, Sumunjang `feat/asn-proposals`) and must be released before the digests can point at them.
-- **Hopae metrics.** Hopae has no Prometheus endpoint, so it has no ServiceMonitor and only cert-manager covers its certificate expiry.
 
 ## Hopae authentication profiles (configuration-authoritative)
 

@@ -51,5 +51,11 @@
 - Serve the Hangang administration API over TLS also when it stays on
   loopback, so sidecars and debug containers in the Pod network namespace
   never see a plaintext administration endpoint.
+- Add the Hopae ServiceMonitor (admin listener, mutual TLS, `hsc1` `metrics`
+  service credential; Hopae PR #19) and Hopae alerts; optional console
+  operator assurance: Hopae `console_operators` (PR #18), a shared assertion
+  key Secret, and the Hangang console adapter sidecar (`hangang-console`,
+  Hangang PR #25) with Hopae SSO over HOP1 mTLS, `operator_policy`,
+  `--disable-local-login` and `--audit-log`. All off by default.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

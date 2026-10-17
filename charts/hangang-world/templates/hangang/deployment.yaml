@@ -4,6 +4,7 @@
 {{- $tls := $h.kubernetesTls }}
 {{- $port := ternary 8443 8080 $tls }}
 {{- $sumunjang := dict "root" . "component" "sumunjang" }}
+{{- $console := $h.console }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,6 +31,9 @@ spec:
       annotations:
         {{- if $h.protection.enabled }}
         checksum/protection: {{ include (print $.Template.BasePath "/hangang/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if $h.console.enabled }}
+        checksum/console: {{ include (print $.Template.BasePath "/hangang/console.yaml") . | sha256sum }}
         {{- end }}
         {{- with $h.podAnnotations }}{{ toYaml . | nindent 8 }}{{ end }}
     spec:
@@ -124,6 +128,7 @@ spec:
             - {{ printf "0.0.0.0:%d" $port | quote }}
             - --admin
             - {{ ternary "0.0.0.0:9000" "127.0.0.1:9000" $h.admin.exposeMetrics | quote }}
+            {{- if not $console.enabled }}
             # The administration API is always TLS, also on loopback: any other
             # container in the Pod network namespace (sidecar, debug
             # container) and kubectl port-forward reach loopback, so plaintext
@@ -132,6 +137,11 @@ spec:
             - /tls/tls.crt
             - --admin-tls-key
             - /tls/tls.key
+            {{- else }}
+            # hangang.console: the console sidecar reaches this authority over
+            # literal loopback HTTP only (hangang-console has no private-CA
+            # option yet), so the admin API stays plaintext on 127.0.0.1.
+            {{- end }}
             - --health-path
             - /-/ready
             - --lame-duck-seconds
@@ -203,6 +213,74 @@ spec:
               mountPath: /etc/hangang/protection
               readOnly: true
             {{- end }}
+        {{- if $console.enabled }}
+        # Hangang console adapter: serves the console UI over this replica's
+        # admin authority; reached only through the gateway (NetworkPolicy).
+        - name: console
+          image: {{ include "world.image" (dict "image" $h.image "component" "hangang") }}
+          imagePullPolicy: {{ $h.image.pullPolicy | default "IfNotPresent" }}
+          command: [{{ $console.command | quote }}]
+          args:
+            - --listen
+            - 0.0.0.0:19080
+            # Plaintext on the Pod network: only the Hangang gateway may reach
+            # it (NetworkPolicy), which terminates TLS and runs Hopae.
+            - --allow-insecure-public
+            - --upstream
+            - http://127.0.0.1:9000/
+            - --plugins
+            - /etc/hangang/console/plugins.json
+            {{- if $console.sso.enabled }}
+            - --hopae-sso
+            - /etc/hangang/console/sso.json
+            {{- end }}
+            {{- if $console.disableLocalLogin }}
+            # No break-glass local administrator sign-in; Hopae SSO only.
+            - --disable-local-login
+            {{- end }}
+            {{- with $console.auditLog }}
+            - --audit-log
+            - {{ . | quote }}
+            {{- end }}
+          env:
+            {{- if $console.sso.enabled }}
+            {{- include "world.secretEnv" (dict "root" . "name" "CONSOLE_HOPAE_GATEWAY_KEY" "key" "hopaeGatewayKey") | nindent 12 }}
+            {{- include "world.secretEnv" (dict "root" . "name" "CONSOLE_HANGANG_SYSTEM_TOKEN" "key" "hangangAdminToken") | nindent 12 }}
+            {{- if $console.sso.operatorPolicy.enabled }}
+            - name: CONSOLE_OPERATOR_ASSERTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.operatorAssurance.keySecret.name }}
+                  key: {{ .Values.operatorAssurance.keySecret.key }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - name: console
+              containerPort: 19080
+              protocol: TCP
+          readinessProbe:
+            tcpSocket:
+              port: console
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: console
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            {{- toYaml $console.resources | nindent 12 }}
+          securityContext:
+            {{- include "world.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: console-config
+              mountPath: /etc/hangang/console
+              readOnly: true
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: console-audit
+              mountPath: /var/log/hangang-console
+        {{- end }}
       volumes:
         # Controller mode keeps no durable routing state: routes come from the
         # Kubernetes API. Administrator accounts here are per Pod.
@@ -214,6 +292,17 @@ spec:
         - name: protection
           configMap:
             name: {{ include "world.name" $ctx }}-protection
+        {{- end }}
+        {{- if $console.enabled }}
+        - name: console-config
+          configMap:
+            name: {{ include "world.name" $ctx }}-console
+            defaultMode: 0440
+        # Console audit (JSON lines) when hangang.console.auditLog points
+        # here; ship it with a log collector, it does not survive the Pod.
+        - name: console-audit
+          emptyDir:
+            sizeLimit: 64Mi
         {{- end }}
 ---
 apiVersion: v1

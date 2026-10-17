@@ -5,6 +5,7 @@
 {{- $expiry := mul (int $r.certificateExpiryDays) 86400 }}
 {{- $hangang := printf "namespace=%q,job=%q" $ns (printf "%s-admin" (include "world.name" (dict "root" . "component" "hangang"))) }}
 {{- $pumgye := printf "namespace=%q,job=%q" $ns (include "world.name" (dict "root" . "component" "pumgye")) }}
+{{- $hopae := printf "namespace=%q,job=%q" $ns (printf "%s-admin" (include "world.name" (dict "root" . "component" "hopae"))) }}
 {{- $sumunjang := printf "namespace=%q,job=%q" $ns (include "world.name" (dict "root" . "component" "sumunjang")) }}
 {{- $projection := $r.projectionStalenessSeconds }}
 {{- if not $projection }}
@@ -13,8 +14,9 @@
 {{- end }}
 # Alerts recommended by the component documentation: Hangang
 # (docs/KUBERNETES.md, docs/TLS_RELOAD.md, docs/KUBERNETES_PROTECTION.md),
-# Pumgye (docs/SERVER.md), Sumunjang (docs/METRICS.md) and cert-manager
-# expiry for every certificate of this release (Hopae has no /metrics yet).
+# Pumgye (docs/SERVER.md), Sumunjang (docs/METRICS.md), Hopae
+# (docs/OPERATIONS.md) and cert-manager expiry for every certificate of this
+# release.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -98,6 +100,55 @@ spec:
           labels: {severity: info}
           annotations:
             summary: Unexplained v1/v2 shadow decision mismatch
+    {{- end }}
+    {{- if and .Values.hopae.enabled .Values.hopae.admin.enabled .Values.hopae.metrics.enabled }}
+    - name: hangang-world.hopae
+      rules:
+        - alert: HopaeStoreDown
+          expr: max by (namespace, pod) (hopae_store_up{ {{- $hopae -}} }) == 0
+          for: 2m
+          labels: {severity: critical}
+          annotations:
+            summary: Hopae's store does not answer; verify fails closed (store_unavailable)
+        - alert: HopaeTLSReloadFailing
+          expr: max by (namespace, pod, name) (hopae_tls_reload_failing{ {{- $hopae -}} }) == 1
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Hopae rejected rotated TLS material; previous certificate still in use
+        - alert: HopaeCertificateExpiringSoon
+          expr: min by (namespace, pod, name) (hopae_tls_leaf_expiry_seconds{ {{- $hopae -}} }) < {{ $expiry }}
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Hopae certificate expires within {{ $r.certificateExpiryDays }} days
+        - alert: HopaeConfigReloadFailing
+          expr: max by (namespace, pod) (hopae_config_reload_failing{ {{- $hopae -}} }) == 1
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Hopae's newest configuration file is invalid; the previous profiles stay in force
+        - alert: HopaeVerifyCallerUnauthorized
+          expr: increase(hopae_verify_unauthorized_total{ {{- $hopae -}} }[10m]) > 0
+          labels: {severity: warning}
+          annotations:
+            summary: Verify calls with a missing or wrong caller key (gateway key mismatch)
+        - alert: HopaeVerifyOverloaded
+          expr: increase(hopae_verify_overloaded_total{ {{- $hopae -}} }[10m]) > 0
+          labels: {severity: warning}
+          annotations:
+            summary: Verify calls refused at the concurrency limit
+        - alert: HopaeProviderDegraded
+          expr: max by (namespace, pod, provider) (hopae_provider_state{ {{- $hopae -}} ,state!="ok"}) == 1
+          for: 10m
+          labels: {severity: warning}
+          annotations:
+            summary: Identity provider {{ "{{ $labels.provider }}" }} is not ok
+        - alert: HopaeEventDeliveriesFailed
+          expr: increase(hopae_event_deliveries_failed_total{ {{- $hopae -}} }[30m]) > 0
+          labels: {severity: info}
+          annotations:
+            summary: Hopae gave up event deliveries
     {{- end }}
     {{- if .Values.sumunjang.enabled }}
     - name: hangang-world.sumunjang

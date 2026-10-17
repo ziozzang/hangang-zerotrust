@@ -263,6 +263,33 @@
         "mode"
       ]
     },
+    "operatorAssurance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "keySecret": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 253,
+              "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[-._a-zA-Z0-9]+$"
+            }
+          },
+          "required": [
+            "name",
+            "key"
+          ]
+        }
+      }
+    },
     "networkPolicy": {
       "type": "object",
       "additionalProperties": false,
@@ -770,6 +797,169 @@
             }
           }
         },
+        "console": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "command": {
+              "type": "string",
+              "pattern": "^/[A-Za-z0-9._/-]{1,255}$"
+            },
+            "plugins": {
+              "type": "array",
+              "maxItems": 32,
+              "items": {
+                "type": "object"
+              }
+            },
+            "sso": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "publicUrl": {
+                  "type": "string",
+                  "maxLength": 300,
+                  "pattern": "^$|^https://[a-z0-9]([-a-z0-9.]*[a-z0-9])?(:[0-9]{1,5})?/$"
+                },
+                "cookie": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                },
+                "accounts": {
+                  "type": "object",
+                  "maxProperties": 1024,
+                  "propertyNames": {
+                    "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  }
+                },
+                "operatorPolicy": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "minimumAal": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "requireFactor": {
+                      "enum": [
+                        "webauthn",
+                        "any"
+                      ]
+                    },
+                    "acceptEnrollmentGrace": {
+                      "type": "boolean"
+                    },
+                    "sensitiveMaxAgeSeconds": {
+                      "type": "integer",
+                      "minimum": 30,
+                      "maximum": 3600
+                    },
+                    "stepUpPath": {
+                      "type": "string",
+                      "pattern": "^/[A-Za-z0-9._/-]{0,255}$"
+                    }
+                  },
+                  "required": [
+                    "enabled"
+                  ]
+                }
+              },
+              "required": [
+                "enabled"
+              ]
+            },
+            "disableLocalLogin": {
+              "type": "boolean"
+            },
+            "auditLog": {
+              "type": "string",
+              "maxLength": 255,
+              "pattern": "^$|^/var/log/hangang-console/[A-Za-z0-9._-]{1,128}$"
+            },
+            "resources": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "requests": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "cpu": {
+                      "type": [
+                        "string",
+                        "number"
+                      ],
+                      "pattern": "^[+-]?([0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
+                    },
+                    "memory": {
+                      "type": [
+                        "string",
+                        "number"
+                      ],
+                      "pattern": "^[+-]?([0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
+                    },
+                    "ephemeral-storage": {
+                      "type": [
+                        "string",
+                        "number"
+                      ],
+                      "pattern": "^[+-]?([0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
+                    }
+                  }
+                },
+                "limits": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "cpu": {
+                      "type": [
+                        "string",
+                        "number"
+                      ],
+                      "pattern": "^[+-]?([0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
+                    },
+                    "memory": {
+                      "type": [
+                        "string",
+                        "number"
+                      ],
+                      "pattern": "^[+-]?([0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
+                    },
+                    "ephemeral-storage": {
+                      "type": [
+                        "string",
+                        "number"
+                      ],
+                      "pattern": "^[+-]?([0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
+                    }
+                  }
+                }
+              },
+              "required": [
+                "requests",
+                "limits"
+              ]
+            }
+          },
+          "required": [
+            "enabled"
+          ]
+        },
         "pdb": {
           "type": "object",
           "additionalProperties": false,
@@ -1041,11 +1231,91 @@
           "minimum": 0,
           "maximum": 3600
         },
+        "consoleOperators": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "appId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "not": {
+                "const": "default"
+              }
+            },
+            "requireAal": {
+              "enum": [
+                2,
+                3
+              ]
+            },
+            "requireFactor": {
+              "enum": [
+                "webauthn",
+                "any"
+              ]
+            },
+            "stepUpPath": {
+              "type": "string",
+              "pattern": "^/[A-Za-z0-9._/-]{0,255}$"
+            },
+            "stepUpMaxAgeSecs": {
+              "type": "integer",
+              "minimum": 30,
+              "maximum": 3600
+            },
+            "enrollmentGraceUntil": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "required": [
+            "enabled"
+          ]
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "tokenSecret": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 253,
+                  "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                },
+                "key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 253,
+                  "pattern": "^[-._a-zA-Z0-9]+$"
+                }
+              },
+              "required": [
+                "name",
+                "key"
+              ]
+            }
+          },
+          "required": [
+            "enabled"
+          ]
+        },
         "config": {
           "type": "object",
           "additionalProperties": true,
           "properties": {},
-          "description": "Hopae configuration minus the chart-owned listen, state_dir, store, gateway, authentication and reload.",
+          "description": "Hopae configuration minus the chart-owned listen, state_dir, store, gateway, authentication, reload and console_operators.",
           "not": {
             "anyOf": [
               {
@@ -1076,6 +1346,11 @@
               {
                 "required": [
                   "reload"
+                ]
+              },
+              {
+                "required": [
+                  "console_operators"
                 ]
               }
             ]

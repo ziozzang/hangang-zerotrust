@@ -24,6 +24,17 @@
 {{- end }}
 {{- $_ := set $owned "admin" $console }}
 {{- end }}
+{{- $co := $v.consoleOperators }}
+{{- if $co.enabled }}
+{{- $operators := dict "app_id" $co.appId "require_aal" (int $co.requireAal) "require_factor" $co.requireFactor "step_up_path" $co.stepUpPath "step_up_max_age_secs" (int $co.stepUpMaxAgeSecs) "assertion_key_env" "HOPAE_CONSOLE_ASSERTION_KEY" }}
+{{- with $co.enrollmentGraceUntil }}{{- $_ := set $operators "enrollment_grace_until" (int64 .) }}{{- end }}
+{{- $_ := set $owned "console_operators" $operators }}
+{{- end }}
+{{- $consoleSso := and .Values.hangang.enabled .Values.hangang.console.enabled .Values.hangang.console.sso.enabled }}
+{{- if $consoleSso }}
+{{- /* HOP1 over mTLS for the Hangang console adapter's SSO checks. */}}
+{{- $_ := set $owned.listen "native_gateway" "0.0.0.0:8704" }}
+{{- end }}
 {{- $config := merge $owned (deepCopy $v.config) }}
 {{- /* In config mode Hopae reconciles authentication profiles and projection
        plans live from the mounted file, so those keys must not roll the Pod;
@@ -102,6 +113,14 @@ spec:
                   name: {{ $admin.delegation.keySecret.name }}
                   key: {{ $admin.delegation.keySecret.key }}
             {{- end }}
+            {{- if $co.enabled }}
+            # Shared with the Hangang console (operator assertion HMAC key).
+            - name: HOPAE_CONSOLE_ASSERTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.operatorAssurance.keySecret.name }}
+                  key: {{ .Values.operatorAssurance.keySecret.key }}
+            {{- end }}
             {{- range $v.extraSecretEnv }}
             - name: {{ .name }}
               valueFrom:
@@ -116,6 +135,11 @@ spec:
             - name: grpc
               containerPort: 8703
               protocol: TCP
+            {{- if $consoleSso }}
+            - name: hop1
+              containerPort: 8704
+              protocol: TCP
+            {{- end }}
             {{- if $admin.enabled }}
             - name: admin
               containerPort: 8702
@@ -195,6 +219,12 @@ spec:
       port: 8703
       targetPort: grpc
       protocol: TCP
+    {{- if $consoleSso }}
+    - name: hop1
+      port: 8704
+      targetPort: hop1
+      protocol: TCP
+    {{- end }}
 {{- if $admin.enabled }}
 ---
 # Admin listener: ClusterIP only, never exposed through the gateway or a load

@@ -18,7 +18,7 @@
 {{- if and (eq $v.hangang.clientAddress.mode "serviceLocal") (eq $v.hangang.service.type "ClusterIP") -}}
 {{- fail "hangang.clientAddress.mode=serviceLocal needs hangang.service.type LoadBalancer or NodePort (externalTrafficPolicy: Local)" -}}
 {{- end -}}
-{{- if and $v.monitoring.serviceMonitor.enabled $v.hangang.enabled (not $v.hangang.admin.exposeMetrics) -}}
+{{- if and $v.monitoring.serviceMonitor.enabled $v.hangang.enabled (not $v.hangang.admin.exposeMetrics) (not $v.hangang.console.enabled) -}}
 {{- fail "monitoring.serviceMonitor.enabled needs hangang.admin.exposeMetrics=true" -}}
 {{- end -}}
 {{- if and $v.monitoring.serviceMonitor.enabled (eq $v.tls.mode "existingSecrets") (or $v.pumgye.enabled $v.sumunjang.enabled) (not $v.monitoring.serviceMonitor.clientCertificate.existingSecret) -}}
@@ -67,5 +67,44 @@
 {{- end -}}
 {{- if not (or $v.pumgye.hopaeOwner.projection $v.pumgye.hopaeOwner.lifecycle) -}}
 {{- fail "pumgye.hopaeOwner needs projection and/or lifecycle" -}}
+{{- end -}}
+{{- end -}}
+{{- /* Console adapter and console operator assurance. */ -}}
+{{- $console := $v.hangang.console -}}
+{{- if and $v.hangang.enabled $console.enabled -}}
+{{- if $v.hangang.admin.exposeMetrics -}}
+{{- fail "hangang.console.enabled cannot be combined with hangang.admin.exposeMetrics: the console reaches the admin authority over loopback HTTP, which Hangang refuses off loopback" -}}
+{{- end -}}
+{{- if and $console.sso.enabled (not $v.hopae.enabled) -}}
+{{- fail "hangang.console.sso.enabled needs hopae.enabled" -}}
+{{- end -}}
+{{- if and $console.sso.enabled (not $console.sso.publicUrl) -}}
+{{- fail "hangang.console.sso.publicUrl is required (the console origin, https://host/)" -}}
+{{- end -}}
+{{- if and $console.disableLocalLogin (not $console.sso.enabled) -}}
+{{- fail "hangang.console.disableLocalLogin needs hangang.console.sso.enabled (otherwise nobody can sign in)" -}}
+{{- end -}}
+{{- if and $console.sso.operatorPolicy.enabled (not $console.sso.enabled) -}}
+{{- fail "hangang.console.sso.operatorPolicy needs hangang.console.sso.enabled" -}}
+{{- end -}}
+{{- if and $console.sso.operatorPolicy.enabled (not $v.hopae.consoleOperators.enabled) -}}
+{{- fail "hangang.console.sso.operatorPolicy needs hopae.consoleOperators.enabled (Hopae signs the operator assertion)" -}}
+{{- end -}}
+{{- end -}}
+{{- if and (not (and $v.hangang.enabled $console.enabled)) (or $console.sso.enabled $console.disableLocalLogin $console.auditLog) -}}
+{{- fail "hangang.console.* settings need hangang.console.enabled" -}}
+{{- end -}}
+{{- if and (or (and $v.hopae.enabled $v.hopae.consoleOperators.enabled) (and $console.enabled $console.sso.operatorPolicy.enabled)) (not $v.operatorAssurance.keySecret.name) -}}
+{{- fail "operatorAssurance.keySecret.name is required by hopae.consoleOperators and hangang.console.sso.operatorPolicy (shared assertion key, 32-4096 bytes)" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.metrics.enabled -}}
+{{- if not $v.hopae.admin.enabled -}}
+{{- fail "hopae.metrics.enabled needs hopae.admin.enabled (GET /metrics is served on the admin listener)" -}}
+{{- end -}}
+{{- if not $v.hopae.metrics.tokenSecret.name -}}
+{{- fail "hopae.metrics.tokenSecret.name is required: mint `hopae admin service-credentials create metrics --preset metrics --client-san <scrape client SAN>` and store the hsc1 token in a Secret" -}}
+{{- end -}}
+{{- if and (eq $v.tls.mode "existingSecrets") (not $v.monitoring.serviceMonitor.clientCertificate.existingSecret) $v.monitoring.serviceMonitor.enabled -}}
+{{- fail "hopae.metrics with tls.mode=existingSecrets needs monitoring.serviceMonitor.clientCertificate.existingSecret" -}}
 {{- end -}}
 {{- end -}}

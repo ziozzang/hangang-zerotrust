@@ -68,6 +68,15 @@ tls:
     # Hopae admin listener (server certificate for hopae.admin), when enabled.
     hopaeAdmin: ""
 
+# Console operator assurance (Hopae ADR-0021): the HMAC key Hopae signs
+# x-hopae-operator-assertion with and the Hangang console verifies. Needed by
+# hopae.consoleOperators and hangang.console.sso.operatorPolicy; 32-4096
+# bytes, distinct from every other credential, in a Secret you create.
+operatorAssurance:
+  keySecret:
+    name: ""
+    key: operator-assertion-key
+
 networkPolicy:
   # Default-deny ingress for every World Pod plus the exact component-to-
   # component flows. Requires a CNI that enforces NetworkPolicy.
@@ -84,8 +93,8 @@ monitoring:
   #               hangang.admin.exposeMetrics
   #   Pumgye    - management listener 9084 (mutual TLS, bearer = metrics token)
   #   Sumunjang - management listener 9080 (mutual TLS, bearer = metrics token)
-  # Hopae has no Prometheus endpoint yet (its counters are in-process only);
-  # its certificate expiry is covered by the cert-manager rule below.
+  #   Hopae     - admin listener 8702 (mutual TLS, bearer = hopae.metrics
+  #               service credential); needs hopae.admin and hopae.metrics
   serviceMonitor:
     # Requires the monitoring.coreos.com/v1 CRDs.
     enabled: false
@@ -198,6 +207,41 @@ hangang:
   clientAddress:
     mode: serviceLocal
     proxyProtocolFrom: []
+  # Hangang console adapter (hangang-console) as a sidecar of every gateway
+  # replica, over that replica's admin authority. Off by default. Expose it
+  # with an Ingress on this gateway protected by Hopae; administrator accounts
+  # and console sessions are per replica.
+  console:
+    enabled: false
+    # Path of the hangang-console binary in the Hangang image.
+    command: /usr/local/bin/hangang-console
+    # Trusted plugin bindings (docs/CONSOLE_PLUGINS.md in Hangang); pinned
+    # manifests must be present in the image.
+    plugins: []
+    sso:
+      # Sign in with Hopae (needs hopae.enabled; Hopae opens HOP1 on 8704).
+      enabled: false
+      publicUrl: ""            # https://console.example.test/
+      cookie: __Host-hopae
+      # Opaque Hopae user id -> existing Hangang account name.
+      accounts: {}
+      # Require Hopae's signed operator assertion (passkey / AAL); needs
+      # operatorAssurance.keySecret and hopae.consoleOperators.
+      operatorPolicy:
+        enabled: false
+        minimumAal: 2
+        requireFactor: webauthn  # webauthn | any
+        acceptEnrollmentGrace: false
+        sensitiveMaxAgeSeconds: 300
+        stepUpPath: /ui/step-up
+    # Refuse the break-glass local administrator sign-in (needs sso.enabled).
+    disableLocalLogin: false
+    # Console audit (JSON lines); empty writes to stderr. A path under
+    # /var/log/hangang-console uses a per-Pod emptyDir.
+    auditLog: ""
+    resources:
+      requests: {cpu: 50m, memory: 32Mi}
+      limits: {memory: 128Mi}
   admin:
     # Bind the administration listener (TLS + bearer token) on the Pod
     # network for metrics scraping; otherwise it stays on loopback, still
@@ -247,13 +291,36 @@ hopae:
     # restart, after the kubelet's ConfigMap propagation delay (sync period
     # plus cache TTL, about a minute by default).
     reloadIntervalMs: 1000
+  # Console operators (Hopae ADR-0021): operators of the console application
+  # must sign in with a passkey (or AAL 3); allowed verifies carry the signed
+  # x-hopae-operator-assertion. Needs operatorAssurance.keySecret, the
+  # application in config.apps and config.webauthn. Off by default.
+  consoleOperators:
+    enabled: false
+    appId: console
+    requireAal: 2              # 2 | 3
+    requireFactor: webauthn    # webauthn | any
+    stepUpPath: /ui/step-up
+    stepUpMaxAgeSecs: 300
+    # Unix seconds; until then operators without a passkey are admitted
+    # without the factor (never on the step-up path). null: no grace.
+    enrollmentGraceUntil: null
+  # Prometheus scrape of GET /metrics on the admin listener (needs
+  # hopae.admin.enabled and monitoring.serviceMonitor.enabled). The bearer is
+  # an hsc1 service credential minted with `--preset metrics` and bound to
+  # the scrape client certificate (see the install guide).
+  metrics:
+    enabled: false
+    tokenSecret:
+      name: ""
+      key: hopae-metrics-token
   # Seconds between content polls of Hopae's TLS files (native/gRPC gateway,
   # admin listener, projection clients); 0 off, at most 3600.
   tlsReloadSeconds: 10
   # Hopae configuration (docs/CONFIG.md in the Hopae repository): portal,
   # apps, providers, authentication_gateway, ... The chart owns listen,
-  # state_dir, store, gateway, authentication and reload; setting them here is
-  # refused.
+  # state_dir, store, gateway, authentication, reload and console_operators;
+  # setting them here is refused.
   config:
     portal:
       public_url: https://auth.example.test

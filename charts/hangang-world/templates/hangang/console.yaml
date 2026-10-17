@@ -1,0 +1,59 @@
+{{- if and .Values.hangang.enabled .Values.hangang.console.enabled }}
+{{- $ctx := dict "root" . "component" "hangang" }}
+{{- $console := .Values.hangang.console }}
+{{- $hopae := dict "root" . "component" "hopae" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "world.name" $ctx }}-console
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+data:
+  # Trusted console plugin registry (pinned manifests); empty by default.
+  plugins.json: {{ toJson (dict "plugins" $console.plugins) | quote }}
+  {{- if $console.sso.enabled }}
+  {{- $sso := dict
+    "public_url" $console.sso.publicUrl
+    "native_address" (printf "%s:8704" (include "world.host" $hopae))
+    "native_tls" (dict "server_name" (include "world.host" $hopae) "ca" "/tls/ca.crt" "certificate" "/tls/tls.crt" "key" "/tls/tls.key")
+    "gateway_key_env" "CONSOLE_HOPAE_GATEWAY_KEY"
+    "upstream_token_env" "CONSOLE_HANGANG_SYSTEM_TOKEN"
+    "cookie" $console.sso.cookie
+    "accounts" $console.sso.accounts }}
+  {{- $policy := $console.sso.operatorPolicy }}
+  {{- if $policy.enabled }}
+  {{- $_ := set $sso "operator_policy" (dict
+    "assertion_key_env" "CONSOLE_OPERATOR_ASSERTION_KEY"
+    "minimum_aal" (int $policy.minimumAal)
+    "require_factor" $policy.requireFactor
+    "accept_enrollment_grace" $policy.acceptEnrollmentGrace
+    "sensitive_max_age_seconds" (int $policy.sensitiveMaxAgeSeconds)
+    "step_up_path" $policy.stepUpPath) }}
+  {{- end }}
+  # Hopae console SSO over the HOP1 mTLS listener (this replica's component
+  # certificate); operator_policy verifies Hopae's signed operator assertion.
+  sso.json: {{ toJson $sso | quote }}
+  {{- end }}
+---
+# Console adapter of every gateway replica. Expose it only through an Ingress
+# on this gateway protected by Hopae (the console host is the Hopae
+# application named in hopae.consoleOperators.appId).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "world.name" $ctx }}-console
+  labels:
+    {{- include "world.labels" $ctx | nindent 4 }}
+    hangang.dev/endpoint: console
+spec:
+  type: ClusterIP
+  # Console sessions and administrator accounts are per replica.
+  sessionAffinity: ClientIP
+  selector:
+    {{- include "world.selectorLabels" $ctx | nindent 4 }}
+  ports:
+    - name: console
+      port: 19080
+      targetPort: console
+      protocol: TCP
+{{- end }}

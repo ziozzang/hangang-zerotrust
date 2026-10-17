@@ -96,7 +96,15 @@ cert-manager가 Secret을 쓴 뒤 최악의 지연은 kubelet의 Secret 볼륨 �
 - **Hangang:** 관리 리스너(TLS, `hangang.admin.exposeMetrics` 필요), bearer는 관리 토큰.
 - **Pumgye:** 상호 TLS를 쓰는 관리 리스너 9084, bearer는 `credentials.keys.pumgyeMetricsToken`(`PUMGYE_METRICS_TOKEN`으로 전달되며 `/metrics`만 열림).
 - **Sumunjang:** 상호 TLS를 쓰는 관리 리스너 9080(`--management-tls`), bearer는 `credentials.keys.guardMetricsToken`(`HANGANG_GUARD_METRICS_TOKEN`). 프로브는 Service에 포함되지 않는 별도 프로브 전용 리스너 9083(`/readyz`, `/healthz`)을 씁니다.
-- **Hopae:** ServiceMonitor 없음. Hopae에는 아직 Prometheus 엔드포인트가 없습니다(카운터는 프로세스 내부에만 있음). 인증서 만료는 cert-manager 규칙이 다룹니다.
+- **Hopae:** `hopae.metrics.enabled`(`hopae.admin.enabled` 필요)이면 상호 TLS를 쓰는 관리 리스너 8702(Hopae PR #19). bearer는 `metrics` 프리셋의 `hsc1` 서비스 자격 증명으로, `GET /metrics`만 읽을 수 있고 수집 클라이언트 인증서에 묶이며 audience 헤더가 필요 없습니다. Hopae Pod 안에서 수집기의 SPIFFE ID로 발급해 `hopae.metrics.tokenSecret`이 가리키는 Secret에 넣습니다.
+
+  ```sh
+  kubectl -n hangang-world exec deploy/world-hangang-world-hopae -- \\
+    hopae admin service-credentials create metrics --preset metrics \\
+    --client-san spiffe://cluster.local/ns/hangang-world/metrics-scraper \\
+    --config /config/hopae.json > hopae-metrics.token
+  kubectl -n hangang-world create secret generic hopae-metrics-credential --from-file=token=hopae-metrics.token
+  ```
 
 Prometheus는 상호 TLS 리스너에 클라이언트 인증서를 제시합니다. cert-manager를 쓰면 차트가 `<release>-hangang-world-metrics-client`(클라이언트 인증 전용, World 발급자)를 발급하고, BYO 인증서라면 `monitoring.serviceMonitor.clientCertificate.existingSecret`을 지정합니다. 이 인증서만으로는 아무 권한도 없으며 모든 수집에는 읽기 전용 bearer가 필요합니다. ServiceMonitor를 켜기 전에 두 지표 토큰(16–4096자의 보이는 ASCII, 다른 모든 자격 증명과 다름)을 자격 증명 Secret에 넣고, `networkPolicy.metricsFrom`으로 모니터링 네임스페이스를 허용하세요.
 
@@ -113,9 +121,24 @@ Prometheus는 상호 TLS 리스너에 클라이언트 인증서를 제시합니�
 | `PumgyeHopaeFeedStale` | Pumgye의 Hopae projection/수명 주기 피드가 projection의 `max_staleness_secs`보다 오래됨 |
 | `PumgyeDecisionsUnavailable`, `SumunjangDecisionsUnavailable` | 10분 동안 unavailable로 답한 결정 비율이 `decisionUnavailableRatio`(1 %) 초과 |
 | `PumgyeUnavailable`, `SumunjangNotReady`(critical) | 결정 서비스가 답할 수 없음 |
+| `HopaeStoreDown`(critical), `HopaeTLSReloadFailing`, `HopaeCertificateExpiringSoon`, `HopaeConfigReloadFailing` | Hopae 저장소 응답 없음, TLS 자료 거부, 리프 만료, 잘못된 설정 파일 |
+| `HopaeVerifyCallerUnauthorized`, `HopaeVerifyOverloaded`, `HopaeProviderDegraded`, `HopaeEventDeliveriesFailed` | 게이트웨이 호출자 키 불일치, verify 동시성 한도, 신원 공급자 비정상, 포기한 이벤트 전달 |
 | `HangangIngressesWithheld`, `PumgyeShadowMismatchUnexplained`, `SumunjangEvidenceDropped` | 운영 경고 |
 
 cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합니다(빼려면 `monitoring.prometheusRule.certManagerExpiry: false`).
+
+## 콘솔과 운영자 보증(선택)
+
+`hangang.console.enabled`는 Hangang 콘솔 어댑터(`hangang-console`, Hangang PR #25)를 모든 게이트웨이 복제본의 사이드카로 추가하고, 19080 포트의 ClusterIP `<release>-hangang-world-hangang-console` Service를 만듭니다. 이 게이트웨이의 Ingress로 게시하되, 호스트는 ProtectionPolicy로 보호되는 Hopae 애플리케이션이어야 합니다. NetworkPolicy는 게이트웨이만 허용합니다. 설정은 모두 기본으로 꺼져 있습니다.
+
+- `hangang.console.sso` — Hopae로 로그인(`--hopae-sso`). 이때 Hopae는 콘솔의 세션 확인을 위해 상호 TLS를 쓰는 HOP1 리스너를 8704에 엽니다. `accounts`는 불투명한 Hopae 사용자 ID를 기존 Hangang 계정에 연결합니다.
+- `hangang.console.sso.operatorPolicy` — Hopae가 HMAC으로 서명한 운영자 단언을 요구합니다(`minimumAal`, `requireFactor`, `acceptEnrollmentGrace`, `sensitiveMaxAgeSeconds`, `stepUpPath`).
+- `hopae.consoleOperators` — Hopae의 `console_operators` 정책(Hopae PR #18). 콘솔 애플리케이션(`appId`, `hopae.config.apps`에 있어야 하며 `hopae.config.webauthn` 설정 필요)은 패스키 또는 AAL 3을 요구하고 단언에 서명합니다. `enrollmentGraceUntil`은 그 Unix 시각까지 패스키 없는 운영자를 허용합니다.
+- `operatorAssurance.keySecret` — 공유 단언 키(32–4096바이트, 다른 모든 자격 증명과 다름). Hopae는 `HOPAE_CONSOLE_ASSERTION_KEY`, 콘솔은 `CONSOLE_OPERATOR_ASSERTION_KEY`로 읽습니다.
+- `hangang.console.disableLocalLogin` — 비상용 로컬 관리자 로그인을 거부합니다(SSO 필요).
+- `hangang.console.auditLog` — 콘솔 감사를 stderr 대신 `/var/log/hangang-console/` 아래 JSON 줄로 기록합니다(Pod별 emptyDir이므로 로그 수집기로 보내세요).
+
+제한: `hangang-console`은 공개 루트를 쓰는 HTTPS나 리터럴 loopback HTTP로만 권한 서버에 닿으므로, 콘솔을 켜면 게이트웨이 관리 API가 TLS 없이 `127.0.0.1:9000`에 머물고 `hangang.admin.exposeMetrics`(그리고 Hangang ServiceMonitor)와 함께 쓸 수 없습니다. 관리자 계정과 콘솔 세션은 복제본별입니다(Service는 ClientIP 친화성 사용). 콘솔 바이너리는 Hangang 이미지에 있어야 합니다(`hangang.console.command`). **남은 선행 조건:** `hangang-console`(PR #25 `e9b6208`)은 SSO 파일을 `0600` 계열 권한(그룹·기타 비트 없음)일 때만 받아들이지만, Kubernetes ConfigMap·Secret 볼륨 파일은 root 소유이고 Pod는 `fsGroup`(`0440`)으로만 읽을 수 있습니다. 실제 바이너리는 마운트된 파일을 거부하므로(`SSO configuration must be a private bounded regular file`), 이 모드를 쓰려면 먼저 projected 파일에 대한 검사가 완화되어야 합니다. 그 밖에 렌더링한 SSO·플러그인 설정은 `hangang-console --check`가 받아들였습니다.
 
 ## 업그레이드와 되돌리기
 
@@ -140,7 +163,6 @@ Hangang World는 N-1 호환성을 따릅니다(ADR 0022 결정 6).
 - **Hopae PostgreSQL.** Hopae의 PostgreSQL 저장소는 계획(Hopae ADR-0002, M2)되어 있으나 릴리스되지 않았습니다(Hopae 0.0.10은 `store.url_env`를 거부). 그 기능이 나올 때까지 차트는 `hopae.storage.backend: postgresql`을 거부하므로 Hopae는 SQLite 단일 복제본으로 실행됩니다.
 - **차트 배포.** 차트는 아직 패키징·서명되거나 OCI 레지스트리에 올라가지 않았습니다.
 - **실제 검증.** 로컬·원격 실행은 보호된 체인, 철회, 10분 API 중단, 인증서 회전, 노드 drain을 다룹니다. 인증서 무중단 재적재, 제한된 오래됨, Hopae 실시간 반영을 고친 구성 요소 변경은 열린 PR(Hangang #23, Pumgye #7, Hopae #14, Sumunjang `feat/asn-proposals`)에 있으며, digest가 이를 가리키려면 먼저 릴리스되어야 합니다.
-- **Hopae 지표.** Hopae에는 Prometheus 엔드포인트가 없어 ServiceMonitor가 없고, 인증서 만료는 cert-manager만 다룹니다.
 
 ## Hopae 인증 프로필(설정 권위 모드)
 

@@ -75,3 +75,51 @@ end-user Hopae session into a Hangang administrator. Attribute/role mappings
 require explicit issuer and management-grant policy.
 
 Native entry integration uses Hopae’s existing `/_hopae/login` and `/_hopae/logout` contracts. Provider/session logic and logout confirmation remain in Hopae.
+
+## Console operator assurance
+
+Status: implemented on branches (Hopae `feat/operator-aal`, ADR-0021, PR #18;
+Hangang `feat/operator-aal`, PR #25); qualified locally in a real browser with a
+virtual WebAuthn authenticator; not yet verified on a live gateway.
+
+Console operators sign in through Hopae with a phishing-resistant factor. Hopae's
+`console_operators` policy names the console's application and requires the
+configured level (AAL 2 by default, AAL 3 with high-assurance keys) and the
+`webauthn` factor on the whole console host, and a fresh passkey use
+(`step_up_max_age_secs`) on the console's step-up path. Outside the explicit read-only enrollment exception below, only a passkey meets or
+refreshes these rules; TOTP, external factors and recovery codes do not. An
+operator without a passkey is sent to add one before the first console grant; an
+optional, dated enrollment grace admits operators with no passkey at all, never
+on the step-up path. This is a deliberately weaker read-only onboarding exception,
+not phishing-resistant authentication; keep it disabled for strict deployments.
+
+The assertion is not a standalone authentication credential. The branch console
+re-verifies the native Hopae session cookie on every SSO request over its pinned
+Hopae channel. Signed claims include audience `hangang-console`, application,
+host, subject, session, issuance and expiry; the console checks audience/time and
+matches subject and host against the verification result and configured origin.
+It does not claim a single-use assertion or request nonce: the 60-second lifetime
+bounds replay, while session-cookie and per-request verification remain required.
+
+Every allowed verify for the console application carries Hopae's operator
+assertion (`x-hopae-operator-assertion`): the level, the latest second factor and
+its time, high assurance, the policy and whether it is met, signed with Hopae's
+dedicated Ed25519 key and valid for 60 seconds. The console pins only public keys,
+by key id (the current and, during a rotation, the next), so it holds nothing that
+could forge an assertion. The Hangang console verifies it on
+every SSO request and enforces its own minimum: sign-in and reads need the policy
+(optionally Hopae's grace for reads), every change needs it without grace, and
+sensitive changes (publish, activate, factor reset, accounts, configuration)
+need the factor used within the console's `sensitive_max_age_seconds`. A refusal
+sends the operator through the gateway to the step-up path, where Hopae runs the
+passkey ceremony; the console then signs in again with the rotated session. The
+console header shows the operator's level and factor.
+
+The Hangang local administrator sign-in remains the break-glass path. It is shown
+as such in the header, every break-glass sign-in and change is recorded in the
+console audit, and it can be disabled. Admissions are recorded by Hopae
+(`operator.console_admitted`); SSO sign-ins, step-up refusals and SSO changes by
+the console with the operator's level and factor.
+
+Open: console audit in the durable Hangang account audit store; live-gateway
+verification with hardware authenticators.

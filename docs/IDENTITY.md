@@ -94,8 +94,10 @@ on the step-up path.
 
 Every allowed verify for the console application carries Hopae's operator
 assertion (`x-hopae-operator-assertion`): the level, the latest second factor and
-its time, high assurance, the policy and whether it is met, HMAC-signed with a key
-the console shares and valid for 60 seconds. The Hangang console verifies it on
+its time, high assurance, the policy and whether it is met, signed with Hopae's
+dedicated Ed25519 key and valid for 60 seconds. The console pins only public keys,
+by key id (the current and, during a rotation, the next), so it holds nothing that
+could forge an assertion. The Hangang console verifies it on
 every SSO request and enforces its own minimum: sign-in and reads need the policy
 (optionally Hopae's grace for reads), every change needs it without grace, and
 sensitive changes (publish, activate, factor reset, accounts, configuration)

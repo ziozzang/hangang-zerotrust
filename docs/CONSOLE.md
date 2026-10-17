@@ -67,7 +67,9 @@ source of truth.
 Console operators authenticate through Hopae with a passkey (or AAL 3), proven to
 the console by Hopae's signed operator assertion and refreshed for sensitive
 changes; the header shows the operator's level and factor; the local administrator
-sign-in is an audited, disableable break-glass path. See
+sign-in is an audited, disableable break-glass path. Console operator records
+(sign-ins with their assurance, step-ups, changes, break-glass) join the unified
+audit as the "Console operators" source. See
 [IDENTITY](IDENTITY.md#console-operator-assurance).
 
 ## Audit and pending Hopae work

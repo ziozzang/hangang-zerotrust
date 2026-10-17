@@ -112,6 +112,5 @@ console audit, and it can be disabled. Admissions are recorded by Hopae
 (`operator.console_admitted`); SSO sign-ins, step-up refusals and SSO changes by
 the console with the operator's level and factor.
 
-Open: an asymmetric assertion signature for consoles that must not share a key;
-console audit in the durable Hangang account audit store; live-gateway
+Open: console audit in the durable Hangang account audit store; live-gateway
 verification with hardware authenticators.

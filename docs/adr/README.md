@@ -38,10 +38,10 @@ automatic/semi-automatic orchestration. Proposed integration ADR 0007:
 
 [ADR 0018: draft authority-relative time observations](0018-authority-time-observations.md) ([한국어](../ko/0018-authority-time-observations.md)).
 
-[ADR 0019: proposed decision event schema and bounded exporter](0019-decision-events-exporter.md) ([한국어](../ko/0019-decision-events-exporter.md)) — one pseudonymized per-request multi-stage decision record, sampled and bounded off the request path; explain/simulate APIs.
+[ADR 0019: accepted architecture: decision event schema and bounded exporter](0019-decision-events-exporter.md) ([한국어](../ko/0019-decision-events-exporter.md)) — one pseudonymized per-request multi-stage decision record, sampled and bounded off the request path; explain/simulate APIs.
 
-[ADR 0020: proposed unified zero-trust console redesign](0020-unified-console-redesign.md) ([한국어](../ko/0020-unified-console-redesign.md)) — task-oriented sections, entity routes, host UI kit, key-based i18n and plugin contract v2.
+[ADR 0020: accepted architecture: unified zero-trust console redesign](0020-unified-console-redesign.md) ([한국어](../ko/0020-unified-console-redesign.md)) — task-oriented sections, entity routes, host UI kit, key-based i18n and plugin contract v2.
 
-[ADR 0021 (proposed): Pumgye authorization model revision — principals, Hopae groups, role templates, deny, zones, explain API](0021-pumgye-authorization-model-revision.md) ([한국어](../ko/0021-pumgye-authorization-model-revision.md)).
+[ADR 0021 (accepted architecture): Pumgye authorization model revision — principals, Hopae groups, role templates, deny, zones, explain API](0021-pumgye-authorization-model-revision.md) ([한국어](../ko/0021-pumgye-authorization-model-revision.md)).
 
-[ADR 0022 (proposed): Kubernetes-native Hangang World package — `world.hangang.dev` CRDs, world controller, Gateway API, Helm/OCI, HA](0022-kubernetes-native-world-package.md) ([한국어](../ko/0022-kubernetes-native-world-package.md)). Supersedes ADR 0015 in part.
+[ADR 0022 (accepted architecture): Kubernetes-native Hangang World package — `world.hangang.dev` CRDs, world controller, Gateway API, Helm/OCI, HA](0022-kubernetes-native-world-package.md) ([한국어](../ko/0022-kubernetes-native-world-package.md)). Supersedes ADR 0015 in part.

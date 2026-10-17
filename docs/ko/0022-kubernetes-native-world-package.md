@@ -2,7 +2,7 @@
 
 [English](../adr/0022-kubernetes-native-world-package.md)
 
-상태: **제안**. [ADR 0015](0015-kubernetes-iam-authority.md)를 부분 대체합니다(원천 표현, Kubernetes 모드의
+상태: **아키텍처 채택 — 2026-10-18**. [ADR 0015](0015-kubernetes-iam-authority.md)를 부분 대체합니다(원천 표현, Kubernetes 모드의
 인가 lease 길이, 워크로드 신원 단위, 패키징 순서). ADR 0015의 소유 규칙, RBAC/IAM 의미, 안전 불변식은
 유지됩니다. [ADR 0013](0013-snapshot-membership-scaleout.md), [ADR 0016](0016-decision-core-metadata-adapters.md),
 [ADR 0021](0021-pumgye-authorization-model-revision.md) 모델 위에 세우며 판정 이벤트는 ADR 0019, 통합 콘솔은
@@ -10,6 +10,12 @@ ADR 0020입니다. 클러스터·이미지·차트·운영 설정은 바꾸지 �
 
 품질 기준: Helm/OCI, 서명 이미지, 업그레이드/롤백, HA, 백업을 갖춘 운영급 Kubernetes 패키지이며 Teleport,
 Cloudflare Zero Trust에 견줄 운영 경험. 아래 게이트는 제품 인수 기준입니다.
+
+> 채택 기록(사용자 재개 지시, 2026-10-18): 명시한 소유 경계와 상한·실패 시 거부하는
+> 설계를 채택합니다. 구현은 서로 다른 미병합 검토 단위에 있으며 채택은 구현 완료·출시·배포·
+> 보존 정책 활성화·conformance 주장이 아닙니다. 아래 배경은 설계 당시의 기준선입니다.
+> 미결 질문과 단계별 인수 게이트는 백로그로 유지합니다.
+> [현재 로드맵](ENTERPRISE_ROADMAP_2026-10-18.md)을 참고하세요.
 
 ## 배경: 확인된 현재 상태
 

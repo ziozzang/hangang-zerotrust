@@ -75,8 +75,8 @@ CRD(`world.hangang.dev`)와 집계 역할 `world-admin`/`world-editor`/`world-vi
 | `credentials.keys.pumgyeMetricsToken` / `guardMetricsToken` | `pumgye-metrics-token` / `guard-metrics-token` | ServiceMonitor를 켰을 때 읽는 읽기 전용 수집 자격 증명 |
 | `hopae.metrics.enabled` / `tokenSecret` | `false` | `hsc1` `metrics` 서비스 자격 증명으로 관리 리스너를 수집하는 Hopae ServiceMonitor |
 | `hopae.consoleOperators.*` | 비활성 | Hopae `console_operators`(패스키 운영자, 서명된 단언) |
-| `operatorAssurance.keySecret` | `""` / `operator-assertion-key` | Hopae와 Hangang 콘솔이 공유하는 단언 키 |
-| `hangang.console.*` | 비활성 | 콘솔 어댑터 사이드카: `sso`, `sso.operatorPolicy`, `disableLocalLogin`, `auditLog`, `plugins` |
+| `operatorAssurance.seedSecret` / `keyId` / `publicKey` / `nextKey` | `""` | Ed25519 운영자 단언: Hopae용 시드 Secret, 콘솔이 고정하는 공개 키 |
+| `hangang.console.*` | 비활성 | 관리 API에 TLS로 접속하는 콘솔 어댑터 사이드카: `sso`, `sso.operatorPolicy`, `disableLocalLogin`, `operatorAudit`, `auditLog`, `plugins` |
 | `monitoring.prometheusRule.*` | 비활성 | 권장 경보(TLS 재적재 실패, 인증서 만료, 오래됨, 체크포인트 나이, projection 신선도, 결정 가용성) |
 | `tests.enabled` / `tests.image` | `true` / busybox | `helm test` Pod(`sh`, `nc`, `wget` 필요, digest 필수) |
 

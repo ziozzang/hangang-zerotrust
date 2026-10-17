@@ -129,16 +129,16 @@ cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합�
 
 ## 콘솔과 운영자 보증(선택)
 
-`hangang.console.enabled`는 Hangang 콘솔 어댑터(`hangang-console`, Hangang PR #25)를 모든 게이트웨이 복제본의 사이드카로 추가하고, 19080 포트의 ClusterIP `<release>-hangang-world-hangang-console` Service를 만듭니다. 이 게이트웨이의 Ingress로 게시하되, 호스트는 ProtectionPolicy로 보호되는 Hopae 애플리케이션이어야 합니다. NetworkPolicy는 게이트웨이만 허용합니다. 설정은 모두 기본으로 꺼져 있습니다.
+`hangang.console.enabled`는 Hangang 콘솔 어댑터(`hangang-console`, Hangang PR #25)를 모든 게이트웨이 복제본의 사이드카로 추가하고, 19080 포트의 ClusterIP `<release>-hangang-world-hangang-console` Service를 만듭니다. 이 게이트웨이의 Ingress로 게시하되, 호스트는 ProtectionPolicy로 보호되는 Hopae 애플리케이션이어야 합니다. NetworkPolicy는 게이트웨이만 허용합니다. 사이드카는 자기 복제본의 관리 API에 TLS로 접속합니다(`--upstream https://<release>-hangang-world-hangang.<namespace>.svc:9000/ --upstream-ca /tls/ca.crt`). 게이트웨이 인증서에 들어 있는 이 Service 이름을 `hostAliases`가 Pod 안에서 loopback으로 연결하며, World CA만 신뢰합니다. 따라서 관리 API는 TLS 전용으로 남고 콘솔은 `hangang.admin.exposeMetrics`와 함께 쓸 수 있습니다. 설정은 모두 기본으로 꺼져 있습니다.
 
 - `hangang.console.sso` — Hopae로 로그인(`--hopae-sso`). 이때 Hopae는 콘솔의 세션 확인을 위해 상호 TLS를 쓰는 HOP1 리스너를 8704에 엽니다. `accounts`는 불투명한 Hopae 사용자 ID를 기존 Hangang 계정에 연결합니다.
-- `hangang.console.sso.operatorPolicy` — Hopae가 HMAC으로 서명한 운영자 단언을 요구합니다(`minimumAal`, `requireFactor`, `acceptEnrollmentGrace`, `sensitiveMaxAgeSeconds`, `stepUpPath`).
-- `hopae.consoleOperators` — Hopae의 `console_operators` 정책(Hopae PR #18). 콘솔 애플리케이션(`appId`, `hopae.config.apps`에 있어야 하며 `hopae.config.webauthn` 설정 필요)은 패스키 또는 AAL 3을 요구하고 단언에 서명합니다. `enrollmentGraceUntil`은 그 Unix 시각까지 패스키 없는 운영자를 허용합니다.
-- `operatorAssurance.keySecret` — 공유 단언 키(32–4096바이트, 다른 모든 자격 증명과 다름). Hopae는 `HOPAE_CONSOLE_ASSERTION_KEY`, 콘솔은 `CONSOLE_OPERATOR_ASSERTION_KEY`로 읽습니다.
+- `hangang.console.sso.operatorPolicy` — 전용 Ed25519 키로 서명한 Hopae 운영자 단언을 요구합니다(`minimumAal`, `requireFactor`, `acceptEnrollmentGrace`, `sensitiveMaxAgeSeconds`, `stepUpPath`). 콘솔은 공개 키만 고정합니다: `operatorAssurance.keyId`/`publicKey`, 교체 중에는 `operatorAssurance.nextKey`도.
+- `hopae.consoleOperators` — Hopae의 `console_operators` 정책(Hopae PR #18). 콘솔 애플리케이션(`appId`, `hopae.config.apps`에 있어야 하며 `hopae.config.webauthn` 설정 필요)은 패스키 또는 AAL 3을 요구하고, `operatorAssurance.seedSecret`의 시드(base64 32바이트 Ed25519 시드, Hopae 전용)로 `keyId`/`publicKey` 아래 단언에 서명합니다. `enrollmentGraceUntil`은 그 Unix 시각까지 패스키 없는 운영자를 허용합니다.
+- 키 교체: 다음 키를 `operatorAssurance.nextKey`에 고정해 배포하고, Hopae의 시드 Secret·`keyId`·`publicKey`를 그 키로 바꾼 뒤 `nextKey`를 비웁니다.
 - `hangang.console.disableLocalLogin` — 비상용 로컬 관리자 로그인을 거부합니다(SSO 필요).
-- `hangang.console.auditLog` — 콘솔 감사를 stderr 대신 `/var/log/hangang-console/` 아래 JSON 줄로 기록합니다(Pod별 emptyDir이므로 로그 수집기로 보내세요).
+- `hangang.console.operatorAudit` — 콘솔 자체의 운영자 감사 저장소(로그인, step-up, 변경, 비상 접근, `GET /v1/console/operator-audit`). 기본은 Pod별 emptyDir의 SQLite 파일이며(`persistent: false`면 메모리), `maxRecords`와 `retentionDays`로 제한합니다. `hangang.console.auditLog`는 `/var/log/hangang-console/` 아래 JSON 줄 기록을 추가합니다.
 
-제한: `hangang-console`은 공개 루트를 쓰는 HTTPS나 리터럴 loopback HTTP로만 권한 서버에 닿으므로, 콘솔을 켜면 게이트웨이 관리 API가 TLS 없이 `127.0.0.1:9000`에 머물고 `hangang.admin.exposeMetrics`(그리고 Hangang ServiceMonitor)와 함께 쓸 수 없습니다. 관리자 계정과 콘솔 세션은 복제본별입니다(Service는 ClientIP 친화성 사용). 콘솔 바이너리는 Hangang 이미지에 있어야 합니다(`hangang.console.command`). **남은 선행 조건:** `hangang-console`(PR #25 `e9b6208`)은 SSO 파일을 `0600` 계열 권한(그룹·기타 비트 없음)일 때만 받아들이지만, Kubernetes ConfigMap·Secret 볼륨 파일은 root 소유이고 Pod는 `fsGroup`(`0440`)으로만 읽을 수 있습니다. 실제 바이너리는 마운트된 파일을 거부하므로(`SSO configuration must be a private bounded regular file`), 이 모드를 쓰려면 먼저 projected 파일에 대한 검사가 완화되어야 합니다. 그 밖에 렌더링한 SSO·플러그인 설정은 `hangang-console --check`가 받아들였습니다.
+설정 파일은 `subPath` 없이 디렉터리째 마운트하며, root 소유이고 `fsGroup`(`0440`)으로 읽을 수 있습니다. `hangang-console`은 Kubernetes 볼륨의 이 형태를 받아들입니다. 관리자 계정과 콘솔 세션은 복제본별입니다(Service는 ClientIP 친화성 사용). 콘솔 바이너리는 Hangang 이미지에 있어야 합니다(`hangang.console.command`).
 
 ## 업그레이드와 되돌리기
 

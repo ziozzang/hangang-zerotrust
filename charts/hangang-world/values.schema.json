@@ -267,7 +267,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "keySecret": {
+        "seedSecret": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -287,6 +287,29 @@
             "name",
             "key"
           ]
+        },
+        "keyId": {
+          "type": "string",
+          "pattern": "^$|^[A-Za-z0-9._-]{1,64}$"
+        },
+        "publicKey": {
+          "type": "string",
+          "pattern": "^$|^[A-Za-z0-9+/]{43}=$",
+          "description": "Base64 Ed25519 public key (not secret)."
+        },
+        "nextKey": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keyId": {
+              "type": "string",
+              "pattern": "^$|^[A-Za-z0-9._-]{1,64}$"
+            },
+            "publicKey": {
+              "type": "string",
+              "pattern": "^$|^[A-Za-z0-9+/]{43}=$"
+            }
+          }
         }
       }
     },
@@ -885,6 +908,25 @@
             },
             "disableLocalLogin": {
               "type": "boolean"
+            },
+            "operatorAudit": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "persistent": {
+                  "type": "boolean"
+                },
+                "maxRecords": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 1000000
+                },
+                "retentionDays": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 3650
+                }
+              }
             },
             "auditLog": {
               "type": "string",

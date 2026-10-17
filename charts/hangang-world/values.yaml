@@ -68,14 +68,23 @@ tls:
     # Hopae admin listener (server certificate for hopae.admin), when enabled.
     hopaeAdmin: ""
 
-# Console operator assurance (Hopae ADR-0021): the HMAC key Hopae signs
-# x-hopae-operator-assertion with and the Hangang console verifies. Needed by
-# hopae.consoleOperators and hangang.console.sso.operatorPolicy; 32-4096
-# bytes, distinct from every other credential, in a Secret you create.
+# Console operator assurance (Hopae ADR-0021): Hopae signs
+# x-hopae-operator-assertion with a dedicated Ed25519 key; the Hangang
+# console holds only the public keys, pinned by key id.
 operatorAssurance:
-  keySecret:
+  # Hopae only: Secret with the base64 32-byte Ed25519 seed (never given to
+  # the console).
+  seedSecret:
     name: ""
-    key: operator-assertion-key
+    key: operator-assertion-seed
+  # The seed's key id and base64 public key (not secret).
+  keyId: ""
+  publicKey: ""
+  # Rotation: pin the next key here first (console only), then move Hopae to
+  # it (keyId/publicKey/seed) and clear this.
+  nextKey:
+    keyId: ""
+    publicKey: ""
 
 networkPolicy:
   # Default-deny ingress for every World Pod plus the exact component-to-
@@ -226,7 +235,7 @@ hangang:
       # Opaque Hopae user id -> existing Hangang account name.
       accounts: {}
       # Require Hopae's signed operator assertion (passkey / AAL); needs
-      # operatorAssurance.keySecret and hopae.consoleOperators.
+      # operatorAssurance keys and hopae.consoleOperators.
       operatorPolicy:
         enabled: false
         minimumAal: 2
@@ -236,8 +245,15 @@ hangang:
         stepUpPath: /ui/step-up
     # Refuse the break-glass local administrator sign-in (needs sso.enabled).
     disableLocalLogin: false
-    # Console audit (JSON lines); empty writes to stderr. A path under
-    # /var/log/hangang-console uses a per-Pod emptyDir.
+    # Console operator audit store (sign-ins, step-ups, changes,
+    # break-glass), read at GET /v1/console/operator-audit. persistent: a
+    # SQLite file on a per-Pod emptyDir (survives container restarts, not Pod
+    # replacement); otherwise in memory.
+    operatorAudit:
+      persistent: true
+      maxRecords: 10000        # 100..1000000
+      retentionDays: 90        # 1..3650
+    # Optional extra sink (JSON lines) under /var/log/hangang-console.
     auditLog: ""
     resources:
       requests: {cpu: 50m, memory: 32Mi}
@@ -293,8 +309,9 @@ hopae:
     reloadIntervalMs: 1000
   # Console operators (Hopae ADR-0021): operators of the console application
   # must sign in with a passkey (or AAL 3); allowed verifies carry the signed
-  # x-hopae-operator-assertion. Needs operatorAssurance.keySecret, the
-  # application in config.apps and config.webauthn. Off by default.
+  # x-hopae-operator-assertion (Ed25519). Needs operatorAssurance.seedSecret,
+  # keyId and publicKey, the application in config.apps and
+  # config.webauthn. Off by default.
   consoleOperators:
     enabled: false
     appId: console

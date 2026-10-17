@@ -278,16 +278,21 @@ class WorldChart(unittest.TestCase):
             ] + ['monitoring.serviceMonitor.enabled=true', 'hangang.admin.exposeMetrics=true'],
             'unavailable ratio above one': ['monitoring.prometheusRule.decisionUnavailableRatio=2'],
             'console operators without the assertion key': ['hopae.consoleOperators.enabled=true'],
-            'console operators on the default app': ['hopae.consoleOperators.enabled=true', 'operatorAssurance.keySecret.name=k',
+            'console operators without the seed': ['hopae.consoleOperators.enabled=true', 'operatorAssurance.keyId=k',
+                                                   'operatorAssurance.publicKey=h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik='],
+            'console operators on the default app': ['hopae.consoleOperators.enabled=true', 'operatorAssurance.seedSecret.name=k',
                                                      'hopae.consoleOperators.appId=default'],
+            'invalid assertion public key': ['operatorAssurance.publicKey=not-a-key'],
+            'next key reusing the key id': ['operatorAssurance.keyId=k', 'operatorAssurance.nextKey.keyId=k',
+                                            'operatorAssurance.nextKey.publicKey=h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik='],
             'chart-owned Hopae console_operators': ['json:hopae.config={"console_operators":{"app_id":"x"}}'],
             'console settings while the console is off': ['hangang.console.disableLocalLogin=true'],
             'console without SSO but local login disabled': ['hangang.console.enabled=true', 'hangang.console.disableLocalLogin=true'],
             'console SSO without a public URL': ['hangang.console.enabled=true', 'hangang.console.sso.enabled=true'],
-            'console with metrics exposure': ['hangang.console.enabled=true', 'hangang.admin.exposeMetrics=true'],
             'operator policy without Hopae operators': ['hangang.console.enabled=true', 'hangang.console.sso.enabled=true',
                                                         'hangang.console.sso.publicUrl=https://console.example.test/',
-                                                        'hangang.console.sso.operatorPolicy.enabled=true', 'operatorAssurance.keySecret.name=k'],
+                                                        'hangang.console.sso.operatorPolicy.enabled=true', 'operatorAssurance.keyId=k',
+                                                        'operatorAssurance.publicKey=h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik='],
             'audit log outside the audit volume': ['hangang.console.enabled=true', 'hangang.console.auditLog=/tmp/a.jsonl'],
             'Hopae metrics without the admin listener': ['hopae.metrics.enabled=true', 'hopae.metrics.tokenSecret.name=t'],
             'Hopae metrics without a credential': ['hopae.metrics.enabled=true', 'hopae.admin.enabled=true', 'hopae.admin.delegation.enabled=false'],
@@ -449,8 +454,8 @@ class WorldChart(unittest.TestCase):
     @unittest.skipUnless(PROMTOOL and Path(PROMTOOL).exists(), 'set PROMTOOL=/path/to/promtool')
     def test_alert_expressions_parse(self):
         for profile in ['ha', 'admin', 'byo-certs', 'console']:
-            extra = [] if profile == 'console' else ['hangang.admin.exposeMetrics=true']
-            docs = render('monitoring.prometheusRule.enabled=true', 'monitoring.serviceMonitor.enabled=true', *extra, profile=profile)
+            docs = render('monitoring.prometheusRule.enabled=true', 'monitoring.serviceMonitor.enabled=true',
+                          'hangang.admin.exposeMetrics=true', profile=profile)
             with tempfile.NamedTemporaryFile('w', suffix='.yaml') as rules:
                 yaml.safe_dump(by_kind(docs, 'PrometheusRule')[0]['spec'], rules)
                 rules.flush()
@@ -462,21 +467,27 @@ class WorldChart(unittest.TestCase):
         pod = named(docs, 'Deployment', '-hangang')['spec']['template']['spec']
         gateway, console = pod['containers']
         args = gateway['args']
-        self.assertNotIn('--admin-tls-cert', args, 'the console reaches the authority over loopback HTTP')
-        self.assertEqual(args[args.index('--admin') + 1], '127.0.0.1:9000')
+        self.assertEqual(args[args.index('--admin-tls-cert') + 1], '/tls/tls.crt', 'admin stays TLS-only with the console')
+        self.assertEqual(args[args.index('--admin') + 1], '0.0.0.0:9000', 'console and metrics exposure combine')
+        self.assertEqual(pod['hostAliases'], [{'ip': '127.0.0.1', 'hostnames': ['w-hangang-world-hangang.world.svc']}])
         self.assertEqual(console['command'], ['/usr/local/bin/hangang-console'])
         cargs = console['args']
-        self.assertEqual(cargs[cargs.index('--upstream') + 1], 'http://127.0.0.1:9000/')
+        self.assertEqual(cargs[cargs.index('--upstream') + 1], 'https://w-hangang-world-hangang.world.svc:9000/')
+        self.assertEqual(cargs[cargs.index('--upstream-ca') + 1], '/tls/ca.crt')
+        self.assertEqual(cargs[cargs.index('--operator-audit-db') + 1], '/var/lib/hangang-console/operator-audit.sqlite3')
+        self.assertEqual(cargs[cargs.index('--operator-audit-retention-days') + 1], '90')
+        for container in pod['containers']:
+            self.assertFalse([m for m in container['volumeMounts'] if 'subPath' in m])
         self.assertIn('--disable-local-login', cargs)
         self.assertEqual(cargs[cargs.index('--audit-log') + 1], '/var/log/hangang-console/audit.jsonl')
         self.assertEqual(cargs[cargs.index('--hopae-sso') + 1], '/etc/hangang/console/sso.json')
-        env = {e['name']: e['valueFrom']['secretKeyRef'] for e in console['env']}
-        self.assertEqual(env['CONSOLE_OPERATOR_ASSERTION_KEY'], {'name': 'world-operator-assertion', 'key': 'key'})
+        env = {e['name'] for e in console['env']}
+        self.assertNotIn('CONSOLE_OPERATOR_ASSERTION_KEY', env, 'the console holds only public keys')
         config = named(docs, 'ConfigMap', '-hangang-console')['data']
         sso = json.loads(config['sso.json'])
         self.assertEqual(sso['native_address'], 'w-hangang-world-hopae.world.svc:8704')
         self.assertEqual(sso['native_tls']['server_name'], 'w-hangang-world-hopae.world.svc')
-        self.assertEqual(sso['operator_policy'], {'assertion_key_env': 'CONSOLE_OPERATOR_ASSERTION_KEY', 'minimum_aal': 2,
+        self.assertEqual(sso['operator_policy'], {'assertion_public_keys': {'op-2026-10': 'h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik='}, 'minimum_aal': 2,
                                                   'require_factor': 'webauthn', 'accept_enrollment_grace': False,
                                                   'sensitive_max_age_seconds': 300, 'step_up_path': '/ui/step-up'})
         self.assertEqual(json.loads(config['plugins.json']), {'plugins': []})
@@ -485,9 +496,15 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(hopae['listen']['native_gateway'], '0.0.0.0:8704')
         self.assertEqual(hopae['console_operators'], {'app_id': 'console', 'require_aal': 2, 'require_factor': 'webauthn',
                                                       'step_up_path': '/ui/step-up', 'step_up_max_age_secs': 300,
-                                                      'assertion_key_env': 'HOPAE_CONSOLE_ASSERTION_KEY'})
+                                                      'assertion_seed_env': 'HOPAE_CONSOLE_ASSERTION_SEED',
+                                                      'assertion_public_key': 'h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik=',
+                                                      'assertion_key_id': 'op-2026-10'})
         henv = {e['name']: e['valueFrom']['secretKeyRef'] for e in named(docs, 'Deployment', '-hopae')['spec']['template']['spec']['containers'][0]['env']}
-        self.assertEqual(henv['HOPAE_CONSOLE_ASSERTION_KEY'], {'name': 'world-operator-assertion', 'key': 'key'})
+        self.assertEqual(henv['HOPAE_CONSOLE_ASSERTION_SEED'], {'name': 'world-operator-assertion', 'key': 'seed'})
+        rotating = render('operatorAssurance.nextKey.keyId=op-2027-01',
+                          'operatorAssurance.nextKey.publicKey=AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=', profile='console')
+        pins = json.loads(named(rotating, 'ConfigMap', '-hangang-console')['data']['sso.json'])['operator_policy']['assertion_public_keys']
+        self.assertEqual(sorted(pins), ['op-2026-10', 'op-2027-01'])
         policies = {d['metadata']['name']: d['spec'] for d in by_kind(docs, 'NetworkPolicy')}
         self.assertIn({'port': 8704, 'protocol': 'TCP'}, policies['w-hangang-world-hopae']['ingress'][0]['ports'])
         console_rule = policies['w-hangang-world-hangang']['ingress'][-1]
@@ -495,7 +512,7 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(console_rule['from'][0]['podSelector']['matchLabels']['app.kubernetes.io/name'], 'hangang')
         self.assertEqual(policies['w-hangang-world-hopae-admin']['ingress'][1]['ports'], [{'port': 8702, 'protocol': 'TCP'}])
         monitors = {d['metadata']['name']: d['spec'] for d in by_kind(docs, 'ServiceMonitor')}
-        self.assertEqual(set(monitors), {f'w-hangang-world-{c}' for c in ['hopae', 'pumgye', 'sumunjang']})
+        self.assertEqual(set(monitors), {f'w-hangang-world-{c}' for c in ['hangang', 'hopae', 'pumgye', 'sumunjang']})
         endpoint = monitors['w-hangang-world-hopae']['endpoints'][0]
         self.assertEqual((endpoint['port'], endpoint['scheme'], endpoint['path']), ('admin', 'https', '/metrics'))
         self.assertEqual(endpoint['authorization']['credentials'], {'name': 'hopae-metrics-credential', 'key': 'token'})

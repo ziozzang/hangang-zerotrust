@@ -3,7 +3,9 @@
 credentials:
   existingSecret: hangang-world-credentials
 operatorAssurance:
-  keySecret: {name: world-operator-assertion, key: key}
+  seedSecret: {name: world-operator-assertion, key: seed}
+  keyId: op-2026-10
+  publicKey: h6XLUWvX8Re1frjkcDC/ek9i262Zbt97RJZqkqophik=
 monitoring:
   serviceMonitor:
     enabled: true
@@ -18,6 +20,8 @@ tests:
     digest: sha256:1111111111111111111111111111111111111111111111111111111111111111
 hangang:
   replicas: 1
+  admin:
+    exposeMetrics: true
   image:
     digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   console:

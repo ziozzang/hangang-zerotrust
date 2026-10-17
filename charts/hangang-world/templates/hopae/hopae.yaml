@@ -26,7 +26,7 @@
 {{- end }}
 {{- $co := $v.consoleOperators }}
 {{- if $co.enabled }}
-{{- $operators := dict "app_id" $co.appId "require_aal" (int $co.requireAal) "require_factor" $co.requireFactor "step_up_path" $co.stepUpPath "step_up_max_age_secs" (int $co.stepUpMaxAgeSecs) "assertion_key_env" "HOPAE_CONSOLE_ASSERTION_KEY" }}
+{{- $operators := dict "app_id" $co.appId "require_aal" (int $co.requireAal) "require_factor" $co.requireFactor "step_up_path" $co.stepUpPath "step_up_max_age_secs" (int $co.stepUpMaxAgeSecs) "assertion_seed_env" "HOPAE_CONSOLE_ASSERTION_SEED" "assertion_public_key" .Values.operatorAssurance.publicKey "assertion_key_id" .Values.operatorAssurance.keyId }}
 {{- with $co.enrollmentGraceUntil }}{{- $_ := set $operators "enrollment_grace_until" (int64 .) }}{{- end }}
 {{- $_ := set $owned "console_operators" $operators }}
 {{- end }}
@@ -114,12 +114,12 @@ spec:
                   key: {{ $admin.delegation.keySecret.key }}
             {{- end }}
             {{- if $co.enabled }}
-            # Shared with the Hangang console (operator assertion HMAC key).
-            - name: HOPAE_CONSOLE_ASSERTION_KEY
+            # Ed25519 seed of the operator assertion (Hopae only).
+            - name: HOPAE_CONSOLE_ASSERTION_SEED
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.operatorAssurance.keySecret.name }}
-                  key: {{ .Values.operatorAssurance.keySecret.key }}
+                  name: {{ .Values.operatorAssurance.seedSecret.name }}
+                  key: {{ .Values.operatorAssurance.seedSecret.key }}
             {{- end }}
             {{- range $v.extraSecretEnv }}
             - name: {{ .name }}

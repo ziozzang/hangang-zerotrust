@@ -48,6 +48,13 @@ spec:
       securityContext:
         {{- include "world.podSecurityContext" . | nindent 8 }}
       {{- include "world.podCommon" (dict "root" . "values" $h) | nindent 6 }}
+      {{- if $console.enabled }}
+      # The console sidecar addresses this replica's admin API by the
+      # certificate's Service name; inside this Pod it is loopback.
+      hostAliases:
+        - ip: 127.0.0.1
+          hostnames: [{{ include "world.host" $ctx | quote }}]
+      {{- end }}
       {{- if $h.topologySpreadConstraints }}
       topologySpreadConstraints:
         {{- toYaml $h.topologySpreadConstraints | nindent 8 }}
@@ -128,7 +135,6 @@ spec:
             - {{ printf "0.0.0.0:%d" $port | quote }}
             - --admin
             - {{ ternary "0.0.0.0:9000" "127.0.0.1:9000" $h.admin.exposeMetrics | quote }}
-            {{- if not $console.enabled }}
             # The administration API is always TLS, also on loopback: any other
             # container in the Pod network namespace (sidecar, debug
             # container) and kubectl port-forward reach loopback, so plaintext
@@ -137,11 +143,6 @@ spec:
             - /tls/tls.crt
             - --admin-tls-key
             - /tls/tls.key
-            {{- else }}
-            # hangang.console: the console sidecar reaches this authority over
-            # literal loopback HTTP only (hangang-console has no private-CA
-            # option yet), so the admin API stays plaintext on 127.0.0.1.
-            {{- end }}
             - --health-path
             - /-/ready
             - --lame-duck-seconds
@@ -226,8 +227,13 @@ spec:
             # Plaintext on the Pod network: only the Hangang gateway may reach
             # it (NetworkPolicy), which terminates TLS and runs Hopae.
             - --allow-insecure-public
+            # This replica's admin authority over TLS: the Service name resolves
+            # to loopback in this Pod (hostAliases) and matches the gateway
+            # certificate; only the World CA is trusted.
             - --upstream
-            - http://127.0.0.1:9000/
+            - {{ printf "https://%s:9000/" (include "world.host" $ctx) | quote }}
+            - --upstream-ca
+            - /tls/ca.crt
             - --plugins
             - /etc/hangang/console/plugins.json
             {{- if $console.sso.enabled }}
@@ -238,6 +244,14 @@ spec:
             # No break-glass local administrator sign-in; Hopae SSO only.
             - --disable-local-login
             {{- end }}
+            {{- if $console.operatorAudit.persistent }}
+            - --operator-audit-db
+            - /var/lib/hangang-console/operator-audit.sqlite3
+            {{- end }}
+            - --operator-audit-max-records
+            - {{ $console.operatorAudit.maxRecords | quote }}
+            - --operator-audit-retention-days
+            - {{ $console.operatorAudit.retentionDays | quote }}
             {{- with $console.auditLog }}
             - --audit-log
             - {{ . | quote }}
@@ -246,13 +260,6 @@ spec:
             {{- if $console.sso.enabled }}
             {{- include "world.secretEnv" (dict "root" . "name" "CONSOLE_HOPAE_GATEWAY_KEY" "key" "hopaeGatewayKey") | nindent 12 }}
             {{- include "world.secretEnv" (dict "root" . "name" "CONSOLE_HANGANG_SYSTEM_TOKEN" "key" "hangangAdminToken") | nindent 12 }}
-            {{- if $console.sso.operatorPolicy.enabled }}
-            - name: CONSOLE_OPERATOR_ASSERTION_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.operatorAssurance.keySecret.name }}
-                  key: {{ .Values.operatorAssurance.keySecret.key }}
-            {{- end }}
             {{- end }}
           ports:
             - name: console
@@ -280,6 +287,8 @@ spec:
               readOnly: true
             - name: console-audit
               mountPath: /var/log/hangang-console
+            - name: console-state
+              mountPath: /var/lib/hangang-console
         {{- end }}
       volumes:
         # Controller mode keeps no durable routing state: routes come from the
@@ -303,6 +312,9 @@ spec:
         - name: console-audit
           emptyDir:
             sizeLimit: 64Mi
+        - name: console-state
+          emptyDir:
+            sizeLimit: 256Mi
         {{- end }}
 ---
 apiVersion: v1

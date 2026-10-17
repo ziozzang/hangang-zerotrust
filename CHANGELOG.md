@@ -53,9 +53,11 @@
   never see a plaintext administration endpoint.
 - Add the Hopae ServiceMonitor (admin listener, mutual TLS, `hsc1` `metrics`
   service credential; Hopae PR #19) and Hopae alerts; optional console
-  operator assurance: Hopae `console_operators` (PR #18), a shared assertion
-  key Secret, and the Hangang console adapter sidecar (`hangang-console`,
-  Hangang PR #25) with Hopae SSO over HOP1 mTLS, `operator_policy`,
-  `--disable-local-login` and `--audit-log`. All off by default.
+  operator assurance: Hopae `console_operators` (PR #18) with an Ed25519
+  seed Secret, and the Hangang console adapter sidecar (`hangang-console`,
+  Hangang PR #25) reaching the admin API over TLS (`--upstream-ca`), with
+  Hopae SSO over HOP1 mTLS, `operator_policy` pinning the assertion public
+  keys (rotation via `nextKey`), `--disable-local-login`, the operator audit
+  store and `--audit-log`. All off by default.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

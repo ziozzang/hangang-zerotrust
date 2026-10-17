@@ -22,8 +22,11 @@ data:
     "accounts" $console.sso.accounts }}
   {{- $policy := $console.sso.operatorPolicy }}
   {{- if $policy.enabled }}
+  {{- $oa := .Values.operatorAssurance }}
+  {{- $pins := dict $oa.keyId $oa.publicKey }}
+  {{- if $oa.nextKey.keyId }}{{- $_ := set $pins $oa.nextKey.keyId $oa.nextKey.publicKey }}{{- end }}
   {{- $_ := set $sso "operator_policy" (dict
-    "assertion_key_env" "CONSOLE_OPERATOR_ASSERTION_KEY"
+    "assertion_public_keys" $pins
     "minimum_aal" (int $policy.minimumAal)
     "require_factor" $policy.requireFactor
     "accept_enrollment_grace" $policy.acceptEnrollmentGrace
@@ -31,7 +34,9 @@ data:
     "step_up_path" $policy.stepUpPath) }}
   {{- end }}
   # Hopae console SSO over the HOP1 mTLS listener (this replica's component
-  # certificate); operator_policy verifies Hopae's signed operator assertion.
+  # certificate); operator_policy verifies Hopae's Ed25519 operator
+  # assertion against the pinned public keys (current, and next during a
+  # rotation). No secret is in this file.
   sso.json: {{ toJson $sso | quote }}
   {{- end }}
 ---

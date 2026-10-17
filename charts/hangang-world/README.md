@@ -75,8 +75,8 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `credentials.keys.pumgyeMetricsToken` / `guardMetricsToken` | `pumgye-metrics-token` / `guard-metrics-token` | Read-only scrape credentials, read while ServiceMonitors are enabled |
 | `hopae.metrics.enabled` / `tokenSecret` | `false` | Hopae ServiceMonitor on the admin listener with an `hsc1` `metrics` service credential |
 | `hopae.consoleOperators.*` | disabled | Hopae `console_operators` (passkey operators, signed assertion) |
-| `operatorAssurance.keySecret` | `""` / `operator-assertion-key` | Assertion key shared by Hopae and the Hangang console |
-| `hangang.console.*` | disabled | Console adapter sidecar: `sso`, `sso.operatorPolicy`, `disableLocalLogin`, `auditLog`, `plugins` |
+| `operatorAssurance.seedSecret` / `keyId` / `publicKey` / `nextKey` | `""` | Ed25519 operator assertion: seed Secret for Hopae, pinned public keys for the console |
+| `hangang.console.*` | disabled | Console adapter sidecar over TLS to the admin API: `sso`, `sso.operatorPolicy`, `disableLocalLogin`, `operatorAudit`, `auditLog`, `plugins` |
 | `monitoring.prometheusRule.*` | disabled | Recommended alerts (TLS reload failing, certificate expiry, staleness, checkpoint age, projection freshness, decision availability) |
 | `tests.enabled` / `tests.image` | `true` / busybox | `helm test` Pod (needs `sh`, `nc`, `wget`; digest required) |
 

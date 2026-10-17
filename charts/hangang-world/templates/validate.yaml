@@ -18,7 +18,7 @@
 {{- if and (eq $v.hangang.clientAddress.mode "serviceLocal") (eq $v.hangang.service.type "ClusterIP") -}}
 {{- fail "hangang.clientAddress.mode=serviceLocal needs hangang.service.type LoadBalancer or NodePort (externalTrafficPolicy: Local)" -}}
 {{- end -}}
-{{- if and $v.monitoring.serviceMonitor.enabled $v.hangang.enabled (not $v.hangang.admin.exposeMetrics) (not $v.hangang.console.enabled) -}}
+{{- if and $v.monitoring.serviceMonitor.enabled $v.hangang.enabled (not $v.hangang.admin.exposeMetrics) -}}
 {{- fail "monitoring.serviceMonitor.enabled needs hangang.admin.exposeMetrics=true" -}}
 {{- end -}}
 {{- if and $v.monitoring.serviceMonitor.enabled (eq $v.tls.mode "existingSecrets") (or $v.pumgye.enabled $v.sumunjang.enabled) (not $v.monitoring.serviceMonitor.clientCertificate.existingSecret) -}}
@@ -72,9 +72,6 @@
 {{- /* Console adapter and console operator assurance. */ -}}
 {{- $console := $v.hangang.console -}}
 {{- if and $v.hangang.enabled $console.enabled -}}
-{{- if $v.hangang.admin.exposeMetrics -}}
-{{- fail "hangang.console.enabled cannot be combined with hangang.admin.exposeMetrics: the console reaches the admin authority over loopback HTTP, which Hangang refuses off loopback" -}}
-{{- end -}}
 {{- if and $console.sso.enabled (not $v.hopae.enabled) -}}
 {{- fail "hangang.console.sso.enabled needs hopae.enabled" -}}
 {{- end -}}
@@ -94,8 +91,15 @@
 {{- if and (not (and $v.hangang.enabled $console.enabled)) (or $console.sso.enabled $console.disableLocalLogin $console.auditLog) -}}
 {{- fail "hangang.console.* settings need hangang.console.enabled" -}}
 {{- end -}}
-{{- if and (or (and $v.hopae.enabled $v.hopae.consoleOperators.enabled) (and $console.enabled $console.sso.operatorPolicy.enabled)) (not $v.operatorAssurance.keySecret.name) -}}
-{{- fail "operatorAssurance.keySecret.name is required by hopae.consoleOperators and hangang.console.sso.operatorPolicy (shared assertion key, 32-4096 bytes)" -}}
+{{- $oa := $v.operatorAssurance -}}
+{{- if and (or (and $v.hopae.enabled $v.hopae.consoleOperators.enabled) (and $console.enabled $console.sso.operatorPolicy.enabled)) (not (and $oa.keyId $oa.publicKey)) -}}
+{{- fail "operatorAssurance.keyId and operatorAssurance.publicKey are required by hopae.consoleOperators and hangang.console.sso.operatorPolicy (the Ed25519 operator assertion key)" -}}
+{{- end -}}
+{{- if and $v.hopae.enabled $v.hopae.consoleOperators.enabled (not $oa.seedSecret.name) -}}
+{{- fail "hopae.consoleOperators needs operatorAssurance.seedSecret.name (Secret with the base64 Ed25519 seed)" -}}
+{{- end -}}
+{{- if and $oa.nextKey.keyId (or (not $oa.nextKey.publicKey) (eq $oa.nextKey.keyId $oa.keyId)) -}}
+{{- fail "operatorAssurance.nextKey needs its own keyId and a publicKey" -}}
 {{- end -}}
 {{- if and $v.hopae.enabled $v.hopae.metrics.enabled -}}
 {{- if not $v.hopae.admin.enabled -}}

@@ -75,5 +75,8 @@
   Fixes: browser navigation headers in identity profiles, `--advertised-port`,
   Hopae preStop sleep (`hopae.preStopSleepSeconds`), PostgreSQL URL without
   `sslmode`, PostgreSQL alerts.
+- Drop the manual `/_hopae` instruction: Hangang PR #29 routes the Hopae
+  sign-in handoff on protected hosts itself. The Hopae password throttle note
+  points to Hopae's upcoming configurable shared limit.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

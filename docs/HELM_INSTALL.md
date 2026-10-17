@@ -155,9 +155,9 @@ Configuration files are mounted as whole directories (never `subPath`), root-own
 - `hopae.replicas` > 1 is allowed only here. Deployments roll with `maxUnavailable: 0, maxSurge: 1` and a PDB; each replica keeps a private `state_dir` on an emptyDir and no PVC is created.
 - Publications (authentication profiles, projection plans) reach every replica within about one second (LISTEN/NOTIFY plus a 1 s poll). Login-transaction and handoff-failure rate limits are counted in the store and shared; the other limits are per replica, so the effective cluster limit is the per-replica value times the replica count.
 - All replicas must run the same configuration; a replica on an older policy stops qualifying native Human sessions until it restarts.
-- The password sign-in throttle (10 attempts per client address per minute) is in memory per replica and not configurable; behind one egress address the cluster admits about 10 per minute per replica.
+- The password sign-in throttle (10 attempts per client address per minute) is in memory per replica and fixed in the current Hopae build; behind one egress address the cluster admits about 10 per minute per replica. Hopae is making it a configurable limit shared through the store; the chart will expose it once it ships.
 - Terminating Pods keep serving for `hopae.preStopSleepSeconds` (default 10, a preStop sleep; Kubernetes ≥ 1.30) so gateways stop sending verifications before Hopae shuts down; without it a rolling update refused a few requests (503).
-- A protected application Ingress must also route `/_hopae` (Prefix) to its backend: Hopae's sign-in handoff lands on `https://<app host>/_hopae/login?...`, which the gateway answers itself during verification.
+- The sign-in handoff path `/_hopae` of every protected host is routed by the gateway itself (Hangang PR #29); application Ingresses need no extra path, and a tenant path under `/_hopae` withholds the Ingress (`ReservedPath`).
 
 ### Migrating from SQLite
 

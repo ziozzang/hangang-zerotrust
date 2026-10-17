@@ -140,6 +140,10 @@ cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합�
 
 설정 파일은 `subPath` 없이 디렉터리째 마운트하며, root 소유이고 `fsGroup`(`0440`)으로 읽을 수 있습니다. `hangang-console`은 Kubernetes 볼륨의 이 형태를 받아들입니다. 관리자 계정과 콘솔 세션은 복제본별입니다(Service는 ClientIP 친화성 사용). 콘솔 바이너리는 Hangang 이미지에 있어야 합니다(`hangang.console.command`).
 
+## 게이트웨이를 거치는 Hopae 로그인 포털
+
+`hopae.portalIngress.enabled`는 Hopae 포털 호스트(기본: `hopae.config.portal.public_url`의 호스트)를 이 게이트웨이로 게시합니다. 포털 경로(`/login`, `/callback/`, `/stepup/`, `/security`, `/assets/`, `/signed-out`, `/healthz`)만 담은 Ingress와 **명시적 공개** ProtectionPolicy(`access: Public`, `hopae.portalIngress.reason`)를 만듭니다. 이 경로들은 로그인 전에 응답해야 하며, 셀프 서비스 페이지는 Hopae가 직접 인증합니다. `hangang.protection.requireProtection`은 켜진 채로 남습니다. 다른 모든 Ingress에는 여전히 보호 정책이 필요하고, 포털은 `unprotected`가 아니라 `public`으로 보고되며, 정책 목록 밖의 Ingress 경로가 생기면 보류됩니다. 게이트웨이가 Ingress Secret으로 TLS를 종료한다면 `hopae.portalIngress.tlsSecret`을 지정하세요. `access` 필드를 지원하는 Hangang과 `hangang-world-crds`가 필요합니다.
+
 ## PostgreSQL 위의 Hopae
 
 `hopae.storage.backend: postgresql`(`global.ha.backend: postgresql`과 함께)은 모든 복제본이 공유하는 외부 PostgreSQL에 Hopae를 저장합니다(Hopae ADR-0020, PR #16).

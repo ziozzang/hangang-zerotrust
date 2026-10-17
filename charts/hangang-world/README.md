@@ -60,6 +60,7 @@ The CRDs (`world.hangang.dev`) and the aggregated `world-admin`/`world-editor`/`
 | `<component>.tlsReloadSeconds` | `10` | Certificate/key/CA content polling; rotated material is used without a restart (Pumgye 1–3600, others 0 = off) |
 | `hopae.authentication.reloadIntervalMs` | `1000` | Live reconciliation of profiles and projection plans in `config` mode (0 off, 200–60000); these keys do not roll the Pod |
 | `hopae.storage.backend` | `sqlite` | `sqlite` (1 replica, PVC) or `postgresql` (replicas > 1, RollingUpdate, PDB; `global.ha.postgresql` URL and CA Secrets) |
+| `hopae.portalIngress.*` | disabled | Portal Ingress with an explicitly public ProtectionPolicy (`access: Public`) for the sign-in paths |
 | `hopae.storage.postgresql.*` / `migration.*` | 16 / 5000 / 2000 ms; off | Pool and timeouts; pre-upgrade SQLite → PostgreSQL copy Job |
 | `hopae.authentication.source` | `config` | `config`: values own the authentication profiles and every rollout reconciles Hopae's store (Hopae PR #13); `store`: values bootstrap an empty store only |
 | `hopae.config` | portal/apps/providers | Hopae configuration; `listen`, `state_dir`, `store`, `gateway`, `authentication`, `reload` are chart-owned |

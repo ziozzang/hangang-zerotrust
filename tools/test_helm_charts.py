@@ -562,6 +562,37 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(json.loads(hook['data']['hopae.json'])['state_dir'], '/sqlite')
         self.assertLess(int(hook['metadata']['annotations']['helm.sh/hook-weight']), int(job['metadata']['annotations']['helm.sh/hook-weight']))
 
+    def test_hopae_portal_ingress_is_explicitly_public(self):
+        self.assertFalse([d for d in render() if d['metadata']['name'].endswith('-portal')])
+        docs = render('hopae.portalIngress.enabled=true', 'hopae.portalIngress.tlsSecret=auth-tls')
+        ingress = named(docs, 'Ingress', '-hopae-portal')['spec']
+        self.assertEqual(ingress['rules'][0]['host'], 'auth.example.test')
+        self.assertEqual(ingress['tls'], [{'hosts': ['auth.example.test'], 'secretName': 'auth-tls'}])
+        paths = {(p['path'], p['pathType']) for p in ingress['rules'][0]['http']['paths']}
+        self.assertIn(('/login', 'Prefix'), paths)
+        self.assertIn(('/callback/', 'Prefix'), paths)
+        self.assertTrue(all(p['backend']['service'] == {'name': 'w-hangang-world-hopae', 'port': {'name': 'portal'}}
+                            for p in ingress['rules'][0]['http']['paths']))
+        self.assertNotIn('defaultBackend', ingress)
+        policy = named(docs, 'ProtectionPolicy', '-hopae-portal-public')['spec']
+        self.assertEqual(policy['access'], 'Public')
+        self.assertNotIn('identity', policy)
+        self.assertGreaterEqual(len(policy['public']['reason']), 8)
+        self.assertEqual(policy['targetRefs'], [{'group': 'networking.k8s.io', 'kind': 'Ingress', 'name': 'w-hangang-world-hopae-portal'}])
+        # Mirror of the controller's coverage rule: every Ingress path is listed.
+        allowed = policy['public']['paths']
+        def covered(path, kind):
+            for entry in allowed:
+                if entry.endswith('*'):
+                    prefix = entry[:-1]
+                    if path.startswith(prefix) or (kind == 'Prefix' and prefix.endswith('/') and path == prefix.rstrip('/')):
+                        return True
+                elif kind == 'Exact' and path == entry:
+                    return True
+            return False
+        self.assertTrue(all(covered(path, kind) for path, kind in paths), paths)
+        self.assertTrue(refused('hopae.portalIngress.enabled=true', 'hopae.portalIngress.reason=short')[0])
+
     def test_client_address_modes(self):
         docs = render('hangang.clientAddress.mode=hostNetwork', 'hangang.service.type=ClusterIP')
         pod = named(docs, 'Deployment', '-hangang')['spec']['template']['spec']

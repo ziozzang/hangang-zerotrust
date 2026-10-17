@@ -64,5 +64,9 @@
   RollingUpdate and a PDB, an optional pre-upgrade SQLite → PostgreSQL
   migration Job, and the migration procedure (EN/KO). Hopae live-reload keys
   are now emitted only when set, so builds without them accept the file.
+- Sync the ProtectionPolicy CRD with explicitly public policies (`access:
+  Public`, `public.reason`, `public.paths`) and add `hopae.portalIngress`:
+  the Hopae portal published through the gateway with an explicitly public
+  policy limited to its sign-in paths, so `requireProtection` stays on.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

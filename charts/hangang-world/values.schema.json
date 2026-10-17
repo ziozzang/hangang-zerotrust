@@ -1420,6 +1420,33 @@
             "enabled"
           ]
         },
+        "portalIngress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "host": {
+              "type": "string",
+              "maxLength": 253,
+              "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+            },
+            "tlsSecret": {
+              "type": "string",
+              "maxLength": 253,
+              "pattern": "^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 256
+            }
+          },
+          "required": [
+            "enabled"
+          ]
+        },
         "config": {
           "type": "object",
           "additionalProperties": true,

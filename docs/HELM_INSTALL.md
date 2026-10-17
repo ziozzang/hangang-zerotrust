@@ -140,6 +140,10 @@ The cert-manager rules need cert-manager's own metrics in Prometheus (`monitorin
 
 Configuration files are mounted as whole directories (never `subPath`), root-owned and readable through `fsGroup` (`0440`), which `hangang-console` accepts for Kubernetes volumes. Administrator accounts and console sessions are per replica (the Service uses ClientIP affinity). The console binary must be present in the Hangang image (`hangang.console.command`).
 
+## Hopae sign-in portal through the gateway
+
+`hopae.portalIngress.enabled` publishes Hopae's portal host (default: the host of `hopae.config.portal.public_url`) through this gateway with an Ingress for exactly the portal's paths (`/login`, `/callback/`, `/stepup/`, `/security`, `/assets/`, `/signed-out`, `/healthz`) and an **explicitly public** ProtectionPolicy (`access: Public` with `hopae.portalIngress.reason`). These routes must answer before anyone is signed in; Hopae authenticates its own self-service pages. `hangang.protection.requireProtection` stays on: every other Ingress still needs a protecting policy, the portal is reported as `public` (not `unprotected`), and an Ingress path outside the policy's list would withhold it. Set `hopae.portalIngress.tlsSecret` when the gateway terminates TLS from Ingress Secrets. Needs Hangang and `hangang-world-crds` with the `access` field.
+
 ## Hopae on PostgreSQL
 
 `hopae.storage.backend: postgresql` (with `global.ha.backend: postgresql`) stores Hopae in an external PostgreSQL that every replica shares (Hopae ADR-0020, PR #16):

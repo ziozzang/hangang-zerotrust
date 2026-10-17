@@ -331,6 +331,17 @@ hopae:
     # null keeps Hopae's default (1000) and omits the key, for Hopae builds
     # without live reload.
     reloadIntervalMs: null
+  # Hopae's sign-in portal through the gateway: an Ingress for the portal
+  # host (default: the host of config.portal.public_url) with an explicitly
+  # public ProtectionPolicy (access: Public, Hangang PR #27) limited to the
+  # portal's paths, so hangang.protection.requireProtection stays on. Needs
+  # hangang-world-crds with the access field.
+  portalIngress:
+    enabled: false
+    host: ""
+    # kubernetes.io/tls Secret for the host when hangang.kubernetesTls is on.
+    tlsSecret: ""
+    reason: "Hopae sign-in portal: login, provider callbacks, step-up, self-service security, assets and health"
   # Console operators (Hopae ADR-0021): operators of the console application
   # must sign in with a passkey (or AAL 3); allowed verifies carry the signed
   # x-hopae-operator-assertion (Ed25519). Needs operatorAssurance.seedSecret,

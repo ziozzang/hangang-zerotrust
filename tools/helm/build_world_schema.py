@@ -230,6 +230,10 @@ schema = obj({
             'enrollmentGraceUntil': {'type': ['integer', 'null'], 'minimum': 0},
         }, required=['enabled']),
         'metrics': obj({'enabled': {'type': 'boolean'}, 'tokenSecret': obj({'name': SECRET_NAME, 'key': KEY}, required=['name', 'key'])}, required=['enabled']),
+        'portalIngress': obj({'enabled': {'type': 'boolean'},
+                              'host': {'type': 'string', 'maxLength': 253, 'pattern': '^$|' + DNS_SUBDOMAIN},
+                              'tlsSecret': SECRET_NAME,
+                              'reason': {'type': 'string', 'minLength': 8, 'maxLength': 256}}, required=['enabled']),
         'config': obj({}, extra=True, description='Hopae configuration minus the chart-owned listen, state_dir, store, gateway, authentication, reload and console_operators.',
                       **{'not': {'anyOf': [{'required': [k]} for k in ['listen', 'state_dir', 'store', 'gateway', 'authentication', 'reload', 'console_operators']]}}),
         'extraSecretEnv': {'type': 'array', 'maxItems': 64, 'items': obj({

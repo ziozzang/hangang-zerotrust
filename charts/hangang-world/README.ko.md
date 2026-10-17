@@ -60,6 +60,7 @@ CRD(`world.hangang.dev`)와 집계 역할 `world-admin`/`world-editor`/`world-vi
 | `<component>.tlsReloadSeconds` | `10` | 인증서/키/CA 내용 폴링, 교체 자료를 재시작 없이 사용(Pumgye 1–3600, 나머지는 0이면 끔) |
 | `hopae.authentication.reloadIntervalMs` | `1000` | `config` 모드에서 프로필과 projection 계획 실시간 반영(0이면 끔, 200–60000), 이 키는 Pod를 다시 띄우지 않음 |
 | `hopae.storage.backend` | `sqlite` | `sqlite`(1개 복제본, PVC) 또는 `postgresql`(복제본 > 1, RollingUpdate, PDB, `global.ha.postgresql` URL·CA Secret) |
+| `hopae.portalIngress.*` | 비활성 | 로그인 경로용 명시적 공개 ProtectionPolicy(`access: Public`)를 가진 포털 Ingress |
 | `hopae.storage.postgresql.*` / `migration.*` | 16 / 5000 / 2000 ms, 꺼짐 | 풀과 시간 제한, pre-upgrade SQLite → PostgreSQL 복사 Job |
 | `hopae.authentication.source` | `config` | `config`: values가 인증 프로필을 소유하고 롤아웃마다 Hopae 저장소를 맞춤(Hopae PR #13), `store`: values는 빈 저장소만 부트스트랩 |
 | `hopae.config` | portal/apps/providers | Hopae 설정, `listen`·`state_dir`·`store`·`gateway`·`authentication`·`reload`는 차트 소유 |

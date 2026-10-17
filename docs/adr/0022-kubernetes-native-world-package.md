@@ -2,7 +2,7 @@
 
 [한국어](../ko/0022-kubernetes-native-world-package.md)
 
-Status: **proposed**. Supersedes in part [ADR 0015](0015-kubernetes-iam-authority.md)
+Status: **Accepted as architecture — 2026-10-18**. Supersedes in part [ADR 0015](0015-kubernetes-iam-authority.md)
 (source-of-truth wording, authorization lease length in Kubernetes mode, workload
 identity granularity, packaging sequence). ADR 0015's ownership rules, RBAC/IAM
 semantics and safety invariants remain. Builds on [ADR 0013](0013-snapshot-membership-scaleout.md),
@@ -15,6 +15,13 @@ Quality bar: a commercial product installable and operable like production-grade
 Kubernetes packages (Helm/OCI, signed images, upgrade/rollback, HA, backup) and
 comparable in operator experience to Teleport or Cloudflare Zero Trust. Gates below
 are product acceptance criteria, not proof-of-concept checks.
+
+> Acceptance record (owner-directed resumption, 2026-10-18): adopt the stated
+> ownership and bounded/fail-closed design. Implementation exists in varying
+> unmerged review units; acceptance is not completion, release, deployment,
+> retention-policy activation or a conformance claim. Context below is the
+> historical design baseline. Open questions and phased acceptance gates remain
+> explicit backlog; see [current roadmap](../ENTERPRISE_ROADMAP_2026-10-18.md).
 
 ## Context: verified current state
 

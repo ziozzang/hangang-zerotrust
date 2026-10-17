@@ -2,11 +2,18 @@
 
 [한국어](../ko/0020-unified-console-redesign.md)
 
-Status: **Proposed**. Supersedes the per-component menu layout described in
+Status: **Accepted as architecture — 2026-10-18**. Supersedes the per-component menu layout described in
 [CONSOLE.md](../CONSOLE.md) and the navigation decision of the
 [2026-10-15 admin UI review](../reviews/2026-10-15-admin-ui.md); keeps their trust,
 broker, pinning, lifecycle and audit invariants. Depends on
 [ADR 0019](0019-decision-events-exporter.md) for decision data.
+
+> Acceptance record (owner-directed resumption, 2026-10-18): adopt the stated
+> ownership and bounded/fail-closed design. Implementation exists in varying
+> unmerged review units; acceptance is not completion, release, deployment,
+> retention-policy activation or a conformance claim. Context below is the
+> historical design baseline. Open questions and phased acceptance gates remain
+> explicit backlog; see [current roadmap](../ENTERPRISE_ROADMAP_2026-10-18.md).
 
 ## Context and quality bar
 

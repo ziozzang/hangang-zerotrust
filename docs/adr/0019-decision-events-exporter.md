@@ -2,10 +2,17 @@
 
 [한국어](../ko/0019-decision-events-exporter.md)
 
-Status: **Proposed**. Nothing in this ADR is implemented. It refines the
+Status: **Accepted as architecture — 2026-10-18**. It refines the
 [observability design](../OBSERVABILITY.md) and ADR 0004 for one event class, the
 per-request access decision, and is the data prerequisite for the console redesign
 in [ADR 0020](0020-unified-console-redesign.md).
+
+> Acceptance record (owner-directed resumption, 2026-10-18): adopt the stated
+> ownership and bounded/fail-closed design. Implementation exists in varying
+> unmerged review units; acceptance is not completion, release, deployment,
+> retention-policy activation or a conformance claim. Context below is the
+> historical design baseline. Open questions and phased acceptance gates remain
+> explicit backlog; see [current roadmap](../ENTERPRISE_ROADMAP_2026-10-18.md).
 
 ## Context
 

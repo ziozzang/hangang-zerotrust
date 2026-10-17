@@ -2,7 +2,7 @@
 
 [한국어](../ko/0021-pumgye-authorization-model-revision.md)
 
-Status: **proposed**. No Pumgye, Hopae, Sumunjang or Hangang code, policy, image or
+Status: **Accepted as architecture — 2026-10-18**. No Pumgye, Hopae, Sumunjang or Hangang code, policy, image or
 deployment is changed by this ADR. It revises the authorization *model* owned by
 Pumgye ([ADR 0010](0010-pumgye-ownership.md)); the decision-core and snapshot
 principles of [ADR 0013](0013-snapshot-membership-scaleout.md) and
@@ -14,6 +14,13 @@ The decision event schema/exporter is ADR 0019 and the unified console is ADR 00
 Quality bar: the target is a commercial authorization product comparable to the
 authorization layers of Okta/Auth0 FGA, Teleport and Cloudflare Access. Acceptance
 criteria below are product gates, not proof-of-concept gates.
+
+> Acceptance record (owner-directed resumption, 2026-10-18): adopt the stated
+> ownership and bounded/fail-closed design. Implementation exists in varying
+> unmerged review units; acceptance is not completion, release, deployment,
+> retention-policy activation or a conformance claim. Context below is the
+> historical design baseline. Open questions and phased acceptance gates remain
+> explicit backlog; see [current roadmap](../ENTERPRISE_ROADMAP_2026-10-18.md).
 
 ## Context: verified defects in the current model
 

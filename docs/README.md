@@ -2,6 +2,8 @@
 
 [한국어](ko/README.md) · [Project](../README.md)
 
+[Enterprise resumption roadmap — 2026-10-18](ENTERPRISE_ROADMAP_2026-10-18.md) — current review units, official-source feature gaps, prioritized issues and release gates.
+
 [Paused implementation handoff — 2026-10-17](HANDOFF_2026-10-17.md) — review units, branch/PR state, verified gates and resume order.
 
 [Paused implementation handoff — 2026-10-16](HANDOFF_2026-10-16.md) — previous checkpoint.

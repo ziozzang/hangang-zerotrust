@@ -2,7 +2,7 @@
 
 [English](../adr/0021-pumgye-authorization-model-revision.md)
 
-상태: **제안**. 이 ADR은 Pumgye·Hopae·Sumunjang·Hangang 코드, 정책, 이미지, 배포를
+상태: **아키텍처 채택 — 2026-10-18**. 이 ADR은 Pumgye·Hopae·Sumunjang·Hangang 코드, 정책, 이미지, 배포를
 바꾸지 않습니다. [ADR 0010](0010-pumgye-ownership.md)의 품계 소유 인가 *모델*을 개정하며,
 [ADR 0013](0013-snapshot-membership-scaleout.md)·[ADR 0016](0016-decision-core-metadata-adapters.md)의
 판정 코어·스냅샷 원칙은 유지합니다. Kubernetes 표현은 [ADR 0022](0022-kubernetes-native-world-package.md),
@@ -11,6 +11,12 @@
 
 품질 기준: Okta/Auth0 FGA, Teleport, Cloudflare Access 인가 계층에 견줄 상용 제품입니다.
 아래 기준은 개념 검증이 아니라 제품 인수 기준입니다.
+
+> 채택 기록(사용자 재개 지시, 2026-10-18): 명시한 소유 경계와 상한·실패 시 거부하는
+> 설계를 채택합니다. 구현은 서로 다른 미병합 검토 단위에 있으며 채택은 구현 완료·출시·배포·
+> 보존 정책 활성화·conformance 주장이 아닙니다. 아래 배경은 설계 당시의 기준선입니다.
+> 미결 질문과 단계별 인수 게이트는 백로그로 유지합니다.
+> [현재 로드맵](ENTERPRISE_ROADMAP_2026-10-18.md)을 참고하세요.
 
 ## 배경: 확인된 현 모델 결함
 

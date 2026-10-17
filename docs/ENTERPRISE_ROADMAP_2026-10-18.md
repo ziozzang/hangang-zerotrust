@@ -20,7 +20,7 @@ fresh qualification of today's candidate.
 | World charts | #1 open; current offline suite 21 tests (19 pass, 2 optional skips); schema-enabled retry timed out at 300 s | Run current offline gates; unreleased dependency images still block install/release. |
 | Operator assurance | #2 merged `fafd0b9`; Ed25519 implementation on branches | Correct contradictory remaining-work wording in EN/KO, independent review, then merge documentation. Hardware/live gateway qualification remains open. |
 | Sumunjang | eight bundle refs verified; 27 commits secret-scanned; eight remote branches now published | Publication approved by resumed user instruction. Preserve bundle. Review audit → API gaps → zones → TLS → metrics → ASN → LLM docs → evidence score; publication is not merge/release. |
-| ADRs | World 0019–0022 accepted as architecture here; Hopae existing 0017–0023 proposed | Accept ownership and bounded/fail-closed architectural direction; do not relabel unfinished implementations complete. Record acceptance separately from runtime gates. |
+| ADRs | World 0019–0022 accepted as architecture here; Hopae 0017–0021 and 0023 proposed; 0022 absent | Accept ownership and bounded/fail-closed architectural direction; do not relabel unfinished implementations complete. Record acceptance separately from runtime gates. |
 | LLM inspection | design only | Approve L0 deterministic replay/schema work; defer L1 provider calls, private quota and retention activation to explicit operational plan. No synchronous request-path LLM; no LLM allow/block authority. |
 
 

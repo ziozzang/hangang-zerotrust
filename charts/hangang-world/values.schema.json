@@ -672,6 +672,14 @@
             "fresh"
           ]
         },
+        "advertisedPort": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 65535
+        },
         "tlsReloadSeconds": {
           "type": "integer",
           "minimum": 0,
@@ -1339,6 +1347,11 @@
           ],
           "minimum": 0,
           "maximum": 3600
+        },
+        "preStopSleepSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120
         },
         "consoleOperators": {
           "type": "object",

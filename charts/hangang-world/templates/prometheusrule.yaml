@@ -144,6 +144,20 @@ spec:
           labels: {severity: warning}
           annotations:
             summary: Identity provider {{ "{{ $labels.provider }}" }} is not ok
+        {{- if eq .Values.hopae.storage.backend "postgresql" }}
+        - alert: HopaePublicationListenerDown
+          expr: max by (namespace, pod) (hopae_store_publication_listener_up{ {{- $hopae -}} }) == 0
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Hopae lost its PostgreSQL LISTEN connection; publications from other replicas arrive by the 1 s poll only
+        - alert: HopaeStorePoolSaturated
+          expr: max by (namespace, pod) (hopae_store_pool_waiting{ {{- $hopae -}} }) > 0
+          for: 5m
+          labels: {severity: warning}
+          annotations:
+            summary: Requests wait for a PostgreSQL pool connection (raise hopae.storage.postgresql.poolSize or the database limit)
+        {{- end }}
         - alert: HopaeEventDeliveriesFailed
           expr: increase(hopae_event_deliveries_failed_total{ {{- $hopae -}} }[30m]) > 0
           labels: {severity: info}

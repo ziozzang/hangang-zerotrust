@@ -16,7 +16,9 @@ global:
   ha:
     backend: none            # none | postgresql
     postgresql:
-      # Secret holding a libpq connection URL (sslmode=verify-full).
+      # Secret holding the connection URL, postgresql://user:password@host:5432/db
+      # without sslmode (Hopae's driver refuses verify-full); with caSecret
+      # Hopae always uses TLS and verifies the server certificate and name.
       existingSecret: ""
       urlKey: url
       # Secret with the CA that signed the server certificate (Hopae
@@ -198,7 +200,10 @@ hangang:
     identityProfiles:
       default:
         namespaces: []
-        requestHeaders: [authorization, cookie]
+        # Hopae's gateway contract: cookie and the browser navigation headers
+        # (Hopae sends a sign-in redirect only to a document request; without
+        # accept/sec-fetch-* every unauthenticated browser gets 401).
+        requestHeaders: [authorization, cookie, user-agent, accept, sec-fetch-dest, sec-fetch-mode, sec-fetch-site]
         forwardResponse: true
     # Optional: Pumgye service ID -> namespaces allowed to bind it.
     pumgyeServices: {}
@@ -206,6 +211,10 @@ hangang:
   guard:
     enabled: true
     timeoutMs: 100
+  # Port clients use in URLs (sign-in redirects, X-Forwarded-Port); null uses
+  # service.port. Set it when clients reach the gateway on another port (a
+  # NodePort or an external load balancer port).
+  advertisedPort: null
   service:
     type: LoadBalancer       # ClusterIP | NodePort | LoadBalancer
     port: 80
@@ -366,6 +375,9 @@ hopae:
     tokenSecret:
       name: ""
       key: hopae-metrics-token
+  # Seconds a terminating Pod keeps serving after its endpoint is withdrawn
+  # (preStop sleep; needs Kubernetes >= 1.30). 0 disables.
+  preStopSleepSeconds: 10
   # Seconds between content polls of Hopae's TLS files (native/gRPC gateway,
   # admin listener, projection clients); 0 off, at most 3600; null keeps
   # Hopae's default (10) and omits the key.

@@ -68,5 +68,12 @@
   Public`, `public.reason`, `public.paths`) and add `hopae.portalIngress`:
   the Hopae portal published through the gateway with an explicitly public
   policy limited to its sign-in paths, so `requireProtection` stays on.
+- Qualify Hopae ×2 on PostgreSQL on the remote k3s cluster with
+  `requireProtection: true` and the explicitly public portal: LDAP sign-in and
+  handoff across replicas, cross-replica publication in 1–2 ms, Pod kills
+  without failed requests or duplicate effects, zero-503 rolling upgrades.
+  Fixes: browser navigation headers in identity profiles, `--advertised-port`,
+  Hopae preStop sleep (`hopae.preStopSleepSeconds`), PostgreSQL URL without
+  `sslmode`, PostgreSQL alerts.
 - Add `tools/test_helm_charts.py` (offline lint/render/invariant/refusal tests,
   optional kubeconform validation) and the EN/KO install guide.

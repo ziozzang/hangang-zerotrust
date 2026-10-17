@@ -148,6 +148,7 @@ schema = obj({
         'maxStalenessSeconds': {'type': 'integer', 'minimum': 60, 'maximum': 3600,
                                 'description': 'ADR 0022 bounded staleness; at least staleSeconds.'},
         'readiness': {'enum': ['snapshot', 'fresh']},
+        'advertisedPort': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 65535},
         'tlsReloadSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 3600},
         'protection': obj({
             'enabled': {'type': 'boolean'},
@@ -220,6 +221,7 @@ schema = obj({
                                                     'not': {'type': 'integer', 'exclusiveMinimum': 0, 'exclusiveMaximum': 200}}},
                               required=['source']),
         'tlsReloadSeconds': {'type': ['integer', 'null'], 'minimum': 0, 'maximum': 3600},
+        'preStopSleepSeconds': {'type': 'integer', 'minimum': 0, 'maximum': 120},
         'consoleOperators': obj({
             'enabled': {'type': 'boolean'},
             'appId': {'type': 'string', 'pattern': '^[A-Za-z0-9_-]{1,64}$', 'not': {'const': 'default'}},

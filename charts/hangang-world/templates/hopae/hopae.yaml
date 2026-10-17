@@ -103,7 +103,7 @@ spec:
       serviceAccountName: {{ include "world.name" $ctx }}
       automountServiceAccountToken: false
       enableServiceLinks: false
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: {{ add 30 (int $v.preStopSleepSeconds) }}
       securityContext:
         {{- include "world.podSecurityContext" . | nindent 8 }}
       {{- include "world.podCommon" (dict "root" . "values" $v) | nindent 6 }}
@@ -112,6 +112,15 @@ spec:
           image: {{ include "world.image" (dict "image" $v.image "component" "hopae") }}
           imagePullPolicy: {{ $v.image.pullPolicy | default "IfNotPresent" }}
           args: ["run", "--config", "/config/hopae.json"]
+          {{- if $v.preStopSleepSeconds }}
+          # Stay up while the endpoint is withdrawn, so gateways stop sending
+          # new verifications here before Hopae shuts down (rolling updates
+          # and drains without refused requests).
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ $v.preStopSleepSeconds }}
+          {{- end }}
           env:
             {{- include "world.hopaeEnv" . | nindent 12 }}
           ports:

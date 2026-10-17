@@ -7,7 +7,7 @@
 {{- $auth := dict
   "url" "http://127.0.0.1:8701/_hopae/verify"
   "native" (dict "transport" "grpc" "address" (printf "%s:8703" (include "world.host" $hopae)) "tls" (include "world.peerTls" $hopae | fromJson))
-  "request_headers" ($profile.requestHeaders | default (list "authorization" "cookie"))
+  "request_headers" ($profile.requestHeaders | default (list "authorization" "cookie" "user-agent" "accept" "sec-fetch-dest" "sec-fetch-mode" "sec-fetch-site"))
   "response_headers" (list "x-forwarded-user" "x-hopae-aal" "x-hopae-principal-kind" "x-hopae-service-id")
   "forward_response" (ne $profile.forwardResponse false)
   "timeout_ms" 500

@@ -123,6 +123,7 @@ Prometheus는 상호 TLS 리스너에 클라이언트 인증서를 제시합니�
 | `PumgyeUnavailable`, `SumunjangNotReady`(critical) | 결정 서비스가 답할 수 없음 |
 | `HopaeStoreDown`(critical), `HopaeTLSReloadFailing`, `HopaeCertificateExpiringSoon`, `HopaeConfigReloadFailing` | Hopae 저장소 응답 없음, TLS 자료 거부, 리프 만료, 잘못된 설정 파일 |
 | `HopaeVerifyCallerUnauthorized`, `HopaeVerifyOverloaded`, `HopaeProviderDegraded`, `HopaeEventDeliveriesFailed` | 게이트웨이 호출자 키 불일치, verify 동시성 한도, 신원 공급자 비정상, 포기한 이벤트 전달 |
+| `HopaePublicationListenerDown`, `HopaeStorePoolSaturated`(PostgreSQL) | `hopae_store_publication_listener_up == 0`(게시는 1초 폴링으로만), `hopae_store_pool_waiting > 0` |
 | `HangangIngressesWithheld`, `PumgyeShadowMismatchUnexplained`, `SumunjangEvidenceDropped` | 운영 경고 |
 
 cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합니다(빼려면 `monitoring.prometheusRule.certManagerExpiry: false`).
@@ -148,12 +149,15 @@ cert-manager 규칙에는 Prometheus에 cert-manager 자체 지표가 필요합�
 
 `hopae.storage.backend: postgresql`(`global.ha.backend: postgresql`과 함께)은 모든 복제본이 공유하는 외부 PostgreSQL에 Hopae를 저장합니다(Hopae ADR-0020, PR #16).
 
-- `global.ha.postgresql.existingSecret`/`urlKey`: libpq URL(`postgresql://user@host:5432/db?sslmode=verify-full`, 비밀번호 포함 또는 서버 인증 방식)을 담은 Secret이며 `HOPAE_STORE_URL`로 전달됩니다.
+- `global.ha.postgresql.existingSecret`/`urlKey`: 연결 URL(`postgresql://user:password@host:5432/db`)을 담은 Secret이며 `HOPAE_STORE_URL`로 전달됩니다. `sslmode`는 넣지 마세요. Hopae 드라이버는 `sslmode=verify-full`을 거부합니다("invalid postgres connection string"). 아래 CA가 있으면 Hopae는 항상 TLS를 쓰고 인증서 체인과 호스트 이름을 검증합니다.
 - `global.ha.postgresql.caSecret`: 서버 인증서의 CA로 `/pg-ca/ca.crt`(`store.postgres.ca_file`)에 마운트됩니다. Hopae는 이것 없이 loopback이 아닌 데이터베이스를 거부합니다.
 - `hopae.storage.postgresql.poolSize`(복제본당 16), `connectTimeoutMs`(5000), `statementTimeoutMs`(트랜잭션당 2000).
 - `hopae.replicas` > 1은 여기서만 허용됩니다. Deployment는 `maxUnavailable: 0, maxSurge: 1`과 PDB로 롤링하고, 각 복제본은 emptyDir에 자기 `state_dir`을 두며 PVC를 만들지 않습니다.
 - 게시(인증 프로필, projection 계획)는 약 1초 안에 모든 복제본에 반영됩니다(LISTEN/NOTIFY와 1초 폴링). 로그인 트랜잭션과 handoff 실패 속도 제한은 저장소에서 세므로 공유되고, 나머지 제한은 복제본별이라 클러스터 전체 한도는 복제본 값 × 복제본 수입니다.
 - 모든 복제본은 같은 설정으로 실행해야 합니다. 이전 정책의 복제본은 재시작할 때까지 네이티브 Human 세션을 인정하지 않습니다.
+- 비밀번호 로그인 제한(클라이언트 주소당 분당 10회)은 복제본별 메모리에 있고 설정할 수 없습니다. 하나의 출구 주소 뒤에서는 클러스터가 복제본마다 분당 약 10회를 허용합니다.
+- 종료 중인 Pod는 `hopae.preStopSleepSeconds`(기본 10, preStop sleep, Kubernetes 1.30 이상) 동안 계속 응답하므로, Hopae가 내려가기 전에 게이트웨이가 검증 요청을 보내지 않게 됩니다. 이것 없이는 롤링 업데이트 중 요청 몇 건이 503으로 거부되었습니다.
+- 보호된 애플리케이션 Ingress는 `/_hopae`(Prefix)도 백엔드로 라우팅해야 합니다. Hopae 로그인 handoff는 `https://<앱 호스트>/_hopae/login?...`에 도착하며, 게이트웨이가 검증 중에 직접 응답합니다.
 
 ### SQLite에서 옮기기
 
@@ -296,6 +300,21 @@ ADR 0022의 남은 게이트를 소유자 승인 아래 사용자 지정 원격 
 | `helm test` | Succeeded |
 
 실행 후 실행 전 기준선으로 정리했습니다(노드, CRD, RBAC, webhook, IngressClass, 네임스페이스, PV 285개, HTTP 확인 동일, 기존 Pod의 UID와 재시작 수 유지). 새 백업을 검증한 뒤 이전 오프호스트 사본은 삭제했습니다. Hangang 후속 하나는 PR #23에서 고쳤습니다: 동적 공개 리스너가 더 이상 재적재 지표를 보고하지 않습니다. Hangang 관리 포트로 `kubectl port-forward`했을 때 본 평문 HTTP `401`은 측정 착오였습니다. 작업 컴퓨터에 관련 없는 평문 게이트웨이가 이미 `0.0.0.0:49000`을 게시하고 있어 kubectl은 `[::1]:49000`만 바인딩했고, IPv4 확인 요청은 Pod가 아니라 그 로컬 서비스에 닿았습니다. Hangang의 TLS 관리 리스너는 loopback에서도, `--supervised`에서도 평문에 응답하지 않습니다(Hangang PR #23 회귀 테스트). 심층 방어로 차트는 관리 API가 loopback에 머물 때도 TLS로 제공하므로, Pod 네트워크 네임스페이스의 어떤 컨테이너도 평문 관리 엔드포인트에 닿을 수 없습니다.
+
+## 검증 기록 — PostgreSQL 위의 Hopae 고가용성 (2026-10-17)
+
+원격 k3s 테스트 클러스터에서 새 콜드 백업(4,108,395,448바이트, 원격·오프호스트 사본의 크기·전체 SHA-256·아카이브 목록 일치, 이후 이전 오프호스트 사본 삭제) 뒤 `requireProtection: true`로 실행했습니다. 구성: Hangang `5efcd19`(PR #27) ×3, `local/pr-check`(`feat/postgres-serve` 867a4c3 + #17–#20)의 Hopae ×2를 TLS를 쓰는 일회용 PostgreSQL 17 Pod 위에, Pumgye `4e52edc`, Sumunjang `400acea`, 명시적 공개 정책(`hopae.portalIngress`)으로 게이트웨이를 통해 게시한 Hopae 포털, 사용자 20명의 OpenLDAP fixture 로그인 공급자. `access` CEL 규칙이 든 CRD를 API 서버가 받아들였습니다.
+
+| 확인 | 결과 |
+| --- | --- |
+| 진단 | 보호 2, 명시적 공개 1(포털, 이유와 함께 `ExplicitlyPublic`), 미보호 0, 보류 0. 정책 밖의 포털 경로는 404 |
+| 복제본을 오가는 LDAP 로그인 → handoff → 보호 페이지 | 제한되지 않은 로그인 18건 모두 완료(한 Hopae 복제본 10, 다른 복제본 8). 복제본별 비밀번호 제한이 추가 시도 2건을 거부(429) |
+| 한 복제본의 프로필 게시를 다른 복제본이 적용 | 2회: 한 복제본이 반영하고 다른 복제본이 1–2 ms 뒤 따라감(`followed a publication from another replica`). API 키 프로브가 200에서 401로 바뀐 뒤 오래된 200 없음. Pod 재시작 없음 |
+| 트래픽 중 Hopae Pod 하나 강제 종료 | 2회: API 키 요청 1208/1208, 1273/1273 200. 종료 중 로그인 21/21 성공(1건은 인증 뒤 Pumgye가 권한 없음으로 거부). 중복 효과 없음: 소비된 로그인 트랜잭션 61건 모두 고유, handoff 코드마다 한 번만 소비, 세션당 코드 하나 |
+| Hopae를 롤링하는 `helm upgrade` | preStop sleep 없이 374건 중 3건 503. `preStopSleepSeconds: 10`으로 두 번의 업그레이드에서 811/811, 883/883 요청과 로그인 30/30이 503 없이 처리 |
+| `helm test` | Succeeded |
+
+이번 실행에서 찾아 차트에 반영한 수정: ID 프로필이 `user-agent`, `accept`, `sec-fetch-*`를 전달합니다(없으면 Hopae가 브라우저에 로그인 리디렉션 대신 401로 응답). 게이트웨이가 `--advertised-port`를 넘깁니다(로그인 리디렉션이 컨테이너 포트 8443을 가리킴). Hopae Pod에 preStop sleep을 둡니다. PostgreSQL URL에는 `sslmode`를 넣으면 안 됩니다. Hopae 제한: 비밀번호 제한은 복제본별이며 고정입니다. 만든 모든 것을 지웠고, 노드·CRD·RBAC·webhook·IngressClass·네임스페이스·PV 285개·HTTP 확인이 기준선과 같으며, 기존 Pod의 UID와 재시작 수가 유지되었습니다.
 
 ## 검증
 

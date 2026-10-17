@@ -371,6 +371,9 @@ class WorldChart(unittest.TestCase):
         self.assertEqual(args[args.index('--kubernetes-readiness') + 1], 'snapshot')
         self.assertEqual(args[args.index('--tls-reload-seconds') + 1], '10')
         self.assertEqual(gateway['readinessProbe']['httpGet']['path'], '/-/ready')
+        self.assertEqual(args[args.index('--advertised-port') + 1], '80', 'the Service port, not the container port')
+        settings = json.loads(named(docs, 'ConfigMap', '-hangang-protection')['data']['settings.json'])
+        self.assertIn('sec-fetch-dest', settings['identity_profiles']['default']['auth']['request_headers'], 'browser sign-in redirects')
         pumgye = named(docs, 'Deployment', '-pumgye')['spec']['template']['spec']['containers'][0]
         self.assertEqual(pumgye['args'][pumgye['args'].index('--tls-reload-interval-secs') + 1], '10')
         self.assertNotIn('--metrics-token-env', pumgye['args'])
@@ -561,6 +564,10 @@ class WorldChart(unittest.TestCase):
         hook = named(migrate, 'ConfigMap', '-hopae-migrate')
         self.assertEqual(json.loads(hook['data']['hopae.json'])['state_dir'], '/sqlite')
         self.assertLess(int(hook['metadata']['annotations']['helm.sh/hook-weight']), int(job['metadata']['annotations']['helm.sh/hook-weight']))
+        rules = render(*pg, 'hopae.admin.enabled=true', 'hopae.admin.delegation.enabled=false', 'hopae.metrics.enabled=true',
+                       'hopae.metrics.tokenSecret.name=t', 'monitoring.prometheusRule.enabled=true')
+        alerts = {r['alert'] for g in by_kind(rules, 'PrometheusRule')[0]['spec']['groups'] for r in g['rules']}
+        self.assertTrue({'HopaePublicationListenerDown', 'HopaeStorePoolSaturated'} <= alerts)
 
     def test_hopae_portal_ingress_is_explicitly_public(self):
         self.assertFalse([d for d in render() if d['metadata']['name'].endswith('-portal')])

@@ -123,6 +123,7 @@ Prometheus presents a client certificate to the mutual-TLS listeners: with cert-
 | `PumgyeUnavailable`, `SumunjangNotReady` (critical) | the decision service cannot answer |
 | `HopaeStoreDown` (critical), `HopaeTLSReloadFailing`, `HopaeCertificateExpiringSoon`, `HopaeConfigReloadFailing` | Hopae store unreachable, rejected TLS material, leaf expiry, invalid configuration file |
 | `HopaeVerifyCallerUnauthorized`, `HopaeVerifyOverloaded`, `HopaeProviderDegraded`, `HopaeEventDeliveriesFailed` | wrong gateway caller key, verify concurrency limit, identity provider not ok, abandoned event deliveries |
+| `HopaePublicationListenerDown`, `HopaeStorePoolSaturated` (PostgreSQL) | `hopae_store_publication_listener_up == 0` (publications only by the 1 s poll), `hopae_store_pool_waiting > 0` |
 | `HangangIngressesWithheld`, `PumgyeShadowMismatchUnexplained`, `SumunjangEvidenceDropped` | operational warnings |
 
 The cert-manager rules need cert-manager's own metrics in Prometheus (`monitoring.prometheusRule.certManagerExpiry: false` to omit them).
@@ -148,12 +149,15 @@ Configuration files are mounted as whole directories (never `subPath`), root-own
 
 `hopae.storage.backend: postgresql` (with `global.ha.backend: postgresql`) stores Hopae in an external PostgreSQL that every replica shares (Hopae ADR-0020, PR #16):
 
-- `global.ha.postgresql.existingSecret`/`urlKey`: a Secret with the libpq URL (`postgresql://user@host:5432/db?sslmode=verify-full`, password included or from the server's auth method), passed as `HOPAE_STORE_URL`.
+- `global.ha.postgresql.existingSecret`/`urlKey`: a Secret with the connection URL (`postgresql://user:password@host:5432/db`), passed as `HOPAE_STORE_URL`. Leave `sslmode` out: Hopae's driver refuses `sslmode=verify-full` ("invalid postgres connection string"); with the CA below Hopae always uses TLS and verifies the certificate chain and the host name.
 - `global.ha.postgresql.caSecret`: the CA of the server certificate, mounted at `/pg-ca/ca.crt` (`store.postgres.ca_file`); Hopae refuses a non-loopback database without it.
 - `hopae.storage.postgresql.poolSize` (16 per replica), `connectTimeoutMs` (5000) and `statementTimeoutMs` (2000 per transaction).
 - `hopae.replicas` > 1 is allowed only here. Deployments roll with `maxUnavailable: 0, maxSurge: 1` and a PDB; each replica keeps a private `state_dir` on an emptyDir and no PVC is created.
 - Publications (authentication profiles, projection plans) reach every replica within about one second (LISTEN/NOTIFY plus a 1 s poll). Login-transaction and handoff-failure rate limits are counted in the store and shared; the other limits are per replica, so the effective cluster limit is the per-replica value times the replica count.
 - All replicas must run the same configuration; a replica on an older policy stops qualifying native Human sessions until it restarts.
+- The password sign-in throttle (10 attempts per client address per minute) is in memory per replica and not configurable; behind one egress address the cluster admits about 10 per minute per replica.
+- Terminating Pods keep serving for `hopae.preStopSleepSeconds` (default 10, a preStop sleep; Kubernetes ≥ 1.30) so gateways stop sending verifications before Hopae shuts down; without it a rolling update refused a few requests (503).
+- A protected application Ingress must also route `/_hopae` (Prefix) to its backend: Hopae's sign-in handoff lands on `https://<app host>/_hopae/login?...`, which the gateway answers itself during verification.
 
 ### Migrating from SQLite
 
@@ -299,6 +303,21 @@ Gate 3 was repeated on the same remote k3s test cluster with the component fixes
 | `helm test` | Succeeded |
 
 The run was cleaned up to the pre-run baseline (nodes, CRDs, RBAC, webhooks, ingress classes, namespaces, the 285 PVs and HTTP checks identical; pre-existing Pods kept their UIDs and restart counts). The older off-host backup copy was removed after the new one verified. One Hangang follow-up was fixed on PR #23: a dynamic public listener no longer reports a reload metric. A plain-HTTP `401` seen through `kubectl port-forward` to the Hangang admin port was a measurement artefact: the workstation already published an unrelated plaintext gateway on `0.0.0.0:49000`, so kubectl bound only `[::1]:49000` and the IPv4 probe reached that local service, not the Pod. Hangang's TLS admin listener never answers plaintext, also from loopback and under `--supervised` (regression test in Hangang PR #23). As defence in depth the chart now serves the admin API over TLS even when it stays on loopback, so no container in the Pod network namespace can reach a plaintext administration endpoint.
+
+## Qualification — Hopae high availability on PostgreSQL (2026-10-17)
+
+On the remote k3s test cluster, after a fresh cold backup (4,108,395,448 bytes; remote and off-host copies matched in size, full SHA-256 and archive listing; the older off-host copy was then removed), with `requireProtection: true`: Hangang `5efcd19` (PR #27) ×3, Hopae ×2 from `local/pr-check` (`feat/postgres-serve` 867a4c3 with #17–#20) on a disposable PostgreSQL 17 Pod with TLS, Pumgye `4e52edc`, Sumunjang `400acea`, the Hopae portal published through the gateway with the explicitly public policy (`hopae.portalIngress`), and an OpenLDAP fixture with 20 users as the sign-in provider. The CRD with the `access` CEL rules was accepted by the API server.
+
+| Check | Result |
+| --- | --- |
+| Diagnostics | 2 protected, 1 explicitly public (the portal, `ExplicitlyPublic` with its reason), 0 unprotected, 0 withheld; portal paths outside the policy answer 404 |
+| LDAP sign-in → handoff → protected page across replicas | 18 of 18 unthrottled sign-ins completed (10 on one Hopae replica, 8 on the other); the per-replica password throttle refused 2 further attempts (429) |
+| Profile publication on one replica, enforced by the other | twice: reconciled on one replica, followed by the other 1–2 ms later (`followed a publication from another replica`); the API-key probe switched from 200 to 401 with no stale 200 afterwards; no Pod restarted |
+| One Hopae Pod force-killed under traffic | twice: 1208/1208 and 1273/1273 API-key requests 200; 21/21 sign-ins during the kill succeeded (one more was authenticated and refused by Pumgye as ungranted); no duplicate effect: 61 consumed login transactions all distinct, each handoff code consumed once, one code per session |
+| `helm upgrade` rolling Hopae | without a preStop sleep 3 of 374 requests answered 503; with `preStopSleepSeconds: 10` two upgrades served 811/811 and 883/883 requests and 30/30 sign-ins without a 503 |
+| `helm test` | Succeeded |
+
+Fixes found by the run and applied to the chart: identity profiles now forward `user-agent`, `accept` and `sec-fetch-*` (otherwise Hopae answers browsers 401 instead of a sign-in redirect), the gateway passes `--advertised-port` (sign-in redirects pointed at the container port 8443), Hopae Pods get a preStop sleep, and the PostgreSQL URL must not carry `sslmode`. Hopae limits: the password throttle is per replica and fixed. Everything created was removed; nodes, CRDs, RBAC, webhooks, ingress classes, namespaces, the 285 PVs and HTTP checks match the baseline, and pre-existing Pods kept their UIDs and restart counts.
 
 ## Validation
 

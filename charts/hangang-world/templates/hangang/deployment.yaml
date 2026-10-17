@@ -133,6 +133,10 @@ spec:
             - /data/hangang.json
             - --listen
             - {{ printf "0.0.0.0:%d" $port | quote }}
+            # Port clients address (redirects and X-Forwarded-Port), not the
+            # container port behind the Service.
+            - --advertised-port
+            - {{ $h.advertisedPort | default $h.service.port | quote }}
             - --admin
             - {{ ternary "0.0.0.0:9000" "127.0.0.1:9000" $h.admin.exposeMetrics | quote }}
             # The administration API is always TLS, also on loopback: any other

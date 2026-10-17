@@ -2,8 +2,9 @@
 
 [한국어](README.ko.md) · [Design index](docs/README.md) · [Roadmap](docs/ROADMAP.md)
 
-[Implementation handoff — paused 2026-10-16](docs/HANDOFF_2026-10-16.md)
-records verified results, open gates and the resume order.
+[Implementation handoff — paused 2026-10-17](docs/HANDOFF_2026-10-17.md)
+records the review units, branch/PR state, verified gates and the resume order
+(previous: [2026-10-16](docs/HANDOFF_2026-10-16.md)).
 
 The architecture and contract repository for a zero-trust backbone built around
 [Hangang](https://github.com/ziozzang/hangang),

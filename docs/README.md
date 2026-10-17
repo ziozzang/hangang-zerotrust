@@ -2,7 +2,9 @@
 
 [한국어](ko/README.md) · [Project](../README.md)
 
-[Paused implementation handoff — 2026-10-16](HANDOFF_2026-10-16.md) — verified state, remaining gates and resume order.
+[Paused implementation handoff — 2026-10-17](HANDOFF_2026-10-17.md) — review units, branch/PR state, verified gates and resume order.
+
+[Paused implementation handoff — 2026-10-16](HANDOFF_2026-10-16.md) — previous checkpoint.
 
 | Document | Scope |
 | --- | --- |
